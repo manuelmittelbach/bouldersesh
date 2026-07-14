@@ -1,0 +1,73 @@
+/* ==========================================================================
+   Boulder Buddy — Typography Tokens
+   Display: Space Grotesk · UI/Body: Inter · Grades/Mono: JetBrains Mono
+   ========================================================================== */
+
+:root {
+  /* --- Families ----------------------------------------------------------- */
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-ui:      "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* --- Type scale (px, mobile-first) ------------------------------------- */
+  --text-2xs:  11px;
+  --text-xs:   12px;
+  --text-sm:   13px;
+  --text-base: 15px;  /* default body on mobile */
+  --text-md:   17px;
+  --text-lg:   20px;
+  --text-xl:   24px;
+  --text-2xl:  30px;
+  --text-3xl:  38px;
+  --text-4xl:  48px;
+  --text-5xl:  64px;
+
+  /* --- Weights ------------------------------------------------------------ */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* --- Line heights ------------------------------------------------------- */
+  --leading-tight:   1.05;  /* display headlines */
+  --leading-snug:    1.2;
+  --leading-normal:  1.45;  /* body */
+  --leading-relaxed: 1.6;
+
+  /* --- Letter spacing ----------------------------------------------------- */
+  --tracking-tight:   -0.02em; /* display */
+  --tracking-snug:    -0.01em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.04em;
+  --tracking-caps:    0.08em;  /* uppercase eyebrows / labels */
+
+  /* ======================================================================
+     Semantic type roles — family + weight + tracking bundled by intent.
+     ====================================================================== */
+
+  /* Display — Space Grotesk, tight */
+  --role-display-family:   var(--font-display);
+  --role-display-weight:   var(--weight-bold);
+  --role-display-tracking: var(--tracking-tight);
+  --role-display-leading:  var(--leading-tight);
+
+  /* Headline — Space Grotesk, snug (card titles, screen titles) */
+  --role-headline-family:  var(--font-display);
+  --role-headline-weight:  var(--weight-semibold);
+  --role-headline-tracking: var(--tracking-snug);
+
+  /* Body — Inter */
+  --role-body-family:  var(--font-ui);
+  --role-body-weight:  var(--weight-regular);
+  --role-body-leading: var(--leading-normal);
+
+  /* Label / eyebrow — Inter uppercase, wide tracking */
+  --role-label-family:   var(--font-ui);
+  --role-label-weight:   var(--weight-semibold);
+  --role-label-tracking: var(--tracking-caps);
+
+  /* Grade / numeric — JetBrains Mono */
+  --role-grade-family:   var(--font-mono);
+  --role-grade-weight:   var(--weight-600, 600);
+  --role-grade-tracking: var(--tracking-normal);
+}

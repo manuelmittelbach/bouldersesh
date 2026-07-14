@@ -1,0 +1,34 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Semantic surfaces & text" subtitle="The aliases components actually reference" -->
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+    body { margin: 0; background: var(--surface-app); font-family: var(--font-ui); }
+    .wrap { padding: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .col { display: flex; flex-direction: column; gap: 8px; }
+    .surf { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); }
+    .dot { width: 18px; height: 18px; border-radius: 5px; border: 1px solid var(--border-default); flex: 0 0 auto; }
+    .k { font-family: var(--font-mono); font-size: 11px; color: var(--text-body); }
+    .txt { display: flex; flex-direction: column; gap: 6px; }
+    .t { font-size: var(--text-md); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="col">
+      <div class="surf" style="background:var(--surface-app)"><span class="dot" style="background:var(--surface-app)"></span><span class="k">--surface-app</span></div>
+      <div class="surf" style="background:var(--surface-card)"><span class="dot" style="background:var(--surface-card)"></span><span class="k">--surface-card</span></div>
+      <div class="surf" style="background:var(--surface-sunken)"><span class="dot" style="background:var(--surface-sunken)"></span><span class="k">--surface-sunken</span></div>
+      <div class="surf" style="background:var(--surface-ink)"><span class="dot" style="background:var(--surface-ink)"></span><span class="k" style="color:var(--on-ink)">--surface-ink</span></div>
+    </div>
+    <div class="txt">
+      <div class="t" style="color:var(--text-strong);font-weight:700">Text strong — headlines</div>
+      <div class="t" style="color:var(--text-body)">Text body — paragraph copy</div>
+      <div class="t" style="color:var(--text-muted)">Text muted — meta & labels</div>
+      <div class="t" style="color:var(--text-faint)">Text faint — placeholder / disabled</div>
+    </div>
+  </div>
+</body>
+</html>

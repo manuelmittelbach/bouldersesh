@@ -1,0 +1,25 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Corner radii" subtitle="Cooler = tighter · cards land at 14px, not bubbly 24px" -->
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+    body { margin: 0; background: var(--surface-app); font-family: var(--font-ui); color: var(--text-strong); }
+    .wrap { padding: 22px; display: flex; gap: 18px; align-items: flex-end; flex-wrap: wrap; }
+    .col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .b { width: 70px; height: 56px; background: var(--surface-card); border: 1px solid var(--border-default); }
+    .k { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="col"><div class="b" style="border-radius:var(--radius-xs)"></div><span class="k">xs · 6<br>tags</span></div>
+    <div class="col"><div class="b" style="border-radius:var(--radius-sm)"></div><span class="k">sm · 10<br>buttons</span></div>
+    <div class="col"><div class="b" style="border-radius:var(--radius-md)"></div><span class="k">md · 12<br>inputs</span></div>
+    <div class="col"><div class="b" style="border-radius:var(--radius-lg)"></div><span class="k">lg · 14<br>cards</span></div>
+    <div class="col"><div class="b" style="border-radius:var(--radius-xl)"></div><span class="k">xl · 20<br>panels</span></div>
+    <div class="col"><div class="b" style="border-radius:var(--radius-pill);width:90px"></div><span class="k">pill · ∞<br>chips · avatars</span></div>
+  </div>
+</body>
+</html>

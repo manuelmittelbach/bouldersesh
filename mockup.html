@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Boulder Buddy — Mockup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    html, body { font-family: 'Inter', system-ui, sans-serif; }
+    body { background: #f5f1eb; }
+    /* Phone frame */
+    .phone {
+      width: 390px;
+      height: 800px;
+      background: #fafaf9;
+      border-radius: 44px;
+      border: 10px solid #1c1917;
+      box-shadow: 0 30px 60px -20px rgba(28,25,23,0.35), 0 0 0 2px #292524 inset;
+      overflow: hidden;
+      position: relative;
+    }
+    .phone-screen { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; }
+    /* Hide scrollbar but keep functional */
+    .phone-screen::-webkit-scrollbar { width: 0; }
+    /* Notch */
+    .notch {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      width: 110px; height: 28px; background: #1c1917; border-radius: 14px; z-index: 50;
+    }
+    /* Status bar */
+    .statusbar {
+      height: 48px; padding: 0 28px; display: flex; align-items: center;
+      justify-content: space-between; font-size: 14px; font-weight: 600; color: #1c1917;
+      padding-top: 14px;
+    }
+    .screen-hidden { display: none; }
+    /* Level pill colors */
+    .pill-beginner { background: #d1fae5; color: #065f46; }
+    .pill-intermediate { background: #dbeafe; color: #1e40af; }
+    .pill-advanced { background: #fed7aa; color: #9a3412; }
+    .pill-pro { background: #fecaca; color: #991b1b; }
+    /* Card hover (subtle, for click affordance) */
+    .session-card { transition: transform .12s ease, box-shadow .12s ease; cursor: pointer; }
+    .session-card:active { transform: scale(.985); }
+    /* Bottom nav */
+    .bottom-nav { box-shadow: 0 -8px 24px -12px rgba(28,25,23,.18); }
+    /* Subtle dotted bg for mockup canvas */
+    .canvas-bg {
+      background-image: radial-gradient(circle, #d6d3d1 1px, transparent 1px);
+      background-size: 18px 18px;
+    }
+    /* Avatar gradients (no images needed) */
+    .av-1 { background: linear-gradient(135deg, #fb923c, #ea580c); }
+    .av-2 { background: linear-gradient(135deg, #38bdf8, #0369a1); }
+    .av-3 { background: linear-gradient(135deg, #a78bfa, #6d28d9); }
+    .av-4 { background: linear-gradient(135deg, #fbbf24, #b45309); }
+    .av-5 { background: linear-gradient(135deg, #34d399, #047857); }
+    .av-me { background: linear-gradient(135deg, #f472b6, #be185d); }
+    /* Chat bubbles */
+    .bubble-them { background: #f5f5f4; color: #1c1917; border-radius: 18px 18px 18px 4px; }
+    .bubble-me { background: #f97316; color: white; border-radius: 18px 18px 4px 18px; }
+    /* FAB */
+    .fab {
+      box-shadow: 0 14px 28px -6px rgba(249, 115, 22, 0.55),
+                  0 6px 12px -2px rgba(28,25,23,0.18);
+    }
+    /* Tap highlight off */
+    * { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body class="canvas-bg min-h-screen">
+
+<!-- Mockup canvas header -->
+<div class="max-w-6xl mx-auto px-6 pt-10 pb-6">
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center text-white">
+          <i data-lucide="mountain" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="text-2xl font-bold text-stone-900 leading-tight">Boulder Buddy</div>
+          <div class="text-sm text-stone-500">Klickbarer Mockup · v0.1 · Mai 2026</div>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2" id="screen-nav">
+      <button data-screen="dashboard" class="nav-btn active px-4 py-2 rounded-full text-sm font-medium bg-stone-900 text-white">Dashboard</button>
+      <button data-screen="create" class="nav-btn px-4 py-2 rounded-full text-sm font-medium bg-white text-stone-700 hover:bg-stone-100 border border-stone-200">Session anlegen</button>
+      <button data-screen="detail" class="nav-btn px-4 py-2 rounded-full text-sm font-medium bg-white text-stone-700 hover:bg-stone-100 border border-stone-200">Session-Detail</button>
+      <button data-screen="sent" class="nav-btn px-4 py-2 rounded-full text-sm font-medium bg-white text-stone-700 hover:bg-stone-100 border border-stone-200">Anfrage gesendet</button>
+      <button data-screen="chat" class="nav-btn px-4 py-2 rounded-full text-sm font-medium bg-white text-stone-700 hover:bg-stone-100 border border-stone-200">Chat</button>
+    </div>
+  </div>
+</div>
+
+<!-- Phone -->
+<div class="flex justify-center pb-16">
+  <div class="phone">
+    <div class="notch"></div>
+
+    <!-- ============ SCREEN: DASHBOARD ============ -->
+    <div class="phone-screen" id="screen-dashboard">
+      <div class="statusbar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+          <i data-lucide="signal" class="w-4 h-4"></i>
+          <i data-lucide="wifi" class="w-4 h-4"></i>
+          <i data-lucide="battery-full" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <!-- Header -->
+      <div class="px-5 pt-2 pb-3 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-stone-500 font-medium">Heute · Mi, 27. Mai</div>
+          <div class="text-2xl font-bold text-stone-900 leading-tight">Wer klettert?</div>
+        </div>
+        <div class="w-10 h-10 rounded-full av-me flex items-center justify-center text-white font-semibold">M</div>
+      </div>
+
+      <!-- Filter chips -->
+      <div class="px-5 pb-3 flex gap-2 overflow-x-auto">
+        <button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-stone-900 text-white text-sm font-medium whitespace-nowrap">
+          <i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Boulderwelt München
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+        </button>
+        <button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-stone-200 text-stone-700 text-sm font-medium whitespace-nowrap">
+          <i data-lucide="calendar" class="w-3.5 h-3.5"></i> Heute & morgen
+        </button>
+        <button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-stone-200 text-stone-700 text-sm font-medium whitespace-nowrap">
+          <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> Mein Level ± 1
+        </button>
+      </div>
+
+      <!-- Sessions list -->
+      <div class="px-5 space-y-3 pb-32">
+
+        <!-- Card 1 — clickable -->
+        <div class="session-card bg-white rounded-2xl p-4 border border-stone-100 shadow-sm" onclick="show('detail')">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 rounded-full av-1 flex items-center justify-center text-white font-semibold shrink-0">L</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <div class="font-semibold text-stone-900 truncate">Lina K.</div>
+                <span class="pill-intermediate text-xs px-2 py-0.5 rounded-full font-semibold shrink-0">6a – 6c</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-sm text-stone-500 mt-0.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                <span>Heute · 18:00 – 21:00</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-sm text-stone-500 mt-0.5">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                <span>Boulderwelt München-Ost</span>
+              </div>
+              <div class="mt-2 text-sm text-stone-700 line-clamp-2">
+                Suche jemand zum Projekt-Bouldern. Versuche mich an einem 6c+ in der gelben Ecke 💛
+              </div>
+              <div class="flex items-center gap-2 mt-3 text-xs">
+                <span class="flex items-center gap-1 text-emerald-700 font-medium">
+                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Passt zu deinem Level
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="session-card bg-white rounded-2xl p-4 border border-stone-100 shadow-sm" onclick="show('detail')">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 rounded-full av-2 flex items-center justify-center text-white font-semibold shrink-0">T</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <div class="font-semibold text-stone-900 truncate">Tom & Jana</div>
+                <span class="pill-beginner text-xs px-2 py-0.5 rounded-full font-semibold shrink-0">5+ – 6a</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-sm text-stone-500 mt-0.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                <span>Morgen · 19:30</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-sm text-stone-500 mt-0.5">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                <span>Boulderwelt München-Ost</span>
+              </div>
+              <div class="mt-2 text-sm text-stone-700 line-clamp-2">
+                Sind zu zweit, ein:e dritte:r ist noch frei. Locker, viel quatschen.
+              </div>
+              <div class="flex items-center gap-2 mt-3 text-xs">
+                <span class="flex items-center gap-1 text-stone-500 font-medium">
+                  <i data-lucide="users" class="w-3.5 h-3.5"></i> 1 / 2 Plätze frei
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="session-card bg-white rounded-2xl p-4 border border-stone-100 shadow-sm" onclick="show('detail')">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 rounded-full av-3 flex items-center justify-center text-white font-semibold shrink-0">S</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <div class="font-semibold text-stone-900 truncate">Sami R.</div>
+                <span class="pill-advanced text-xs px-2 py-0.5 rounded-full font-semibold shrink-0">7a+</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-sm text-stone-500 mt-0.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                <span>Fr, 29. Mai · 17:00</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-sm text-stone-500 mt-0.5">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                <span>Einstein Boulderhalle</span>
+              </div>
+              <div class="mt-2 text-sm text-stone-700 line-clamp-2">
+                Power-Session. Suche jemand auf ähnlichem Niveau zum Spotten.
+              </div>
+              <div class="flex items-center gap-2 mt-3 text-xs">
+                <span class="flex items-center gap-1 text-amber-700 font-medium">
+                  <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i> Stretch-Level
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="session-card bg-white rounded-2xl p-4 border border-stone-100 shadow-sm" onclick="show('detail')">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 rounded-full av-4 flex items-center justify-center text-white font-semibold shrink-0">N</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <div class="font-semibold text-stone-900 truncate">Nora P.</div>
+                <span class="pill-intermediate text-xs px-2 py-0.5 rounded-full font-semibold shrink-0">6b</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-sm text-stone-500 mt-0.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                <span>Sa, 30. Mai · 11:00</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-sm text-stone-500 mt-0.5">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                <span>DAV Kletter- und Boulderzentrum</span>
+              </div>
+              <div class="mt-2 text-sm text-stone-700 line-clamp-2">
+                Erstmal warm werden, dann Slabs. Tipps willkommen 🙏
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- FAB -->
+      <button onclick="show('create')" class="fab absolute bottom-24 right-5 w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center active:scale-95 transition">
+        <i data-lucide="plus" class="w-7 h-7"></i>
+      </button>
+
+      <!-- Bottom nav -->
+      <div class="bottom-nav absolute bottom-0 left-0 right-0 bg-white border-t border-stone-100 px-6 pt-2 pb-6">
+        <div class="flex items-center justify-around">
+          <button class="flex flex-col items-center gap-0.5 text-orange-500">
+            <i data-lucide="home" class="w-6 h-6"></i>
+            <span class="text-[10px] font-semibold">Home</span>
+          </button>
+          <button onclick="show('chat')" class="flex flex-col items-center gap-0.5 text-stone-400 relative">
+            <i data-lucide="message-circle" class="w-6 h-6"></i>
+            <span class="text-[10px] font-semibold">Chats</span>
+            <span class="absolute top-0 right-2 w-2 h-2 rounded-full bg-orange-500"></span>
+          </button>
+          <button class="flex flex-col items-center gap-0.5 text-stone-400">
+            <i data-lucide="user" class="w-6 h-6"></i>
+            <span class="text-[10px] font-semibold">Profil</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ============ SCREEN: CREATE SESSION ============ -->
+    <div class="phone-screen screen-hidden" id="screen-create">
+      <div class="statusbar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+          <i data-lucide="signal" class="w-4 h-4"></i>
+          <i data-lucide="wifi" class="w-4 h-4"></i>
+          <i data-lucide="battery-full" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <div class="px-5 pt-2 pb-3 flex items-center justify-between">
+        <button onclick="show('dashboard')" class="w-10 h-10 -ml-2 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-700">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <div class="text-base font-semibold text-stone-900">Neue Session</div>
+        <div class="w-10"></div>
+      </div>
+
+      <div class="px-5 pb-32 space-y-5">
+        <!-- Gym -->
+        <div>
+          <label class="text-xs font-semibold text-stone-500 uppercase tracking-wide">Halle</label>
+          <div class="mt-1.5 bg-white border border-stone-200 rounded-xl px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="map-pin" class="w-4 h-4 text-stone-500"></i>
+              <span class="text-stone-900 font-medium">Boulderwelt München-Ost</span>
+            </div>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-stone-400"></i>
+          </div>
+        </div>
+
+        <!-- Quick day -->
+        <div>
+          <label class="text-xs font-semibold text-stone-500 uppercase tracking-wide">Wann?</label>
+          <div class="mt-1.5 grid grid-cols-3 gap-2">
+            <button class="bg-orange-500 text-white rounded-xl py-3 text-sm font-semibold">Heute</button>
+            <button class="bg-white border border-stone-200 text-stone-700 rounded-xl py-3 text-sm font-semibold">Morgen</button>
+            <button class="bg-white border border-stone-200 text-stone-700 rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-1">
+              <i data-lucide="calendar" class="w-4 h-4"></i> Datum
+            </button>
+          </div>
+          <div class="mt-2 grid grid-cols-2 gap-2">
+            <div class="bg-white border border-stone-200 rounded-xl px-4 py-3 flex items-center justify-between">
+              <span class="text-xs text-stone-500">Start</span>
+              <span class="font-semibold text-stone-900">18:00</span>
+            </div>
+            <div class="bg-white border border-stone-200 rounded-xl px-4 py-3 flex items-center justify-between">
+              <span class="text-xs text-stone-500">Ende</span>
+              <span class="font-semibold text-stone-900">21:00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Level -->
+        <div>
+          <label class="text-xs font-semibold text-stone-500 uppercase tracking-wide">Wunsch-Level</label>
+          <div class="mt-1.5 flex flex-wrap gap-2">
+            <button class="px-3.5 py-2 rounded-full bg-white border border-stone-200 text-stone-700 text-sm font-medium">5+</button>
+            <button class="px-3.5 py-2 rounded-full bg-stone-900 text-white text-sm font-semibold">6a</button>
+            <button class="px-3.5 py-2 rounded-full bg-stone-900 text-white text-sm font-semibold">6b</button>
+            <button class="px-3.5 py-2 rounded-full bg-stone-900 text-white text-sm font-semibold">6c</button>
+            <button class="px-3.5 py-2 rounded-full bg-white border border-stone-200 text-stone-700 text-sm font-medium">7a</button>
+            <button class="px-3.5 py-2 rounded-full bg-white border border-stone-200 text-stone-500 text-sm font-medium flex items-center gap-1">
+              <i data-lucide="infinity" class="w-3.5 h-3.5"></i> egal
+            </button>
+          </div>
+        </div>
+
+        <!-- Note -->
+        <div>
+          <label class="text-xs font-semibold text-stone-500 uppercase tracking-wide">Notiz <span class="text-stone-400 font-normal">(optional)</span></label>
+          <textarea class="mt-1.5 w-full bg-white border border-stone-200 rounded-xl px-4 py-3 text-sm text-stone-900 placeholder-stone-400" rows="3" placeholder="z. B. 'Suche jemand zum Projekt-Bouldern an einem 6c+'"></textarea>
+        </div>
+
+        <!-- Max buddies + visibility -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-stone-500 uppercase tracking-wide">Max. Buddies</label>
+            <div class="mt-1.5 bg-white border border-stone-200 rounded-xl px-4 py-3 flex items-center justify-between">
+              <span class="font-semibold text-stone-900">1</span>
+              <div class="flex gap-1">
+                <button class="w-6 h-6 rounded-full bg-stone-100 text-stone-700 text-sm font-bold">−</button>
+                <button class="w-6 h-6 rounded-full bg-stone-100 text-stone-700 text-sm font-bold">+</button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-stone-500 uppercase tracking-wide">Sichtbar für</label>
+            <div class="mt-1.5 bg-white border border-stone-200 rounded-xl px-4 py-3 flex items-center justify-between">
+              <span class="font-medium text-stone-900 text-sm">Alle</span>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-stone-400"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom CTA -->
+      <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-stone-100 px-5 pt-3 pb-6">
+        <button onclick="show('dashboard')" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2">
+          <i data-lucide="send" class="w-4 h-4"></i> Session veröffentlichen
+        </button>
+      </div>
+    </div>
+
+
+    <!-- ============ SCREEN: SESSION DETAIL ============ -->
+    <div class="phone-screen screen-hidden" id="screen-detail">
+      <div class="statusbar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+          <i data-lucide="signal" class="w-4 h-4"></i>
+          <i data-lucide="wifi" class="w-4 h-4"></i>
+          <i data-lucide="battery-full" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <div class="px-5 pt-2 pb-3 flex items-center justify-between">
+        <button onclick="show('dashboard')" class="w-10 h-10 -ml-2 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-700">
+          <i data-lucide="arrow-left" class="w-6 h-6"></i>
+        </button>
+        <button class="w-10 h-10 -mr-2 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-700">
+          <i data-lucide="more-horizontal" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <div class="px-5 pb-32">
+        <!-- User -->
+        <div class="flex flex-col items-center text-center mt-2">
+          <div class="w-24 h-24 rounded-full av-1 flex items-center justify-center text-white text-3xl font-bold">L</div>
+          <div class="mt-3 text-xl font-bold text-stone-900">Lina K.</div>
+          <div class="text-sm text-stone-500">Klettert seit 3 Jahren · Power & Dynamisch</div>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="pill-intermediate text-xs px-2.5 py-1 rounded-full font-semibold">6a – 6c</span>
+            <span class="bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
+              <i data-lucide="check-circle-2" class="w-3 h-3"></i> Verifiziert
+            </span>
+          </div>
+        </div>
+
+        <!-- Session info -->
+        <div class="mt-6 bg-white border border-stone-100 rounded-2xl p-4 space-y-3 shadow-sm">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
+              <i data-lucide="calendar" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-xs text-stone-500">Wann</div>
+              <div class="font-semibold text-stone-900 text-sm">Heute · 18:00 – 21:00 Uhr</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
+              <i data-lucide="map-pin" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-xs text-stone-500">Wo</div>
+              <div class="font-semibold text-stone-900 text-sm">Boulderwelt München-Ost</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
+              <i data-lucide="users" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-xs text-stone-500">Plätze</div>
+              <div class="font-semibold text-stone-900 text-sm">1 Buddy gesucht</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Note -->
+        <div class="mt-4 bg-amber-50 border border-amber-100 rounded-2xl p-4">
+          <div class="text-xs font-semibold text-amber-900 uppercase tracking-wide mb-1">Notiz</div>
+          <div class="text-sm text-stone-800 leading-relaxed">
+            Suche jemand zum Projekt-Bouldern. Versuche mich an einem 6c+ in der gelben Ecke 💛 Letzte Versuche brauchten dringend Spotten.
+          </div>
+        </div>
+
+        <!-- Match indicator -->
+        <div class="mt-4 flex items-center gap-2 text-sm text-emerald-700 font-medium">
+          <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+          <span>Passt zu deinem Level (6b) und deiner Stamm-Halle</span>
+        </div>
+      </div>
+
+      <!-- Bottom CTA -->
+      <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-stone-100 px-5 pt-3 pb-6">
+        <button onclick="show('sent')" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2">
+          <i data-lucide="hand" class="w-4 h-4"></i> Klettern mit?
+        </button>
+      </div>
+    </div>
+
+
+    <!-- ============ SCREEN: REQUEST SENT ============ -->
+    <div class="phone-screen screen-hidden" id="screen-sent">
+      <div class="statusbar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+          <i data-lucide="signal" class="w-4 h-4"></i>
+          <i data-lucide="wifi" class="w-4 h-4"></i>
+          <i data-lucide="battery-full" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <div class="px-5 pt-2 pb-3 flex items-center justify-between">
+        <button onclick="show('detail')" class="w-10 h-10 -ml-2 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-700">
+          <i data-lucide="arrow-left" class="w-6 h-6"></i>
+        </button>
+        <button class="w-10 h-10 -mr-2 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-700">
+          <i data-lucide="more-horizontal" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <div class="px-5 pb-32">
+        <!-- Big success state -->
+        <div class="flex flex-col items-center text-center mt-6">
+          <div class="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+            <i data-lucide="send" class="w-9 h-9"></i>
+          </div>
+          <div class="mt-4 text-xl font-bold text-stone-900">Anfrage gesendet!</div>
+          <div class="mt-1 text-sm text-stone-500 max-w-[280px]">
+            Lina kriegt eine Push-Nachricht. Wenn sie zusagt, kann's los gehen.
+          </div>
+        </div>
+
+        <!-- Mini session summary -->
+        <div class="mt-6 bg-white border border-stone-100 rounded-2xl p-4 shadow-sm">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full av-1 flex items-center justify-center text-white font-semibold">L</div>
+            <div class="flex-1">
+              <div class="font-semibold text-stone-900">Lina K.</div>
+              <div class="text-xs text-stone-500">Heute · 18:00 · Boulderwelt München-Ost</div>
+            </div>
+            <span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
+              <i data-lucide="clock" class="w-3 h-3"></i> Wartet
+            </span>
+          </div>
+        </div>
+
+        <!-- Tip -->
+        <div class="mt-5 flex items-start gap-3 bg-stone-100 rounded-2xl p-4">
+          <i data-lucide="lightbulb" class="w-5 h-5 text-amber-500 shrink-0 mt-0.5"></i>
+          <div class="text-sm text-stone-700">
+            Tipp: schreib eine kurze Begrüßung mit, sobald Lina annimmt — Anfragen mit Nachricht werden 3× häufiger zugesagt.
+          </div>
+        </div>
+
+        <!-- Other sessions -->
+        <div class="mt-6">
+          <div class="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Weitere Sessions heute</div>
+          <div class="space-y-2">
+            <div class="session-card bg-white rounded-2xl p-3 border border-stone-100 flex items-center gap-3" onclick="show('dashboard')">
+              <div class="w-10 h-10 rounded-full av-2 flex items-center justify-center text-white font-semibold text-sm">T</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-stone-900 text-sm">Tom & Jana</div>
+                <div class="text-xs text-stone-500 truncate">Morgen 19:30 · München-Ost</div>
+              </div>
+              <span class="pill-beginner text-[10px] px-2 py-0.5 rounded-full font-semibold">5+ – 6a</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom — back to feed -->
+      <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-stone-100 px-5 pt-3 pb-6">
+        <button onclick="show('dashboard')" class="w-full bg-stone-900 text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Zurück zum Feed
+        </button>
+      </div>
+    </div>
+
+
+    <!-- ============ SCREEN: CHAT (Match accepted) ============ -->
+    <div class="phone-screen screen-hidden" id="screen-chat">
+      <div class="statusbar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+          <i data-lucide="signal" class="w-4 h-4"></i>
+          <i data-lucide="wifi" class="w-4 h-4"></i>
+          <i data-lucide="battery-full" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <!-- Chat header -->
+      <div class="px-3 pt-1 pb-2 flex items-center gap-2 border-b border-stone-100">
+        <button onclick="show('dashboard')" class="w-10 h-10 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-700">
+          <i data-lucide="arrow-left" class="w-6 h-6"></i>
+        </button>
+        <div class="w-10 h-10 rounded-full av-1 flex items-center justify-center text-white font-semibold">L</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-stone-900 text-sm leading-tight">Lina K.</div>
+          <div class="text-xs text-emerald-600 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
+          </div>
+        </div>
+        <button class="w-10 h-10 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-700">
+          <i data-lucide="more-vertical" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Session pin -->
+      <div class="mx-4 mt-3 bg-orange-50 border border-orange-100 rounded-xl p-3 flex items-center gap-2">
+        <i data-lucide="mountain" class="w-4 h-4 text-orange-600 shrink-0"></i>
+        <div class="text-xs text-stone-800 flex-1">
+          <span class="font-semibold">Heute 18:00</span> · Boulderwelt München-Ost
+        </div>
+        <button class="text-xs font-semibold text-orange-600">Details</button>
+      </div>
+
+      <!-- Messages -->
+      <div class="px-4 py-4 space-y-3 pb-40">
+        <div class="text-center text-[11px] text-stone-400 font-medium">Heute</div>
+
+        <!-- system -->
+        <div class="text-center">
+          <span class="inline-block bg-stone-100 text-stone-600 text-[11px] px-3 py-1 rounded-full">
+            Ihr seid gematcht — viel Spaß beim Klettern! 🧗
+          </span>
+        </div>
+
+        <!-- them -->
+        <div class="flex gap-2 items-end">
+          <div class="w-7 h-7 rounded-full av-1 flex items-center justify-center text-white text-[11px] font-semibold shrink-0">L</div>
+          <div class="bubble-them max-w-[75%] px-3 py-2 text-sm">
+            Hey Manu! Cool, dass du Bock hast. 🙌
+          </div>
+        </div>
+        <div class="flex gap-2 items-end pl-9">
+          <div class="bubble-them max-w-[75%] px-3 py-2 text-sm">
+            Bin um 18 Uhr direkt am Empfang. Magst du dich davor noch warm machen oder zusammen?
+          </div>
+        </div>
+        <div class="pl-9 text-[10px] text-stone-400">9:42</div>
+
+        <!-- me -->
+        <div class="flex justify-end">
+          <div class="bubble-me max-w-[75%] px-3 py-2 text-sm">
+            Zusammen warm machen klingt gut! 🔥
+          </div>
+        </div>
+        <div class="text-right text-[10px] text-stone-400">9:43</div>
+
+        <!-- them typing -->
+        <div class="flex gap-2 items-end">
+          <div class="w-7 h-7 rounded-full av-1 flex items-center justify-center text-white text-[11px] font-semibold shrink-0">L</div>
+          <div class="bubble-them px-3 py-2 text-sm flex items-center gap-1">
+            <span class="w-1.5 h-1.5 bg-stone-400 rounded-full animate-pulse"></span>
+            <span class="w-1.5 h-1.5 bg-stone-400 rounded-full animate-pulse" style="animation-delay: .15s"></span>
+            <span class="w-1.5 h-1.5 bg-stone-400 rounded-full animate-pulse" style="animation-delay: .3s"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-stone-100 px-3 pt-2 pb-6 flex items-center gap-2">
+        <button class="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center text-stone-500">
+          <i data-lucide="plus" class="w-5 h-5"></i>
+        </button>
+        <div class="flex-1 bg-stone-100 rounded-full px-4 py-2.5 text-sm text-stone-400">Nachricht …</div>
+        <button class="w-9 h-9 rounded-full bg-orange-500 flex items-center justify-center text-white">
+          <i data-lucide="send" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Legend / notes under phone -->
+<div class="max-w-3xl mx-auto px-6 pb-16 text-sm text-stone-600 leading-relaxed">
+  <div class="bg-white/70 backdrop-blur rounded-2xl p-5 border border-stone-200">
+    <div class="font-semibold text-stone-900 mb-2">So funktioniert der Mockup</div>
+    <ul class="space-y-1.5 list-disc list-inside">
+      <li>Oben über die Reiter zwischen Screens springen.</li>
+      <li>Im Phone selbst klickbar: Karten im Dashboard → Detail, FAB → Session anlegen, „Klettern mit?" → Anfrage gesendet, Chats-Icon unten → Chat-Beispiel.</li>
+      <li>Alle Daten sind Dummy. Nichts wird gespeichert.</li>
+      <li>Designentscheidungen, die hier offen sind: echtes Logo/Wortmarke, Avatar-Upload-Flow, Onboarding-Screens, Profil-Seite, Filter-Sheet im Detail.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  function show(name) {
+    document.querySelectorAll('.phone-screen').forEach(el => el.classList.add('screen-hidden'));
+    document.getElementById('screen-' + name).classList.remove('screen-hidden');
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      const active = btn.dataset.screen === name;
+      btn.classList.toggle('active', active);
+      btn.classList.toggle('bg-stone-900', active);
+      btn.classList.toggle('text-white', active);
+      btn.classList.toggle('bg-white', !active);
+      btn.classList.toggle('text-stone-700', !active);
+      btn.classList.toggle('border', !active);
+      btn.classList.toggle('border-stone-200', !active);
+    });
+    // Reset scroll of the now-visible screen
+    document.getElementById('screen-' + name).scrollTop = 0;
+  }
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => show(btn.dataset.screen));
+  });
+  // Lucide
+  window.addEventListener('load', () => lucide.createIcons());
+</script>
+
+</body>
+</html>

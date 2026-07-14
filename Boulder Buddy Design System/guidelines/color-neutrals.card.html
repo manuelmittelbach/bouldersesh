@@ -1,0 +1,36 @@
+<!-- @dsCard group="Colors" viewport="700x160" name="Neutrals — Rock" subtitle="Cool graphite scale (concrete/granite, not warm sand)" -->
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+    body { margin: 0; background: var(--surface-app); font-family: var(--font-ui); }
+    .wrap { padding: 22px; }
+    .scale { display: grid; grid-template-columns: repeat(11, 1fr); gap: 6px; }
+    .sw { height: 64px; border-radius: var(--radius-sm); display: flex; align-items: flex-end; padding: 6px; box-sizing: border-box; }
+    .sw.edge { border: 1px solid var(--border-default); }
+    .n { font-family: var(--font-mono); font-size: 10px; font-weight: 600; }
+    .cap { margin-top: 10px; font-size: var(--text-xs); color: var(--text-muted); }
+    code { font-family: var(--font-mono); color: var(--text-body); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="scale">
+      <div class="sw edge" style="background:var(--rock-0)"><span class="n" style="color:var(--rock-900)">0</span></div>
+      <div class="sw edge" style="background:var(--rock-25)"><span class="n" style="color:var(--rock-900)">25</span></div>
+      <div class="sw" style="background:var(--rock-50)"><span class="n" style="color:var(--rock-900)">50</span></div>
+      <div class="sw" style="background:var(--rock-100)"><span class="n" style="color:var(--rock-900)">100</span></div>
+      <div class="sw" style="background:var(--rock-200)"><span class="n" style="color:var(--rock-900)">200</span></div>
+      <div class="sw" style="background:var(--rock-300)"><span class="n" style="color:var(--rock-900)">300</span></div>
+      <div class="sw" style="background:var(--rock-400)"><span class="n" style="color:#fff">400</span></div>
+      <div class="sw" style="background:var(--rock-500)"><span class="n" style="color:#fff">500</span></div>
+      <div class="sw" style="background:var(--rock-600)"><span class="n" style="color:#fff">600</span></div>
+      <div class="sw" style="background:var(--rock-700)"><span class="n" style="color:#fff">700</span></div>
+      <div class="sw" style="background:var(--rock-900)"><span class="n" style="color:#fff">900</span></div>
+    </div>
+    <div class="cap">App canvas <code>--rock-25</code> · cards <code>--rock-0</code> · ink/text <code>--rock-900</code> · hairlines 100–200.</div>
+  </div>
+</body>
+</html>

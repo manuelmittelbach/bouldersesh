@@ -1,0 +1,39 @@
+<!-- @dsCard group="Brand" viewport="700x200" name="Logo lockup" subtitle="Mountain mark in an orange tile + Space Grotesk wordmark · light & dark" -->
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    body { margin: 0; background: var(--surface-app); font-family: var(--font-ui); }
+    .wrap { padding: 24px; display: flex; gap: 18px; flex-wrap: wrap; }
+    .panel { flex: 1; min-width: 280px; border-radius: var(--radius-lg); padding: 26px; display: flex; align-items: center; gap: 14px; border: 1px solid var(--border-subtle); }
+    .light { background: var(--surface-card); }
+    .dark { background: var(--rock-900); border-color: var(--rock-800); }
+    .tile { width: 44px; height: 44px; border-radius: 12px; background: var(--brand); display: flex; align-items: center; justify-content: center; color: #fff; flex: 0 0 auto; }
+    .tile [data-lucide] { width: 26px; height: 26px; }
+    .word { font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: var(--tracking-tight); line-height: 1; }
+    .sub { font-family: var(--font-mono); font-size: 11px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel light">
+      <div class="tile"><i data-lucide="mountain"></i></div>
+      <div>
+        <div class="word" style="color:var(--text-strong)">Boulder Buddy</div>
+        <div class="sub" style="color:var(--text-muted)">Find your climbing partner</div>
+      </div>
+    </div>
+    <div class="panel dark">
+      <div class="tile"><i data-lucide="mountain"></i></div>
+      <div>
+        <div class="word" style="color:#fff">Boulder Buddy</div>
+        <div class="sub" style="color:var(--rock-400)">Find your climbing partner</div>
+      </div>
+    </div>
+  </div>
+  <script>requestAnimationFrame(() => lucide.createIcons());</script>
+</body>
+</html>

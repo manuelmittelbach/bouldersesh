@@ -1,0 +1,38 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Grade bands" subtitle="Level colours for grade pills — muted, read as data not candy" -->
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+    body { margin: 0; background: var(--surface-app); font-family: var(--font-ui); }
+    .wrap { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+    .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .band { border-radius: var(--radius-md); padding: 14px; }
+    .pill { display: inline-flex; font-family: var(--font-mono); font-weight: 700; font-size: var(--text-xs); padding: 4px 10px; border-radius: var(--radius-xs); }
+    .lab { margin-top: 10px; font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: var(--tracking-caps); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row">
+      <div class="band" style="background:var(--grade-beginner-surface)">
+        <span class="pill" style="background:#fff;color:var(--grade-beginner-ink)">5+ – 6a</span>
+        <div class="lab" style="color:var(--grade-beginner-ink)">Beginner</div>
+      </div>
+      <div class="band" style="background:var(--grade-intermediate-surface)">
+        <span class="pill" style="background:#fff;color:var(--grade-intermediate-ink)">6a – 6c</span>
+        <div class="lab" style="color:var(--grade-intermediate-ink)">Intermediate</div>
+      </div>
+      <div class="band" style="background:var(--grade-advanced-surface)">
+        <span class="pill" style="background:#fff;color:var(--grade-advanced-ink)">7a+</span>
+        <div class="lab" style="color:var(--grade-advanced-ink)">Advanced</div>
+      </div>
+      <div class="band" style="background:var(--grade-pro-surface)">
+        <span class="pill" style="background:#fff;color:var(--grade-pro-ink)">8a</span>
+        <div class="lab" style="color:var(--grade-pro-ink)">Pro</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
