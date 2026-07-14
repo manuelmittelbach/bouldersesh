@@ -1,0 +1,67 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Buttons" subtitle="Primary, secondary, outline, ghost · IconButton" -->
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../../styles.css" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="../../_ds_bundle.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    body { margin: 0; background: var(--surface-app); font-family: var(--font-ui); color: var(--text-strong); }
+    .wrap { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+    .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .label { font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: var(--tracking-caps); color: var(--text-muted); font-weight: 600; width: 76px; flex: 0 0 auto; }
+    .line { display: flex; align-items: center; gap: 16px; }
+    [data-lucide] { width: 16px; height: 16px; }
+  </style>
+</head>
+<body>
+  <div id="root" class="wrap"></div>
+  <script type="text/babel">
+    const { Button, IconButton } = window.BoulderBuddyDesignSystem_019e12;
+    const I = (n) => <i data-lucide={n}></i>;
+
+    function Demo() {
+      return (
+        <>
+          <div className="line"><span className="label">Variants</span>
+            <div className="row">
+              <Button variant="primary" icon={I("send")}>Veröffentlichen</Button>
+              <Button variant="secondary">Zurück zum Feed</Button>
+              <Button variant="outline">Abbrechen</Button>
+              <Button variant="ghost">Später</Button>
+            </div>
+          </div>
+          <div className="line"><span className="label">Sizes</span>
+            <div className="row">
+              <Button size="sm" variant="primary">Klein</Button>
+              <Button size="md" variant="primary">Mittel</Button>
+              <Button size="lg" variant="primary" icon={I("hand")}>Klettern mit?</Button>
+            </div>
+          </div>
+          <div className="line"><span className="label">States</span>
+            <div className="row">
+              <Button variant="primary" disabled>Deaktiviert</Button>
+              <Button variant="outline" trailingIcon={I("chevron-down")}>Halle wählen</Button>
+            </div>
+          </div>
+          <div className="line"><span className="label">Icon</span>
+            <div className="row">
+              <IconButton label="Zurück" variant="ghost">{I("arrow-left")}</IconButton>
+              <IconButton label="Mehr" variant="soft">{I("more-horizontal")}</IconButton>
+              <IconButton label="Senden" variant="brand">{I("send")}</IconButton>
+              <IconButton label="Neu" variant="ink">{I("plus")}</IconButton>
+            </div>
+          </div>
+        </>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+    requestAnimationFrame(() => window.lucide && window.lucide.createIcons());
+  </script>
+</body>
+</html>

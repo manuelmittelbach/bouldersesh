@@ -1,0 +1,34 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Brand — Send Orange" subtitle="The signature accent · brand-500 = #f25c16, used boldly & sparingly" -->
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+    body { margin: 0; background: var(--surface-app); font-family: var(--font-ui); }
+    .wrap { padding: 22px; }
+    .scale { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+    .sw { height: 64px; border-radius: var(--radius-sm); display: flex; align-items: flex-end; padding: 6px; box-sizing: border-box; }
+    .n { font-family: var(--font-mono); font-size: 10px; font-weight: 600; }
+    .cap { margin-top: 10px; font-size: var(--text-xs); color: var(--text-muted); }
+    code { font-family: var(--font-mono); color: var(--text-body); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="scale">
+      <div class="sw" style="background:var(--orange-50)"><span class="n" style="color:var(--orange-900)">50</span></div>
+      <div class="sw" style="background:var(--orange-100)"><span class="n" style="color:var(--orange-900)">100</span></div>
+      <div class="sw" style="background:var(--orange-200)"><span class="n" style="color:var(--orange-900)">200</span></div>
+      <div class="sw" style="background:var(--orange-300)"><span class="n" style="color:var(--orange-900)">300</span></div>
+      <div class="sw" style="background:var(--orange-400)"><span class="n" style="color:#fff">400</span></div>
+      <div class="sw" style="background:var(--orange-500);outline:2px solid var(--rock-900);outline-offset:1px"><span class="n" style="color:#fff">500</span></div>
+      <div class="sw" style="background:var(--orange-600)"><span class="n" style="color:#fff">600</span></div>
+      <div class="sw" style="background:var(--orange-700)"><span class="n" style="color:#fff">700</span></div>
+      <div class="sw" style="background:var(--orange-800)"><span class="n" style="color:#fff">800</span></div>
+      <div class="sw" style="background:var(--orange-900)"><span class="n" style="color:#fff">900</span></div>
+    </div>
+    <div class="cap">Primary <code>--brand</code> = <code>--orange-500</code> · hover 600 · press 700 · soft fill <code>--brand-soft</code> (50). One bold hit per view.</div>
+  </div>
+</body>
+</html>

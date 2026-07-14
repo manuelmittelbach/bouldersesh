@@ -1,0 +1,15 @@
+/* ==========================================================================
+   Boulder Buddy — Webfonts
+   --------------------------------------------------------------------------
+   NOTE: Loaded from the Google Fonts CDN rather than bundled binaries — the
+   build environment can't fetch font files. For an offline/production design
+   system, download these families and replace the @import with local
+   @font-face rules pointing at assets/fonts/*.woff2.
+
+   Families:
+   - Space Grotesk  → display / headlines / wordmark (the "cool" face)
+   - Inter          → UI + body (carried over from the app codebase)
+   - JetBrains Mono → climbing grades, numerics, timestamps (technical accent)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');

@@ -1,0 +1,32 @@
+# Minimal Supabase project config for local development.
+# Run `supabase init` once if you want the full file with all sections,
+# or just use this skeleton + `supabase link --project-ref <ref>` for cloud-only work.
+
+project_id = "boulder-buddy"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/auth/callback"]
+jwt_expiry = 3600
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false  # for dev only — turn on in prod
