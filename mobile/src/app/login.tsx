@@ -1,16 +1,9 @@
-import { Mountain } from 'lucide-react-native';
+import { Lock, Mail, Mountain } from 'lucide-react-native';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Button, Input } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/theme/colors';
 
@@ -102,41 +95,35 @@ export default function Login() {
                 ))}
               </View>
 
-              <TextInput
+              <Input
                 value={email}
                 onChangeText={setEmail}
                 placeholder="du@example.com"
-                placeholderTextColor={colors.rock[400]}
+                icon={<Mail size={18} color={colors.rock[400]} strokeWidth={2} />}
                 autoCapitalize="none"
                 autoComplete="email"
                 keyboardType="email-address"
                 inputMode="email"
-                className="rounded-md border border-rock-200 bg-rock-0 px-4 py-3 font-sans text-base text-rock-900"
               />
-              <TextInput
+              <Input
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Passwort (mind. 6 Zeichen)"
-                placeholderTextColor={colors.rock[400]}
+                icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
                 secureTextEntry
                 autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                className="rounded-md border border-rock-200 bg-rock-0 px-4 py-3 font-sans text-base text-rock-900"
+                error={error ?? undefined}
               />
 
-              {error ? <Text className="font-sans text-sm text-danger">{error}</Text> : null}
-
-              <Pressable
+              <Button
                 onPress={submit}
-                disabled={busy}
-                className={`mt-1 h-[52px] flex-row items-center justify-center rounded-md bg-brand-500 ${busy ? 'opacity-50' : ''}`}>
-                {busy ? (
-                  <ActivityIndicator color={colors.rock[0]} />
-                ) : (
-                  <Text className="font-sans-semibold text-base text-rock-0">
-                    {mode === 'signup' ? 'Account anlegen' : 'Anmelden'}
-                  </Text>
-                )}
-              </Pressable>
+                variant="primary"
+                size="lg"
+                fullWidth
+                loading={busy}
+                className="mt-1">
+                {mode === 'signup' ? 'Account anlegen' : 'Anmelden'}
+              </Button>
             </View>
           )}
 
