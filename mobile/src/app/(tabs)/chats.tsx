@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { MessageCircle } from 'lucide-react-native';
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -61,7 +62,16 @@ function ChatRow({ chat }: { chat: ChatListItem }) {
 }
 
 export default function ChatList() {
-  const { data: chats, isLoading, error, refetch, isRefetching } = useMyChats();
+  const { data: chats, isLoading, error, refetch } = useMyChats();
+  const [refreshing, setRefreshing] = useState(false);
+  async function onRefresh() {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
@@ -83,8 +93,8 @@ export default function ChatList() {
         <FlatList<ChatListItem>
           data={chats ?? []}
           keyExtractor={(c) => c.id}
-          onRefresh={refetch}
-          refreshing={isRefetching}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
           ItemSeparatorComponent={() => <View className="ml-[76px] h-px bg-rock-100" />}
           renderItem={({ item }) => <ChatRow chat={item} />}
           ListEmptyComponent={

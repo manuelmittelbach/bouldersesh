@@ -33,7 +33,7 @@ function Eyebrow({ children }: { children: string }) {
 
 export default function SessionCreate() {
   const insets = useSafeAreaInsets();
-  const { data: gyms } = useGyms();
+  const { data: gyms, isLoading: gymsLoading, error: gymsError } = useGyms();
   const createSession = useCreateSession();
 
   const [gymId, setGymId] = useState<string | null>(null);
@@ -66,9 +66,13 @@ export default function SessionCreate() {
       setError('Bitte wähl eine Halle.');
       return;
     }
-    setError(null);
     const dt = new Date(days[dayIdx]);
     dt.setHours(hour, 0, 0, 0);
+    if (dt.getTime() < Date.now()) {
+      setError('Diese Zeit liegt in der Vergangenheit — wähl eine spätere.');
+      return;
+    }
+    setError(null);
     try {
       await createSession.mutateAsync({
         gym_id: gymId,
@@ -104,6 +108,17 @@ export default function SessionCreate() {
           {/* Halle */}
           <View className="mb-6">
             <Eyebrow>Halle</Eyebrow>
+            {gymsLoading ? (
+              <Text className="py-2 font-sans text-sm text-rock-400">Lädt…</Text>
+            ) : gymsError ? (
+              <Text className="py-2 font-sans text-sm text-danger">
+                Hallen konnten nicht geladen werden.
+              </Text>
+            ) : !gyms || gyms.length === 0 ? (
+              <Text className="py-2 font-sans text-sm text-rock-500">
+                Keine Hallen gefunden.
+              </Text>
+            ) : null}
             <View className="gap-2">
               {gyms?.map((gym) => {
                 const active = gymId === gym.id;
