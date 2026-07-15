@@ -93,7 +93,6 @@ export default function Chat() {
             placeholderTextColor={colors.rock[400]}
             multiline
             className="max-h-28 flex-1 rounded-full bg-rock-50 px-4 py-2.5 font-sans text-[15px] text-rock-900"
-            onSubmitEditing={submit}
           />
           <IconButton
             variant="brand"

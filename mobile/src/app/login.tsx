@@ -112,8 +112,11 @@ export default function Login() {
                 icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
                 secureTextEntry
                 autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                error={error ?? undefined}
               />
+
+              {/* Fehler als eigene Zeile — nicht an ein einzelnes Feld gebunden, da die
+                  Meldung Mail ODER Passwort ODER allgemein betreffen kann. */}
+              {error ? <Text className="font-sans text-sm text-danger">{error}</Text> : null}
 
               <Button
                 onPress={submit}

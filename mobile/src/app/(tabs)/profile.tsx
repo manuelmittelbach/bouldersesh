@@ -1,5 +1,5 @@
 import { Check, LogOut } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -44,9 +44,13 @@ export default function Profile() {
   const [bio, setBio] = useState('');
   const [homeGymId, setHomeGymId] = useState<string | null>(null);
 
-  // Formularfelder aus dem geladenen Profil spiegeln (und nach dem Speichern nachziehen).
+  // Formularfelder EINMAL pro Profil-Identität aus dem geladenen Profil seeden. Nicht bei
+  // jeder Daten-Änderung neu setzen — sonst würde ein Hintergrund-Refetch laufende (noch
+  // nicht gespeicherte) Eingaben überschreiben. Nach Logout/Userwechsel (neue id) neu seeden.
+  const seededFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || seededFor.current === profile.id) return;
+    seededFor.current = profile.id;
     setDisplayName(profile.display_name ?? '');
     setSkill(profile.skill_level);
     setBio(profile.bio ?? '');

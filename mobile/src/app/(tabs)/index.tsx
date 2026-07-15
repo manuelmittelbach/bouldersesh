@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Mountain, Plus } from 'lucide-react-native';
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -45,7 +46,18 @@ function EmptyState() {
 }
 
 export default function Dashboard() {
-  const { data: sessions, isLoading, error, refetch, isRefetching } = useOpenSessions();
+  const { data: sessions, isLoading, error, refetch } = useOpenSessions();
+  // Eigener Pull-Zustand: der RefreshControl-Spinner soll NUR bei echtem Runterziehen
+  // laufen, nicht bei jedem Hintergrund-Refetch (refetchOnMount).
+  const [refreshing, setRefreshing] = useState(false);
+  async function onRefresh() {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
@@ -63,8 +75,8 @@ export default function Dashboard() {
         <FlatList<SessionWithMeta>
           data={sessions ?? []}
           keyExtractor={(s) => s.id}
-          onRefresh={refetch}
-          refreshing={isRefetching}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
           contentContainerClassName="px-5 pb-8 gap-3"
           ListHeaderComponent={Header}
           ListEmptyComponent={EmptyState}

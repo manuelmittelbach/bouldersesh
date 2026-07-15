@@ -254,15 +254,22 @@ export default function SessionDetail() {
               <Text className="font-sans-semibold text-base text-success">Anfrage gesendet</Text>
             </View>
           ) : (
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              loading={request.isPending}
-              icon={<Hand size={18} color={colors.rock[0]} strokeWidth={2} />}
-              onPress={() => request.mutate(session.id)}>
-              Klettern mit?
-            </Button>
+            <>
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                loading={request.isPending}
+                icon={<Hand size={18} color={colors.rock[0]} strokeWidth={2} />}
+                onPress={() => request.mutate(session.id)}>
+                Klettern mit?
+              </Button>
+              {request.isError ? (
+                <Text className="mt-2 text-center font-sans text-sm text-danger">
+                  Anfrage fehlgeschlagen. Vielleicht hast du schon angefragt?
+                </Text>
+              ) : null}
+            </>
           )}
         </View>
       ) : null}
