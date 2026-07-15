@@ -1,13 +1,106 @@
-import { Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Mountain, Plus } from 'lucide-react-native';
+import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Phase-0-Platzhalter. Wird in Phase 3 durch den echten Feed (useOpenSessions) ersetzt.
+import { SessionCard } from '@/components/SessionCard';
+import { Button, IconButton } from '@/components/ui';
+import { avatarTone, formatDateDE, formatSessionTime, gradeBand } from '@/lib/utils';
+import { useOpenSessions, type SessionWithMeta } from '@/queries/sessions';
+import { colors } from '@/theme/colors';
+
+// Der Feed: offene Sessions als SessionCard-Liste. Header mit Datum-Eyebrow + „Wer klettert?".
+// FAB unten rechts (der EINE Brand-Glow der View) führt ins Anlegen-Formular.
+function Header() {
+  return (
+    <View className="pb-3 pt-2">
+      <Text className="font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
+        {formatDateDE(new Date())}
+      </Text>
+      <Text className="mt-1 font-display-bold text-[30px] leading-none text-rock-900">
+        Wer klettert?
+      </Text>
+    </View>
+  );
+}
+
+function EmptyState() {
+  return (
+    <View className="items-center px-6 py-16">
+      <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-brand-50">
+        <Mountain size={28} color={colors.brand[600]} strokeWidth={2} />
+      </View>
+      <Text className="font-display text-base text-rock-900">Noch keine Sessions</Text>
+      <Text className="mb-4 mt-1 text-center font-sans text-sm text-rock-500">
+        Sei die erste Person, die heute klettern geht.
+      </Text>
+      <Button
+        variant="primary"
+        icon={<Plus size={16} color={colors.rock[0]} strokeWidth={2.5} />}
+        onPress={() => router.push('/sessions/new')}>
+        Session anlegen
+      </Button>
+    </View>
+  );
+}
+
 export default function Dashboard() {
+  const { data: sessions, isLoading, error, refetch, isRefetching } = useOpenSessions();
+
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
-      <View className="flex-1 items-center justify-center gap-1">
-        <Text className="font-display-bold text-2xl text-rock-900">Dashboard</Text>
-        <Text className="font-sans text-sm text-rock-500">Feed kommt in Phase 3</Text>
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={colors.brand[500]} />
+        </View>
+      ) : error ? (
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="text-center font-sans text-sm text-danger">
+            Fehler beim Laden: {(error as Error).message}
+          </Text>
+        </View>
+      ) : (
+        <FlatList<SessionWithMeta>
+          data={sessions ?? []}
+          keyExtractor={(s) => s.id}
+          onRefresh={refetch}
+          refreshing={isRefetching}
+          contentContainerClassName="px-5 pb-8 gap-3"
+          ListHeaderComponent={Header}
+          ListEmptyComponent={EmptyState}
+          renderItem={({ item }) => {
+            const name = item.creator?.display_name ?? 'Anonym';
+            const gymLabel = item.gym
+              ? item.gym.city
+                ? `${item.gym.name} · ${item.gym.city}`
+                : item.gym.name
+              : undefined;
+            return (
+              <SessionCard
+                name={name}
+                avatarTone={avatarTone(item.creator?.id ?? name)}
+                grade={item.level}
+                band={gradeBand(item.creator?.skill_level)}
+                time={formatSessionTime(item.starts_at)}
+                gym={gymLabel}
+                note={item.note}
+                onPress={() => router.push(`/sessions/${item.id}`)}
+              />
+            );
+          }}
+        />
+      )}
+
+      {/* FAB — der eine Brand-Glow pro View. */}
+      <View className="absolute bottom-6 right-5">
+        <IconButton
+          variant="brand"
+          size="lg"
+          label="Session anlegen"
+          className="h-14 w-14 shadow-brand"
+          onPress={() => router.push('/sessions/new')}>
+          <Plus size={26} color={colors.rock[0]} strokeWidth={2.5} />
+        </IconButton>
       </View>
     </SafeAreaView>
   );

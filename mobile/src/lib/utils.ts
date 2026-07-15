@@ -20,6 +20,28 @@ export function formatDateDE(d: Date): string {
   return `${WEEKDAYS_DE[d.getDay()]}, ${d.getDate()}. ${MONTHS_DE[d.getMonth()]}`;
 }
 
+/** "HH:MM" — reine Uhrzeit aus einem UTC-Timestamp (lokale Zone). */
+export function formatClock(iso: string): string {
+  const d = new Date(iso);
+  const hh = d.getHours().toString().padStart(2, '0');
+  const mm = d.getMinutes().toString().padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+/**
+ * Kompakter Zeitstempel für eine Chat-Zeile: heute → Uhrzeit, diese Woche → Wochentag,
+ * sonst → Tag + Monat. Deterministisch (WEEKDAYS_DE/MONTHS_DE), kein toLocaleDateString —
+ * siehe Kommentar oben zu Hermes/ICU.
+ */
+export function formatChatTime(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return formatClock(iso);
+  const days = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
+  if (days < 7) return WEEKDAYS_DE[d.getDay()];
+  return `${d.getDate()}. ${MONTHS_DE[d.getMonth()]}`;
+}
+
 /** UTC-Timestamp in ein kurzes deutsches Label formatieren, z. B. "Heute · 18:00". */
 export function formatSessionTime(starts_at: string): string {
   const d = new Date(starts_at);
