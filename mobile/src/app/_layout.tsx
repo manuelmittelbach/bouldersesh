@@ -1,6 +1,6 @@
 // Subpath-Imports statt Barrel (@expo-google-fonts/inter): Metro macht kein
-// Tree-Shaking, ein Barrel-Import würde ALLE Gewichte (bei Inter ~18 Dateien)
-// ins Bundle ziehen. Der Subpath zieht nur genau dieses eine Gewicht.
+// Tree-Shaking, ein Barrel-Import würde ALLE Gewichte ins Bundle ziehen. Der Subpath
+// zieht nur genau dieses eine Gewicht.
 import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
 import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
 import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
@@ -13,22 +13,52 @@ import { SpaceGrotesk_600SemiBold } from '@expo-google-fonts/space-grotesk/600Se
 import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk/700Bold';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { useAuth } from '@/hooks/useAuth';
 import { queryClient } from '@/lib/queryClient';
+
+import '../global.css';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+// Login-first-Gate: liest die Session aus useAuth (TanStack-Query-backed) und gibt per
+// Stack.Protected je nach An-/Abmeldung entweder die App-Routen oder den Login frei.
+// Wechselt die Session (Login/Logout), leitet expo-router automatisch auf die Anker-Route um.
+function RootNavigator() {
+  const { session, isLoading } = useAuth();
 
-  // Marken-Fonts zur Laufzeit laden (Web nutzte den Google-Fonts-CDN; RN muss die
-  // Dateien bündeln). Die useFonts-Keys sind zugleich die Familiennamen, die die
-  // fontFamily-Tokens in tailwind.config.js referenzieren.
+  // Splash erst freigeben, wenn die Session-Frage beantwortet ist — sonst flasht kurz
+  // der Login, bevor eine bestehende Session geladen wurde.
+  useEffect(() => {
+    if (!isLoading) SplashScreen.hideAsync();
+  }, [isLoading]);
+
+  if (isLoading) return null;
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={!!session}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="sessions/new" />
+        <Stack.Screen name="sessions/[id]" />
+        <Stack.Screen name="chats/[id]" />
+      </Stack.Protected>
+      <Stack.Protected guard={!session}>
+        <Stack.Screen name="login" />
+      </Stack.Protected>
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  // Marken-Fonts zur Laufzeit laden. Die useFonts-Keys sind zugleich die Familiennamen,
+  // die die fontFamily-Tokens in tailwind.config.js referenzieren.
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -42,19 +72,18 @@ export default function TabLayout() {
     JetBrainsMono_700Bold,
   });
 
-  // Rendern erst freigeben, wenn Fonts geladen (oder fehlgeschlagen) sind — sonst
-  // flasht ein System-Font, bevor die Marken-Fonts stehen. Der native Splash bleibt
-  // sichtbar (preventAutoHide); AnimatedSplashOverlay ruft hideAsync, sobald der Baum mountet.
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
+  // Rendern erst freigeben, wenn Fonts geladen (oder fehlgeschlagen) sind. Der native
+  // Splash bleibt bis dahin sichtbar (preventAutoHide); RootNavigator ruft hideAsync.
+  if (!fontsLoaded && !fontError) return null;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AnimatedSplashOverlay />
-        <AppTabs />
-      </ThemeProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <RootNavigator />
+          <StatusBar style="dark" />
+        </QueryClientProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
