@@ -1,0 +1,77 @@
+import type { ReactNode } from 'react';
+import { forwardRef, useState } from 'react';
+import { Text, TextInput, View, type TextInputProps } from 'react-native';
+
+import { cn } from '@/lib/utils';
+import { colors } from '@/theme/colors';
+
+// Textfeld / Textarea mit optionalem Uppercase-Eyebrow-Label, Leading-Icon, Hint und
+// Error-State. Fokus tönt den Rahmen orange (+ dezenter Glow auf iOS). `multiline` rendert
+// ein wachsendes Feld. Reicht alle TextInput-Props durch (value/onChangeText/placeholder …).
+export type InputProps = TextInputProps & {
+  label?: string;
+  icon?: ReactNode;
+  hint?: string;
+  error?: string;
+  multiline?: boolean;
+  containerClassName?: string;
+};
+
+export const Input = forwardRef<TextInput, InputProps>(function Input(
+  { label, icon, hint, error, multiline, containerClassName, className, onFocus, onBlur, ...rest },
+  ref,
+) {
+  const [focused, setFocused] = useState(false);
+  const borderClass = error ? 'border-danger' : focused ? 'border-brand-500' : 'border-rock-200';
+
+  return (
+    <View className={cn('gap-1.5', containerClassName)}>
+      {label ? (
+        <Text className="font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
+          {label}
+        </Text>
+      ) : null}
+      <View
+        className={cn(
+          'flex-row gap-2 rounded-md border bg-rock-0 px-3.5',
+          multiline ? 'items-start py-3' : 'h-[46px] items-center',
+          borderClass,
+        )}
+        // Fokus-Ring als dezenter Brand-Glow (iOS-Shadow / Android-Elevation).
+        style={
+          focused
+            ? {
+                shadowColor: colors.brand[500],
+                shadowOpacity: 0.18,
+                shadowRadius: 4,
+                shadowOffset: { width: 0, height: 0 },
+                elevation: 2,
+              }
+            : undefined
+        }>
+        {icon ? <View className={cn('shrink-0', multiline && 'pt-0.5')}>{icon}</View> : null}
+        <TextInput
+          ref={ref}
+          multiline={multiline}
+          placeholderTextColor={colors.rock[400]}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
+          className={cn('flex-1 font-sans text-[15px] text-rock-900', multiline && 'min-h-[72px]', className)}
+          style={multiline ? { textAlignVertical: 'top' } : undefined}
+          {...rest}
+        />
+      </View>
+      {error ? (
+        <Text className="font-sans text-xs text-danger">{error}</Text>
+      ) : hint ? (
+        <Text className="font-sans text-xs text-rock-400">{hint}</Text>
+      ) : null}
+    </View>
+  );
+});
