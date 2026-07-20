@@ -38,17 +38,16 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
           borderClass,
         )}
         // Fokus-Ring als dezenter Brand-Glow (iOS-Shadow / Android-Elevation).
-        style={
-          focused
-            ? {
-                shadowColor: colors.brand[500],
-                shadowOpacity: 0.18,
-                shadowRadius: 4,
-                shadowOffset: { width: 0, height: 0 },
-                elevation: 2,
-              }
-            : undefined
-        }>
+        // `style` MUSS immer ein Objekt bleiben: schaltet es zwischen undefined und Objekt
+        // um, verliert das TextInput beim Fokussieren sofort wieder den Fokus (Keyboard
+        // flackert auf und zu). Daher nur die Werte togglen, nie die Prop selbst.
+        style={{
+          shadowColor: colors.brand[500],
+          shadowOpacity: focused ? 0.18 : 0,
+          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: focused ? 2 : 0,
+        }}>
         {icon ? <View className={cn('shrink-0', multiline && 'pt-0.5')}>{icon}</View> : null}
         <TextInput
           ref={ref}
