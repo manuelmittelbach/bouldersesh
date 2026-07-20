@@ -21,7 +21,7 @@ export default function TabsLayout() {
           <NavItem icon={MessageCircle} label="Chats" />
         </TabTrigger>
         <TabTrigger name="profile" href="/profile" asChild>
-          <NavItem icon={User} label="Profil" />
+          <NavItem icon={User} label="Profile" />
         </TabTrigger>
       </TabList>
     </Tabs>

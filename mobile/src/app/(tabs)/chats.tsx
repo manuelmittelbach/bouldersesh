@@ -10,9 +10,9 @@ import { useMyChats, type ChatListItem } from '@/queries/chat';
 import { colors } from '@/theme/colors';
 
 function ChatRow({ chat }: { chat: ChatListItem }) {
-  const name = chat.other?.display_name ?? 'Anonym';
+  const name = chat.other?.display_name ?? 'Anonymous';
   // Fallback bewusst OHNE Emoji (DS: kein Emoji).
-  const preview = chat.lastMessage?.body ?? 'Noch keine Nachrichten';
+  const preview = chat.lastMessage?.body ?? 'No messages yet';
   const stamp = chat.lastMessage?.sent_at ?? chat.createdAt;
 
   return (
@@ -86,7 +86,7 @@ export default function ChatList() {
       ) : error ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center font-sans text-sm text-danger">
-            Fehler beim Laden: {(error as Error).message}
+            Couldn’t load: {(error as Error).message}
           </Text>
         </View>
       ) : (
@@ -102,10 +102,10 @@ export default function ChatList() {
               <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-brand-50">
                 <MessageCircle size={28} color={colors.brand[600]} strokeWidth={2} />
               </View>
-              <Text className="font-display text-base text-rock-900">Noch keine Chats</Text>
+              <Text className="font-display text-base text-rock-900">No chats yet</Text>
               <Text className="mt-1 text-center font-sans text-sm leading-5 text-rock-500">
-                Sobald du eine Kletter-Anfrage annimmst oder deine angenommen wird, landet der
-                Chat hier.
+                Once you accept a climbing request — or someone accepts yours — the chat shows
+                up here.
               </Text>
             </View>
           }

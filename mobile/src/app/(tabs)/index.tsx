@@ -6,20 +6,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SessionCard } from '@/components/SessionCard';
 import { Button, IconButton } from '@/components/ui';
-import { avatarTone, formatDateDE, formatSessionTime, gradeBand } from '@/lib/utils';
+import { avatarTone, formatDateShort, formatSessionTime, gradeBand } from '@/lib/utils';
 import { useOpenSessions, type SessionWithMeta } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
-// Der Feed: offene Sessions als SessionCard-Liste. Header mit Datum-Eyebrow + „Wer klettert?".
+// Der Feed: offene Sessions als SessionCard-Liste. Header mit Datum-Eyebrow + „Who's climbing?".
 // FAB unten rechts (der EINE Brand-Glow der View) führt ins Anlegen-Formular.
 function Header() {
   return (
     <View className="pb-3 pt-2">
       <Text className="font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
-        {formatDateDE(new Date())}
+        {formatDateShort(new Date())}
       </Text>
       <Text className="mt-1 font-display-bold text-[30px] leading-none text-rock-900">
-        Wer klettert?
+        Who's climbing?
       </Text>
     </View>
   );
@@ -31,15 +31,15 @@ function EmptyState() {
       <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-brand-50">
         <Mountain size={28} color={colors.brand[600]} strokeWidth={2} />
       </View>
-      <Text className="font-display text-base text-rock-900">Noch keine Sessions</Text>
+      <Text className="font-display text-base text-rock-900">No sessions yet</Text>
       <Text className="mb-4 mt-1 text-center font-sans text-sm text-rock-500">
-        Sei die erste Person, die heute klettern geht.
+        Be the first to head to the wall today.
       </Text>
       <Button
         variant="primary"
         icon={<Plus size={16} color={colors.rock[0]} strokeWidth={2.5} />}
         onPress={() => router.push('/sessions/new')}>
-        Session anlegen
+        Create session
       </Button>
     </View>
   );
@@ -68,7 +68,7 @@ export default function Dashboard() {
       ) : error ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center font-sans text-sm text-danger">
-            Fehler beim Laden: {(error as Error).message}
+            Couldn’t load: {(error as Error).message}
           </Text>
         </View>
       ) : (
@@ -81,7 +81,7 @@ export default function Dashboard() {
           ListHeaderComponent={Header}
           ListEmptyComponent={EmptyState}
           renderItem={({ item }) => {
-            const name = item.creator?.display_name ?? 'Anonym';
+            const name = item.creator?.display_name ?? 'Anonymous';
             const gymLabel = item.gym
               ? item.gym.city
                 ? `${item.gym.name} · ${item.gym.city}`
@@ -108,7 +108,7 @@ export default function Dashboard() {
         <IconButton
           variant="brand"
           size="lg"
-          label="Session anlegen"
+          label="Create session"
           className="h-14 w-14 shadow-brand"
           onPress={() => router.push('/sessions/new')}>
           <Plus size={26} color={colors.rock[0]} strokeWidth={2.5} />

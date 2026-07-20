@@ -44,7 +44,7 @@ export default function Chat() {
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center gap-1 border-b border-rock-100 px-3 pb-2">
-        <IconButton variant="ghost" label="Zurück" onPress={() => router.back()}>
+        <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
           <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
         </IconButton>
         <Text className="font-display text-base text-rock-900">Chat</Text>
@@ -89,7 +89,7 @@ export default function Chat() {
           <TextInput
             value={body}
             onChangeText={setBody}
-            placeholder="Nachricht …"
+            placeholder="Message …"
             placeholderTextColor={colors.rock[400]}
             multiline
             className="max-h-28 flex-1 rounded-full bg-rock-50 px-4 py-2.5 font-sans text-[15px] text-rock-900"
@@ -97,7 +97,7 @@ export default function Chat() {
           <IconButton
             variant="brand"
             size="md"
-            label="Senden"
+            label="Send"
             disabled={!body.trim() || send.isPending}
             onPress={submit}>
             <Send size={18} color={colors.rock[0]} strokeWidth={2} />
