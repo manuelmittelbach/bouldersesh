@@ -28,9 +28,9 @@ import { useSession } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
 const SKILL_LABEL: Record<string, string> = {
-  beginner: 'Anfänger:in',
-  intermediate: 'Fortgeschritten',
-  advanced: 'Erfahren',
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
   pro: 'Pro',
 };
 
@@ -59,7 +59,7 @@ function RequestRow({
   const respond = useRespondToMatchRequest();
   const chat = useChatForSession(sessionId, request.status === 'accepted');
 
-  const name = request.requester?.display_name ?? 'Anonym';
+  const name = request.requester?.display_name ?? 'Anonymous';
   const skill = request.requester?.skill_level;
   const pending = respond.isPending && respond.variables?.requestId === request.id;
 
@@ -85,7 +85,7 @@ function RequestRow({
           <IconButton
             variant="soft"
             size="md"
-            label="Ablehnen"
+            label="Decline"
             disabled={pending}
             onPress={() => respond.mutate({ requestId: request.id, action: 'decline' })}>
             <X size={20} color={colors.rock[500]} strokeWidth={2} />
@@ -93,7 +93,7 @@ function RequestRow({
           <IconButton
             variant="brand"
             size="md"
-            label="Annehmen"
+            label="Accept"
             disabled={pending}
             onPress={accept}>
             <Check size={20} color={colors.rock[0]} strokeWidth={2.5} />
@@ -112,11 +112,11 @@ function RequestRow({
         ) : (
           <View className="flex-row items-center gap-1.5">
             <CheckCircle2 size={16} color={colors.success} strokeWidth={2} />
-            <Text className="font-sans-semibold text-[13px] text-success">Angenommen</Text>
+            <Text className="font-sans-semibold text-[13px] text-success">Accepted</Text>
           </View>
         )
       ) : (
-        <Text className="font-sans text-[13px] text-rock-400">Abgelehnt</Text>
+        <Text className="font-sans text-[13px] text-rock-400">Declined</Text>
       )}
     </Card>
   );
@@ -130,12 +130,12 @@ function IncomingRequests({ sessionId }: { sessionId: string }) {
       <View className="mb-2 flex-row items-center gap-1.5">
         <Users size={14} color={colors.rock[500]} strokeWidth={2} />
         <Text className="font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
-          Anfragen
+          Requests
         </Text>
       </View>
 
       {isLoading ? (
-        <Text className="py-4 font-sans text-sm text-rock-400">Lädt…</Text>
+        <Text className="py-4 font-sans text-sm text-rock-400">Loading…</Text>
       ) : requests && requests.length > 0 ? (
         <View className="gap-2.5">
           {requests.map((req) => (
@@ -145,7 +145,7 @@ function IncomingRequests({ sessionId }: { sessionId: string }) {
       ) : (
         <View className="rounded-lg bg-rock-50 p-4">
           <Text className="font-sans text-sm leading-5 text-rock-500">
-            Noch keine Anfragen. Sobald jemand mitklettern will, taucht die Anfrage hier auf.
+            No requests yet. As soon as someone wants to join, it shows up here.
           </Text>
         </View>
       )}
@@ -172,13 +172,13 @@ export default function SessionDetail() {
     return (
       <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
         <View className="px-4 py-3">
-          <IconButton variant="ghost" label="Zurück" onPress={() => router.back()}>
+          <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
             <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
           </IconButton>
         </View>
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-center font-sans text-rock-500">
-            Diese Session gibt es nicht (mehr).
+            This session doesn’t exist (anymore).
           </Text>
         </View>
       </SafeAreaView>
@@ -187,13 +187,13 @@ export default function SessionDetail() {
 
   const isMine = user?.id === session.creator_id;
   const sent = request.isSuccess;
-  const name = session.creator?.display_name ?? 'Anonym';
+  const name = session.creator?.display_name ?? 'Anonymous';
   const buddies = session.max_buddies ?? 1;
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
       <View className="px-4 py-2">
-        <IconButton variant="ghost" label="Zurück" onPress={() => router.back()}>
+        <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
           <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
         </IconButton>
       </View>
@@ -215,25 +215,25 @@ export default function SessionDetail() {
         <Card className="mt-6 gap-3.5">
           <InfoRow
             icon={<Calendar size={16} color={colors.brand[700]} strokeWidth={2} />}
-            label="Wann"
+            label="When"
             value={formatSessionTime(session.starts_at)}
           />
           <InfoRow
             icon={<MapPin size={16} color={colors.brand[700]} strokeWidth={2} />}
-            label="Wo"
+            label="Where"
             value={session.gym?.name ?? '—'}
           />
           <InfoRow
             icon={<Users size={16} color={colors.brand[700]} strokeWidth={2} />}
-            label="Plätze"
-            value={buddies > 1 ? `${buddies} Buddies gesucht` : '1 Buddy gesucht'}
+            label="Spots"
+            value={buddies > 1 ? `Looking for ${buddies} buddies` : 'Looking for 1 buddy'}
           />
         </Card>
 
         {session.note ? (
           <View className="mt-4 rounded-lg bg-rock-50 p-4">
             <Text className="mb-1.5 font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
-              Notiz
+              Note
             </Text>
             <Text className="font-sans text-sm leading-6 text-rock-700">{session.note}</Text>
           </View>
@@ -251,7 +251,7 @@ export default function SessionDetail() {
           {sent ? (
             <View className="h-[52px] flex-row items-center justify-center gap-2 rounded-md bg-success-surface">
               <CheckCircle2 size={16} color={colors.success} strokeWidth={2} />
-              <Text className="font-sans-semibold text-base text-success">Anfrage gesendet</Text>
+              <Text className="font-sans-semibold text-base text-success">Request sent</Text>
             </View>
           ) : (
             <>
@@ -262,11 +262,11 @@ export default function SessionDetail() {
                 loading={request.isPending}
                 icon={<Hand size={18} color={colors.rock[0]} strokeWidth={2} />}
                 onPress={() => request.mutate(session.id)}>
-                Klettern mit?
+                Climb together?
               </Button>
               {request.isError ? (
                 <Text className="mt-2 text-center font-sans text-sm text-danger">
-                  Anfrage fehlgeschlagen. Vielleicht hast du schon angefragt?
+                  Request failed. Maybe you already asked?
                 </Text>
               ) : null}
             </>

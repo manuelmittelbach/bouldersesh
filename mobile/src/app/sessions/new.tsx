@@ -12,7 +12,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Chip, IconButton, Input } from '@/components/ui';
-import { formatDateDE } from '@/lib/utils';
+import { formatDateShort } from '@/lib/utils';
 import { useCreateSession } from '@/queries/sessions';
 import { useGyms } from '@/queries/gyms';
 import { colors } from '@/theme/colors';
@@ -55,21 +55,21 @@ export default function SessionCreate() {
   }, []);
 
   function dayLabel(i: number): string {
-    if (i === 0) return 'Heute';
-    if (i === 1) return 'Morgen';
-    return formatDateDE(days[i]);
+    if (i === 0) return 'Today';
+    if (i === 1) return 'Tomorrow';
+    return formatDateShort(days[i]);
   }
 
   async function submit() {
     if (createSession.isPending) return;
     if (!gymId) {
-      setError('Bitte wähl eine Halle.');
+      setError('Please pick a gym.');
       return;
     }
     const dt = new Date(days[dayIdx]);
     dt.setHours(hour, 0, 0, 0);
     if (dt.getTime() < Date.now()) {
-      setError('Diese Zeit liegt in der Vergangenheit — wähl eine spätere.');
+      setError('That time is in the past — pick a later one.');
       return;
     }
     setError(null);
@@ -82,7 +82,7 @@ export default function SessionCreate() {
       });
       router.replace('/');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Etwas ist schiefgelaufen.');
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
     }
   }
 
@@ -90,10 +90,10 @@ export default function SessionCreate() {
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-3 py-2">
-        <IconButton variant="ghost" label="Schließen" onPress={() => router.back()}>
+        <IconButton variant="ghost" label="Close" onPress={() => router.back()}>
           <X size={24} color={colors.rock[700]} strokeWidth={2} />
         </IconButton>
-        <Text className="font-display text-base text-rock-900">Neue Session</Text>
+        <Text className="font-display text-base text-rock-900">New session</Text>
         <View className="w-10" />
       </View>
 
@@ -107,16 +107,16 @@ export default function SessionCreate() {
           keyboardShouldPersistTaps="handled">
           {/* Halle */}
           <View className="mb-6">
-            <Eyebrow>Halle</Eyebrow>
+            <Eyebrow>Gym</Eyebrow>
             {gymsLoading ? (
-              <Text className="py-2 font-sans text-sm text-rock-400">Lädt…</Text>
+              <Text className="py-2 font-sans text-sm text-rock-400">Loading…</Text>
             ) : gymsError ? (
               <Text className="py-2 font-sans text-sm text-danger">
-                Hallen konnten nicht geladen werden.
+                Couldn’t load gyms.
               </Text>
             ) : !gyms || gyms.length === 0 ? (
               <Text className="py-2 font-sans text-sm text-rock-500">
-                Keine Hallen gefunden.
+                No gyms found.
               </Text>
             ) : null}
             <View className="gap-2">
@@ -150,7 +150,7 @@ export default function SessionCreate() {
 
           {/* Wann — Tag */}
           <View className="mb-5">
-            <Eyebrow>Wann</Eyebrow>
+            <Eyebrow>When</Eyebrow>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -165,7 +165,7 @@ export default function SessionCreate() {
 
           {/* Wann — Uhrzeit */}
           <View className="mb-6">
-            <Eyebrow>Uhrzeit</Eyebrow>
+            <Eyebrow>Time</Eyebrow>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -180,7 +180,7 @@ export default function SessionCreate() {
 
           {/* Level */}
           <View className="mb-6">
-            <Eyebrow>Wunsch-Level</Eyebrow>
+            <Eyebrow>Preferred level</Eyebrow>
             <View className="flex-row flex-wrap gap-2">
               {LEVELS.map((lvl) => (
                 <Chip key={lvl} active={level === lvl} onPress={() => setLevel(lvl)}>
@@ -192,12 +192,12 @@ export default function SessionCreate() {
 
           {/* Notiz */}
           <Input
-            label="Notiz (optional)"
+            label="Note (optional)"
             value={note}
             onChangeText={setNote}
             multiline
             maxLength={280}
-            placeholder="z. B. „Suche jemand zum Projekt-Bouldern an einem 6c+“"
+            placeholder="e.g. “Looking for someone to project a 6c+ with”"
           />
 
           {error ? <Text className="mt-3 font-sans text-sm text-danger">{error}</Text> : null}
@@ -214,7 +214,7 @@ export default function SessionCreate() {
             loading={createSession.isPending}
             icon={<Send size={18} color={colors.rock[0]} strokeWidth={2} />}
             onPress={submit}>
-            Session veröffentlichen
+            Publish session
           </Button>
         </View>
       </KeyboardAvoidingView>

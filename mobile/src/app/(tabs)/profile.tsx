@@ -19,9 +19,9 @@ import type { SkillLevel } from '@/types/database';
 import { colors } from '@/theme/colors';
 
 const SKILL_LABEL: Record<SkillLevel, string> = {
-  beginner: 'Anfänger:in',
-  intermediate: 'Fortgeschritten',
-  advanced: 'Erfahren',
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
   pro: 'Pro',
 };
 const SKILL_LEVELS = Object.keys(SKILL_LABEL) as SkillLevel[];
@@ -75,7 +75,7 @@ export default function Profile() {
     });
   }
 
-  const name = displayName.trim() || user?.email || 'Profil';
+  const name = displayName.trim() || user?.email || 'Profile';
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
@@ -87,7 +87,7 @@ export default function Profile() {
           contentContainerClassName="px-5 pb-10"
           keyboardShouldPersistTaps="handled">
           <View className="pb-3 pt-2">
-            <Text className="font-display-bold text-[30px] leading-none text-rock-900">Profil</Text>
+            <Text className="font-display-bold text-[30px] leading-none text-rock-900">Profile</Text>
           </View>
 
           {/* Kopf */}
@@ -99,7 +99,7 @@ export default function Profile() {
               src={profile?.avatar_url}
             />
             <Text className="mt-3 font-display-bold text-xl text-rock-900">
-              {displayName.trim() || 'Noch kein Name'}
+              {displayName.trim() || 'No name yet'}
             </Text>
             <Text className="font-sans text-sm text-rock-500">{user?.email}</Text>
             {skill ? (
@@ -111,10 +111,10 @@ export default function Profile() {
 
           {/* Editierbar */}
           <View className="mt-8 gap-6">
-            <Input label="Anzeigename" value={displayName} onChangeText={setDisplayName} placeholder="Wie heißt du?" />
+            <Input label="Display name" value={displayName} onChangeText={setDisplayName} placeholder="What should we call you?" />
 
             <View>
-              <Eyebrow>Skill-Level</Eyebrow>
+              <Eyebrow>Skill level</Eyebrow>
               <View className="flex-row flex-wrap gap-2">
                 {SKILL_LEVELS.map((lvl) => (
                   <Chip key={lvl} active={skill === lvl} onPress={() => setSkill(lvl)}>
@@ -130,11 +130,11 @@ export default function Profile() {
               onChangeText={setBio}
               multiline
               maxLength={280}
-              placeholder="Ein, zwei Sätze über dich und dein Klettern."
+              placeholder="A line or two about you and your climbing."
             />
 
             <View>
-              <Eyebrow>Home-Gym (optional)</Eyebrow>
+              <Eyebrow>Home gym (optional)</Eyebrow>
               <View className="gap-2">
                 {gyms?.map((gym) => {
                   const active = homeGymId === gym.id;
@@ -169,7 +169,7 @@ export default function Profile() {
               disabled={!dirty}
               loading={update.isPending}
               onPress={save}>
-              Speichern
+              Save
             </Button>
 
             {update.isError ? (
@@ -184,7 +184,7 @@ export default function Profile() {
               fullWidth
               icon={<LogOut size={18} color={colors.rock[700]} strokeWidth={2} />}
               onPress={signOut}>
-              Abmelden
+              Sign out
             </Button>
           </View>
         </ScrollView>
