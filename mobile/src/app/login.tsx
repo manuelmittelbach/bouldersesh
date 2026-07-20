@@ -12,7 +12,6 @@ type Mode = 'signin' | 'signup';
 // Login-first-Einstieg. E-Mail/Passwort (kein Magic-Link → kein Deep-Linking nötig).
 // Bei Erfolg setzt supabase die Session; das Root-Gate (Stack.Protected) leitet dann
 // automatisch in die App um — hier ist keine Navigation nötig.
-// Phase-3-TODO: Formfelder auf DS-Input/Button umstellen.
 export default function Login() {
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
@@ -36,7 +35,7 @@ export default function Login() {
         if (error) throw error;
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Etwas ist schiefgelaufen.');
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
     } finally {
       setBusy(false);
     }
@@ -58,21 +57,20 @@ export default function Login() {
 
           <View className="mt-12">
             <Text className="font-display-bold text-[28px] leading-8 text-rock-900">
-              {mode === 'signup' ? 'Leg los.' : 'Willkommen zurück.'}
+              {mode === 'signup' ? 'Get started.' : 'Welcome back.'}
             </Text>
             <Text className="mt-3 font-sans text-base text-rock-500">
               {mode === 'signup'
-                ? 'E-Mail und ein Passwort genügen.'
-                : 'Meld dich mit E-Mail und Passwort an.'}
+                ? 'An email and a password are all it takes.'
+                : 'Sign in with your email and password.'}
             </Text>
           </View>
 
           {confirmSent ? (
             <View className="mt-8 rounded-lg bg-success-surface p-5">
-              <Text className="font-display text-base text-success">Check deine Mails</Text>
+              <Text className="font-display text-base text-success">Check your inbox</Text>
               <Text className="mt-1 font-sans text-sm leading-5 text-rock-700">
-                Wir haben einen Bestätigungs-Link an {email} geschickt. Klick drauf, dann kannst du
-                dich anmelden.
+                We sent a confirmation link to {email}. Tap it, then you can sign in.
               </Text>
             </View>
           ) : (
@@ -89,7 +87,7 @@ export default function Login() {
                     className={`flex-1 items-center rounded-sm py-2 ${mode === m ? 'bg-rock-0' : ''}`}>
                     <Text
                       className={`font-sans-semibold text-sm ${mode === m ? 'text-rock-900' : 'text-rock-500'}`}>
-                      {m === 'signin' ? 'Anmelden' : 'Registrieren'}
+                      {m === 'signin' ? 'Sign in' : 'Sign up'}
                     </Text>
                   </Pressable>
                 ))}
@@ -98,7 +96,7 @@ export default function Login() {
               <Input
                 value={email}
                 onChangeText={setEmail}
-                placeholder="du@example.com"
+                placeholder="you@example.com"
                 icon={<Mail size={18} color={colors.rock[400]} strokeWidth={2} />}
                 autoCapitalize="none"
                 autoComplete="email"
@@ -108,7 +106,7 @@ export default function Login() {
               <Input
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Passwort (mind. 6 Zeichen)"
+                placeholder="Password (min. 6 characters)"
                 icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
                 secureTextEntry
                 autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
@@ -125,13 +123,13 @@ export default function Login() {
                 fullWidth
                 loading={busy}
                 className="mt-1">
-                {mode === 'signup' ? 'Account anlegen' : 'Anmelden'}
+                {mode === 'signup' ? 'Create account' : 'Sign in'}
               </Button>
             </View>
           )}
 
           <Text className="mt-auto text-center font-sans text-xs text-rock-400">
-            Mit dem Login akzeptierst du unsere Datenschutzerklärung.
+            By signing in you accept our privacy policy.
           </Text>
         </View>
       </KeyboardAvoidingView>
