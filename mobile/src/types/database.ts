@@ -51,11 +51,25 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
         Relationships: [];
       };
+      cities: {
+        Row: {
+          id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["cities"]["Insert"]>;
+        Relationships: [];
+      };
       gyms: {
         Row: {
           id: string;
           name: string;
-          city: string | null;
+          city_id: string;
           address: string | null;
           lat: number | null;
           lng: number | null;
@@ -64,7 +78,7 @@ export interface Database {
         Insert: {
           id?: string;
           name: string;
-          city?: string | null;
+          city_id: string;
           address?: string | null;
           lat?: number | null;
           lng?: number | null;
@@ -182,6 +196,7 @@ export interface Database {
 }
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type City = Database["public"]["Tables"]["cities"]["Row"];
 export type Gym = Database["public"]["Tables"]["gyms"]["Row"];
 export type Session = Database["public"]["Tables"]["sessions"]["Row"];
 export type MatchRequest = Database["public"]["Tables"]["match_requests"]["Row"];

@@ -49,6 +49,7 @@ pnpm-debug.log*
 
 # === Claude Code (local, per-machine) ===
 .claude/settings.local.json
+.claude/worktrees/
 
 # === Supabase ===
 supabase/.branches

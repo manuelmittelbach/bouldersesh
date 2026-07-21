@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Check, Send, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,7 +13,9 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Chip, IconButton, Input } from '@/components/ui';
+import { useActiveCity } from '@/hooks/useActiveCity';
 import { formatDateShort } from '@/lib/utils';
+import { useCities } from '@/queries/cities';
 import { useCreateSession } from '@/queries/sessions';
 import { useGyms } from '@/queries/gyms';
 import { colors } from '@/theme/colors';
@@ -33,10 +36,25 @@ function Eyebrow({ children }: { children: string }) {
 
 export default function SessionCreate() {
   const insets = useSafeAreaInsets();
-  const { data: gyms, isLoading: gymsLoading, error: gymsError } = useGyms();
+  const { cityId: activeCityId, setActiveCity } = useActiveCity();
+  const { data: cities } = useCities();
   const createSession = useCreateSession();
 
+  // Stadt und Halle stehen im SELBEN Formular, kein Wizard: Stadt oben, vorausgefüllt mit
+  // der aktiven Stadt und änderbar, Hallenliste darunter auf die Stadt gefiltert.
+  // Der Screen ist nur erreichbar, wenn eine aktive Stadt steht (Gate im RootNavigator) —
+  // der Initialwert ist also nie null.
+  const [cityId, setCityId] = useState<string | null>(activeCityId);
   const [gymId, setGymId] = useState<string | null>(null);
+
+  const { data: gyms, isLoading: gymsLoading, error: gymsError } = useGyms(cityId);
+
+  function selectCity(id: string) {
+    if (id === cityId) return;
+    setCityId(id);
+    // Die bisherige Halle liegt in der alten Stadt — Auswahl zurücksetzen.
+    setGymId(null);
+  }
   const [dayIdx, setDayIdx] = useState(0);
   const [hour, setHour] = useState(18);
   const [level, setLevel] = useState('6a');
@@ -60,8 +78,44 @@ export default function SessionCreate() {
     return formatDateShort(days[i]);
   }
 
+  /**
+   * Eine Session in einer anderen als der aktiven Stadt wechselt den Kontext NICHT
+   * automatisch — sie weist nur darauf hin und bietet den Wechsel an. Sonst würde das
+   * einmalige Anlegen einer Auswärts-Session stillschweigend den ganzen Feed umstellen.
+   */
+  function leaveAfterCreate() {
+    const target = cities?.find((c) => c.id === cityId);
+    const active = cities?.find((c) => c.id === activeCityId);
+    if (!cityId || cityId === activeCityId || !target) {
+      router.replace('/');
+      return;
+    }
+    Alert.alert(
+      'Session created',
+      `Your session in ${target.name} is live. Your feed still shows ${active?.name ?? 'your current city'}.`,
+      [
+        {
+          text: active ? `Stay in ${active.name}` : 'Stay here',
+          style: 'cancel',
+          onPress: () => router.replace('/'),
+        },
+        {
+          text: `Switch to ${target.name}`,
+          onPress: async () => {
+            await setActiveCity(cityId);
+            router.replace('/');
+          },
+        },
+      ],
+    );
+  }
+
   async function submit() {
     if (createSession.isPending) return;
+    if (!cityId) {
+      setError('Please pick a city.');
+      return;
+    }
     if (!gymId) {
       setError('Please pick a gym.');
       return;
@@ -80,7 +134,7 @@ export default function SessionCreate() {
         level,
         note: note.trim() || null,
       });
-      router.replace('/');
+      leaveAfterCreate();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
     }
@@ -105,6 +159,21 @@ export default function SessionCreate() {
           contentContainerClassName="px-5 pt-2"
           contentContainerStyle={{ paddingBottom: 32 }}
           keyboardShouldPersistTaps="handled">
+          {/* Stadt — erstes Feld, filtert die Hallenliste darunter */}
+          <View className="mb-6">
+            <Eyebrow>City</Eyebrow>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerClassName="gap-2 pr-4">
+              {cities?.map((city) => (
+                <Chip key={city.id} active={cityId === city.id} onPress={() => selectCity(city.id)}>
+                  {city.name}
+                </Chip>
+              ))}
+            </ScrollView>
+          </View>
+
           {/* Halle */}
           <View className="mb-6">
             <Eyebrow>Gym</Eyebrow>
@@ -116,7 +185,7 @@ export default function SessionCreate() {
               </Text>
             ) : !gyms || gyms.length === 0 ? (
               <Text className="py-2 font-sans text-sm text-rock-500">
-                No gyms found.
+                No gyms in this city yet.
               </Text>
             ) : null}
             <View className="gap-2">
@@ -136,8 +205,9 @@ export default function SessionCreate() {
                         'flex-1 font-sans-medium text-[15px] ' +
                         (active ? 'text-brand-700' : 'text-rock-900')
                       }>
+                      {/* Kein Stadt-Suffix mehr: die Liste ist bereits auf die
+                          oben gewählte Stadt gefiltert. */}
                       {gym.name}
-                      {gym.city ? <Text className="text-rock-400">{`  ·  ${gym.city}`}</Text> : null}
                     </Text>
                     {active ? (
                       <Check size={18} color={colors.brand[600]} strokeWidth={2.5} />

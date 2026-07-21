@@ -8,6 +8,8 @@ const OPEN_SESSIONS_KEY = (params: OpenSessionsParams) =>
 const SESSION_KEY = (id: string) => ["sessions", id] as const;
 
 export type OpenSessionsParams = {
+  /** The feed's city context. Filters through the gym — sessions carry no city. */
+  city_id?: string;
   gym_id?: string;
   from?: string; // ISO timestamp
   to?: string; // ISO timestamp
@@ -21,24 +23,33 @@ export type SessionWithMeta = Session & {
     avatar_url: string | null;
     skill_level: string | null;
   } | null;
-  gym: { id: string; name: string; city: string | null } | null;
+  gym: {
+    id: string;
+    name: string;
+    city_id: string;
+    city: { id: string; name: string } | null;
+  } | null;
 };
+
+// `!inner` rather than a left join: it's the only way to filter on the gym via
+// `.eq("gym.city_id", …)`. There are no sessions without a gym (gym_id is NOT NULL),
+// so the result set is unchanged.
+const SESSION_SELECT = `
+  *,
+  creator:profiles!sessions_creator_id_fkey ( id, display_name, avatar_url, skill_level ),
+  gym:gyms!inner ( id, name, city_id, city:cities ( id, name ) )
+`;
 
 async function getOpenSessions(
   params: OpenSessionsParams,
 ): Promise<SessionWithMeta[]> {
   let query = supabase
     .from("sessions")
-    .select(
-      `
-        *,
-        creator:profiles!sessions_creator_id_fkey ( id, display_name, avatar_url, skill_level ),
-        gym:gyms ( id, name, city )
-      `,
-    )
+    .select(SESSION_SELECT)
     .eq("status", "open")
     .order("starts_at", { ascending: true });
 
+  if (params.city_id) query = query.eq("gym.city_id", params.city_id);
   if (params.gym_id) query = query.eq("gym_id", params.gym_id);
   if (params.from) query = query.gte("starts_at", params.from);
   if (params.to) query = query.lte("starts_at", params.to);
@@ -58,13 +69,7 @@ export function useOpenSessions(params: OpenSessionsParams = {}) {
 async function getSession(id: string): Promise<SessionWithMeta | null> {
   const { data, error } = await supabase
     .from("sessions")
-    .select(
-      `
-        *,
-        creator:profiles!sessions_creator_id_fkey ( id, display_name, avatar_url, skill_level ),
-        gym:gyms ( id, name, city )
-      `,
-    )
+    .select(SESSION_SELECT)
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
@@ -105,6 +110,8 @@ export function useCreateSession() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions", "open"] });
+      // The city picker shows "N open sessions" — otherwise the number would lag.
+      queryClient.invalidateQueries({ queryKey: ["cities", "openSessionCounts"] });
     },
   });
 }
