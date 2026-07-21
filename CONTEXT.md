@@ -38,6 +38,26 @@ Die Halle, die jemand im Profil als seine übliche hinterlegt. Optional.
 **Unabhängig von der aktiven Stadt** — die Stammhalle bestimmt nicht, welche
 Stadt der Feed zeigt, und die aktive Stadt ändert die Stammhalle nicht.
 
+## Avatar
+
+Das Bild, das eine Person überall dort vertritt, wo sie nur beiläufig vorkommt —
+in Listen, an Sessions, neben Nachrichten. Klein, rund, auf Wiedererkennung
+angelegt. Jede Person hat höchstens einen.
+
+Ein Avatar ist **kein Galeriefoto**: er wird eigenständig gewählt und ist nicht
+das erste Bild einer Reihe.
+
+## Galeriefoto
+
+Ein Bild, das jemand seinem Profil hinzufügt, um zu zeigen, wie er klettert.
+Galeriefotos sind für **andere** da — sie werden erst sichtbar, wenn jemand ein
+Profil bewusst öffnet, und tauchen nirgends beiläufig auf.
+
+## Meldung (Report)
+
+Der Hinweis einer Person, dass ein Profil unangemessen ist. Eine Meldung
+**entfernt nichts** — sie legt einen Vorgang an, über den ein Mensch entscheidet.
+
 ## Session
 
 Die Ankündigung „ich klettere zu dieser Zeit in dieser Halle und suche
