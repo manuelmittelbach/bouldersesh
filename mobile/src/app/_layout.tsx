@@ -20,6 +20,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { useActiveCity } from '@/hooks/useActiveCity';
 import { useAuth } from '@/hooks/useAuth';
 import { queryClient } from '@/lib/queryClient';
 
@@ -27,27 +28,37 @@ import '../global.css';
 
 SplashScreen.preventAutoHideAsync();
 
-// Login-first-Gate: liest die Session aus useAuth (TanStack-Query-backed) und gibt per
-// Stack.Protected je nach An-/Abmeldung entweder die App-Routen oder den Login frei.
-// Wechselt die Session (Login/Logout), leitet expo-router automatisch auf die Anker-Route um.
+// Zwei gestaffelte Gates, beide über Stack.Protected:
+//   1. Login — ohne Session gibt es nur `login`.
+//   2. Stadt — mit Session, aber ohne gewählte Stadt gibt es nur `city`.
+// Verschachtelte Guards heißen: beide müssen true sein, damit die App-Routen erreichbar
+// sind. Fällt ein Guard auf false, wirft expo-router die History dieser Screens weg und
+// leitet auf den ersten verfügbaren Screen um — die Umleitung braucht also keinen Code.
+// `city` liegt bewusst NUR im Session-Guard, damit derselbe Screen später als Wechsler
+// per router.push('/city') erreichbar bleibt.
 function RootNavigator() {
   const { session, isLoading } = useAuth();
+  const { cityId, isLoading: cityLoading } = useActiveCity();
 
-  // Splash erst freigeben, wenn die Session-Frage beantwortet ist — sonst flasht kurz
-  // der Login, bevor eine bestehende Session geladen wurde.
+  // Splash erst freigeben, wenn Session UND Stadt beantwortet sind — sonst flasht kurz
+  // der Login bzw. der Stadt-Screen, bevor der gespeicherte Zustand geladen wurde.
+  const booting = isLoading || cityLoading;
   useEffect(() => {
-    if (!isLoading) SplashScreen.hideAsync();
-  }, [isLoading]);
+    if (!booting) SplashScreen.hideAsync();
+  }, [booting]);
 
-  if (isLoading) return null;
+  if (booting) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={!!session}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="sessions/new" />
-        <Stack.Screen name="sessions/[id]" />
-        <Stack.Screen name="chats/[id]" />
+        <Stack.Protected guard={!!cityId}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="sessions/new" />
+          <Stack.Screen name="sessions/[id]" />
+          <Stack.Screen name="chats/[id]" />
+        </Stack.Protected>
+        <Stack.Screen name="city" />
       </Stack.Protected>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="login" />

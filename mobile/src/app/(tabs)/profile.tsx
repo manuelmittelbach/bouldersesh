@@ -153,7 +153,9 @@ export default function Profile() {
                           (active ? 'text-brand-700' : 'text-rock-900')
                         }>
                         {gym.name}
-                        {gym.city ? <Text className="text-rock-400">{`  ·  ${gym.city}`}</Text> : null}
+                        {gym.city ? (
+                          <Text className="text-rock-400">{`  ·  ${gym.city.name}`}</Text>
+                        ) : null}
                       </Text>
                       {active ? <Check size={18} color={colors.brand[600]} strokeWidth={2.5} /> : null}
                     </Pressable>
