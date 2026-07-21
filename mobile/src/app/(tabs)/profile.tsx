@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Button, Chip, GradePill, Input } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { avatarTone, gradeBand } from '@/lib/utils';
-import { useGyms } from '@/queries/gyms';
+import { GYM_ACCESS_LABEL, useGyms } from '@/queries/gyms';
 import { useUpdateProfile } from '@/queries/profiles';
 import type { SkillLevel } from '@/types/database';
 import { colors } from '@/theme/colors';
@@ -155,6 +155,9 @@ export default function Profile() {
                         {gym.name}
                         {gym.city ? (
                           <Text className="text-rock-400">{`  ·  ${gym.city.name}`}</Text>
+                        ) : null}
+                        {gym.access ? (
+                          <Text className="text-rock-400">{`  ·  ${GYM_ACCESS_LABEL[gym.access]}`}</Text>
                         ) : null}
                       </Text>
                       {active ? <Check size={18} color={colors.brand[600]} strokeWidth={2.5} /> : null}

@@ -23,6 +23,8 @@ export type SkillLevel = "beginner" | "intermediate" | "advanced" | "pro";
 export type SessionVisibility = "public" | "friends";
 export type SessionStatus = "open" | "matched" | "done" | "cancelled";
 export type MatchStatus = "pending" | "accepted" | "declined" | "cancelled";
+/** Zugangsbeschränkung einer Halle; `null` heißt offen für alle. */
+export type GymAccess = "members_only" | "students_only";
 
 export interface Database {
   public: {
@@ -73,6 +75,8 @@ export interface Database {
           address: string | null;
           lat: number | null;
           lng: number | null;
+          active: boolean;
+          access: GymAccess | null;
           created_at: string;
         };
         Insert: {
@@ -82,6 +86,8 @@ export interface Database {
           address?: string | null;
           lat?: number | null;
           lng?: number | null;
+          active?: boolean;
+          access?: GymAccess | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["gyms"]["Insert"]>;

@@ -17,7 +17,7 @@ import { useActiveCity } from '@/hooks/useActiveCity';
 import { formatDateShort } from '@/lib/utils';
 import { useCities } from '@/queries/cities';
 import { useCreateSession } from '@/queries/sessions';
-import { useGyms } from '@/queries/gyms';
+import { GYM_ACCESS_LABEL, useGyms } from '@/queries/gyms';
 import { colors } from '@/theme/colors';
 
 const LEVELS = ['5+', '6a', '6b', '6c', '7a', '7b'];
@@ -208,6 +208,9 @@ export default function SessionCreate() {
                       {/* Kein Stadt-Suffix mehr: die Liste ist bereits auf die
                           oben gewählte Stadt gefiltert. */}
                       {gym.name}
+                      {gym.access ? (
+                        <Text className="text-rock-400">{`  ·  ${GYM_ACCESS_LABEL[gym.access]}`}</Text>
+                      ) : null}
                     </Text>
                     {active ? (
                       <Check size={18} color={colors.brand[600]} strokeWidth={2.5} />
