@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Check, MapPin, X } from 'lucide-react-native';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,12 +18,22 @@ export default function CityPicker() {
   const { data: cities, isLoading, error } = useCities();
   const { data: counts } = useOpenSessionCountsByCity();
 
-  const isSwitching = !!cityId;
+  // Ob Gate oder Wechsler entscheidet die History beim Mount, NICHT `cityId`: als Gate
+  // ist `city` die einzige Route, es gibt nichts, wohin zurück. Würde man `!!cityId`
+  // nehmen, tauchte nach der Wahl im Gate ein Schließen-Button auf, dessen router.back()
+  // ins Leere läuft („The action 'GO_BACK' was not handled by any navigator").
+  const isSwitching = useRef(router.canGoBack()).current;
+
+  // Stack.Protected leitet nur um, wenn die AKTUELLE Route unerreichbar wird. `city`
+  // liegt bewusst außerhalb des Stadt-Guards und bleibt darum erreichbar — nach der Wahl
+  // im Gate bliebe der Screen also einfach stehen. Der Sprung muss von Hand kommen, und
+  // zwar aus einem Effect: erst danach hat Stack.Protected `(tabs)` registriert.
+  useEffect(() => {
+    if (!isSwitching && cityId) router.replace('/(tabs)');
+  }, [isSwitching, cityId]);
 
   async function pick(id: string) {
     await setActiveCity(id);
-    // Als Gate braucht es keine Navigation: sobald die Stadt steht, gibt Stack.Protected
-    // die App-Routen frei und expo-router leitet selbst um.
     if (isSwitching) router.back();
   }
 
