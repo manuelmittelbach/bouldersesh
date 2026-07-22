@@ -4,6 +4,7 @@ import {
   Calendar,
   Check,
   CheckCircle2,
+  Flag,
   Hand,
   MapPin,
   MessageCircle,
@@ -11,11 +12,13 @@ import {
   X,
 } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ProfileGallery } from '@/components/ProfileGallery';
 import { Avatar, Button, Card, GradePill, IconButton } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
+import { publicImageUrl } from '@/lib/images';
 import { avatarTone, formatSessionTime, gradeBand } from '@/lib/utils';
 import { useChatForSession } from '@/queries/chat';
 import {
@@ -24,6 +27,7 @@ import {
   useRespondToMatchRequest,
   type MatchRequestWithRequester,
 } from '@/queries/matches';
+import { useHasReported, useReportProfile } from '@/queries/reports';
 import { useSession } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
@@ -70,7 +74,12 @@ function RequestRow({
 
   return (
     <Card className="flex-row items-center gap-3 p-3">
-      <Avatar name={name} tone={avatarTone(request.requester?.id ?? name)} size="md" />
+      <Avatar
+        name={name}
+        tone={avatarTone(request.requester?.id ?? name)}
+        size="md"
+        src={publicImageUrl(request.requester?.avatar_path)}
+      />
       <View className="min-w-0 flex-1">
         <Text numberOfLines={1} className="font-display text-[15px] text-rock-900">
           {name}
@@ -119,6 +128,49 @@ function RequestRow({
         <Text className="font-sans text-[13px] text-rock-400">Declined</Text>
       )}
     </Card>
+  );
+}
+
+/** Melden eines fremden Profils. Bewusst ohne Grund-Eingabe: die Meldung soll
+ *  keine Hürde haben, geprüft wird ohnehin von Hand. */
+function ReportButton({ profileId, name }: { profileId: string; name: string }) {
+  const { data: alreadyReported } = useHasReported(profileId);
+  const report = useReportProfile();
+  const done = alreadyReported || report.isSuccess;
+
+  function confirm() {
+    Alert.alert(
+      `Report ${name}?`,
+      'We’ll take a look at this profile. Nothing happens to it right away, and they won’t be told who reported them.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Report',
+          style: 'destructive',
+          onPress: () => report.mutate({ reportedId: profileId }),
+        },
+      ],
+    );
+  }
+
+  if (done) {
+    return (
+      <Text className="font-sans text-[13px] text-rock-400">
+        You reported this profile. We’re looking into it.
+      </Text>
+    );
+  }
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Report ${name}`}
+      disabled={report.isPending}
+      onPress={confirm}
+      className="flex-row items-center gap-1.5 px-3 py-2 active:opacity-60">
+      <Flag size={13} color={colors.rock[400]} strokeWidth={2} />
+      <Text className="font-sans text-[13px] text-rock-400">Report profile</Text>
+    </Pressable>
   );
 }
 
@@ -204,12 +256,33 @@ export default function SessionDetail() {
         contentContainerStyle={{ paddingBottom: isMine ? 32 : 120 }}>
         {/* Creator */}
         <View className="mt-2 items-center">
-          <Avatar name={name} tone={avatarTone(session.creator?.id ?? name)} size="xl" />
+          <Avatar
+            name={name}
+            tone={avatarTone(session.creator?.id ?? name)}
+            size="xl"
+            src={publicImageUrl(session.creator?.avatar_path)}
+          />
           <Text className="mt-3 font-display-bold text-[22px] text-rock-900">{name}</Text>
           <View className="mt-3">
             <GradePill grade={session.level} band={gradeBand(session.creator?.skill_level)} />
           </View>
         </View>
+
+        {/* Galeriefotos der Ersteller:in — der einzige Ort, an dem fremde Fotos
+            zu sehen sind. Einen eigenen Profil-Screen gibt es bewusst nicht. */}
+        {session.creator?.gallery_paths?.length ? (
+          <View className="mt-5">
+            <ProfileGallery paths={session.creator.gallery_paths} />
+          </View>
+        ) : null}
+
+        {/* Melden — nur bei fremden Sessions, und unauffällig: die Meldung ist
+            der Ausnahmefall, nicht die angebotene Handlung. */}
+        {!isMine && session.creator ? (
+          <View className="mt-4 items-center">
+            <ReportButton profileId={session.creator.id} name={name} />
+          </View>
+        ) : null}
 
         {/* Info-Block */}
         <Card className="mt-6 gap-3.5">

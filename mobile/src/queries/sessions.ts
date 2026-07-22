@@ -20,7 +20,11 @@ export type SessionWithMeta = Session & {
   creator: {
     id: string;
     display_name: string | null;
-    avatar_url: string | null;
+    avatar_path: string | null;
+    // Wird nur im Session-Detail gezeigt, nicht im Feed — Galeriefotos tauchen
+    // nirgends beiläufig auf (CONTEXT.md). Der Feed schleppt die Pfade mit,
+    // was billiger ist als ein zweiter Query beim Öffnen.
+    gallery_paths: string[] | null;
     skill_level: string | null;
   } | null;
   gym: {
@@ -36,7 +40,7 @@ export type SessionWithMeta = Session & {
 // so the result set is unchanged.
 const SESSION_SELECT = `
   *,
-  creator:profiles!sessions_creator_id_fkey ( id, display_name, avatar_url, skill_level ),
+  creator:profiles!sessions_creator_id_fkey ( id, display_name, avatar_path, gallery_paths, skill_level ),
   gym:gyms!inner ( id, name, city_id, city:cities ( id, name ) )
 `;
 

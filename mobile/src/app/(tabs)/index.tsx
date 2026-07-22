@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SessionCard } from '@/components/SessionCard';
 import { Button, Chip, IconButton } from '@/components/ui';
 import { useActiveCity } from '@/hooks/useActiveCity';
+import { publicImageUrl } from '@/lib/images';
 import { avatarTone, formatDateShort, formatSessionTime, gradeBand } from '@/lib/utils';
 import { useCities } from '@/queries/cities';
 import { useGyms, type GymWithCity } from '@/queries/gyms';
@@ -203,6 +204,7 @@ export default function Dashboard() {
               <SessionCard
                 name={name}
                 avatarTone={avatarTone(item.creator?.id ?? name)}
+                avatarSrc={publicImageUrl(item.creator?.avatar_path)}
                 grade={item.level}
                 band={gradeBand(item.creator?.skill_level)}
                 time={formatSessionTime(item.starts_at)}

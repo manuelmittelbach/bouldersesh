@@ -50,10 +50,10 @@ CHECK-Constraint auf max. 6 Einträge. Die öffentliche URL baut der Client per
 
 - Wer eine Bild-URL kennt (weitergeleitet, geteilt), sieht das Bild **ohne
   Account** — dauerhaft, auch nach dem Abmelden.
-- **Offene Lücke:** Wird ein Account gelöscht, räumt der Cascade auf `profiles`
-  die Zeile ab, die Dateien im Bucket bleiben liegen und öffentlich erreichbar.
-  Ein Löschpfad fehlt bislang komplett (die App kann Accounts noch gar nicht
-  löschen) — vor einem echten Launch nachzuziehen.
+- Wird ein Account gelöscht, räumt der Cascade auf `profiles` nur die Zeile ab —
+  die Dateien im Bucket blieben liegen und öffentlich erreichbar. Deshalb löscht
+  die Edge Function aus [ADR-0004](./0004-account-loeschen.md) die Dateien
+  **zuerst** und den Account danach.
 - Bilder speichern **sofort** beim Auswählen, unabhängig vom Save-Button des
   Profil-Formulars. Der Screen hat damit zwei Speicher-Modelle; die UI muss das
   sichtbar machen.

@@ -53,6 +53,16 @@ Ein Bild, das jemand seinem Profil hinzufügt, um zu zeigen, wie er klettert.
 Galeriefotos sind für **andere** da — sie werden erst sichtbar, wenn jemand ein
 Profil bewusst öffnet, und tauchen nirgends beiläufig auf.
 
+## Gelöschte Nutzer:in (Deleted User)
+
+Kein Zustand, sondern eine **Leerstelle**: Wer seinen Account löscht, hört auf zu
+existieren — Profil, Sessions und Anfragen verschwinden mit.
+
+Was bleibt, sind die **Nachrichten**, die die Person geschrieben hat. Sie gehören
+auch dem Gegenüber, dessen Verlauf sonst Löcher hätte. Dort erscheint die Person
+als „Deleted user" — nicht als Person mit einem Zustand, sondern als
+Absender-Position ohne Absender:in.
+
 ## Meldung (Report)
 
 Der Hinweis einer Person, dass ein Profil unangemessen ist. Eine Meldung

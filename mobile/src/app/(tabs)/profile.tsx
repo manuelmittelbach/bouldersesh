@@ -1,6 +1,8 @@
-import { Check, LogOut } from 'lucide-react-native';
+import { Camera, Check, LogOut } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -10,11 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { GalleryEditor } from '@/components/GalleryEditor';
 import { Avatar, Button, Chip, GradePill, Input } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
+import { publicImageUrl } from '@/lib/images';
 import { avatarTone, gradeBand } from '@/lib/utils';
 import { GYM_ACCESS_LABEL, useGyms } from '@/queries/gyms';
-import { useUpdateProfile } from '@/queries/profiles';
+import { useRemoveAvatar, useSetAvatar, useUpdateProfile } from '@/queries/profiles';
 import type { SkillLevel } from '@/types/database';
 import { colors } from '@/theme/colors';
 
@@ -38,6 +42,8 @@ export default function Profile() {
   const { user, profile, signOut } = useAuth();
   const { data: gyms } = useGyms();
   const update = useUpdateProfile();
+  const setAvatar = useSetAvatar();
+  const removeAvatar = useRemoveAvatar();
 
   const [displayName, setDisplayName] = useState('');
   const [skill, setSkill] = useState<SkillLevel | null>(null);
@@ -77,6 +83,29 @@ export default function Profile() {
 
   const name = displayName.trim() || user?.email || 'Profile';
 
+  // Der Avatar wird sofort gespeichert, das Formular erst per Save-Button
+  // (ADR-0003). Damit das nicht wie ein Bug wirkt, sagt der Screen es an beiden
+  // Bild-Blöcken ausdrücklich.
+  const avatarBusy = setAvatar.isPending || removeAvatar.isPending;
+  const avatarError = (setAvatar.error ?? removeAvatar.error) as Error | null;
+
+  function editAvatar() {
+    if (!profile || avatarBusy) return;
+    if (!profile.avatar_path) {
+      setAvatar.mutate(profile);
+      return;
+    }
+    Alert.alert('Profile picture', undefined, [
+      { text: 'Choose a new one', onPress: () => setAvatar.mutate(profile) },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => removeAvatar.mutate(profile),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
       <KeyboardAvoidingView
@@ -92,12 +121,34 @@ export default function Profile() {
 
           {/* Kopf */}
           <View className="mt-4 items-center">
-            <Avatar
-              name={name}
-              tone={avatarTone(user?.id ?? name)}
-              size="xl"
-              src={profile?.avatar_url}
-            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Change profile picture"
+              disabled={!profile || avatarBusy}
+              onPress={editAvatar}
+              className="active:scale-[0.98]">
+              <Avatar
+                name={name}
+                tone={avatarTone(user?.id ?? name)}
+                size="xl"
+                src={publicImageUrl(profile?.avatar_path)}
+              />
+              <View className="absolute -bottom-1 -right-1 h-8 w-8 items-center justify-center rounded-full border-2 border-rock-25 bg-rock-900">
+                {avatarBusy ? (
+                  <ActivityIndicator size="small" color={colors.rock[0]} />
+                ) : (
+                  <Camera size={15} color={colors.rock[0]} strokeWidth={2} />
+                )}
+              </View>
+            </Pressable>
+            <Text className="mt-2 font-sans text-[13px] text-rock-400">
+              Tap to change — saves right away
+            </Text>
+            {avatarError ? (
+              <Text className="mt-1 text-center font-sans text-sm text-danger">
+                {avatarError.message}
+              </Text>
+            ) : null}
             <Text className="mt-3 font-display-bold text-xl text-rock-900">
               {displayName.trim() || 'No name yet'}
             </Text>
@@ -109,8 +160,17 @@ export default function Profile() {
             ) : null}
           </View>
 
-          {/* Editierbar */}
-          <View className="mt-8 gap-6">
+          {/* Galerie — wie der Avatar sofort gespeichert, deshalb oberhalb des
+              Formulars und optisch von ihm getrennt. */}
+          {profile ? (
+            <View className="mt-8">
+              <Eyebrow>Photos</Eyebrow>
+              <GalleryEditor profile={profile} />
+            </View>
+          ) : null}
+
+          {/* Editierbar — ab hier zählt der Save-Button. */}
+          <View className="mt-8 border-t border-rock-100 pt-8 gap-6">
             <Input label="Display name" value={displayName} onChangeText={setDisplayName} placeholder="What should we call you?" />
 
             <View>

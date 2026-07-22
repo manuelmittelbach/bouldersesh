@@ -13,7 +13,7 @@ export type MatchRequestWithRequester = MatchRequest & {
   requester: {
     id: string;
     display_name: string | null;
-    avatar_url: string | null;
+    avatar_path: string | null;
     skill_level: string | null;
   } | null;
 };
@@ -26,7 +26,7 @@ async function getRequestsForSession(
     .select(
       `
         *,
-        requester:profiles!match_requests_requester_id_fkey ( id, display_name, avatar_url, skill_level )
+        requester:profiles!match_requests_requester_id_fkey ( id, display_name, avatar_path, skill_level )
       `,
     )
     .eq("session_id", sessionId)

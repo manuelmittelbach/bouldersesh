@@ -5,12 +5,14 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui';
+import { publicImageUrl } from '@/lib/images';
 import { avatarTone, cn, formatChatTime } from '@/lib/utils';
 import { useMyChats, type ChatListItem } from '@/queries/chat';
 import { colors } from '@/theme/colors';
 
 function ChatRow({ chat }: { chat: ChatListItem }) {
-  const name = chat.other?.display_name ?? 'Anonymous';
+  const name =
+    chat.other?.display_name ?? (chat.counterpartDeleted ? 'Deleted user' : 'Anonymous');
   // Fallback bewusst OHNE Emoji (DS: kein Emoji).
   const preview = chat.lastMessage?.body ?? 'No messages yet';
   const stamp = chat.lastMessage?.sent_at ?? chat.createdAt;
@@ -23,7 +25,7 @@ function ChatRow({ chat }: { chat: ChatListItem }) {
         name={name}
         tone={avatarTone(chat.other?.id ?? name)}
         size="lg"
-        src={chat.other?.avatar_url}
+        src={publicImageUrl(chat.other?.avatar_path)}
       />
       <View className="min-w-0 flex-1">
         <View className="flex-row items-center justify-between gap-2">

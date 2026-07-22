@@ -22,6 +22,8 @@ function MetaRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
 export type SessionCardProps = {
   name: string;
   avatarTone?: AvatarTone;
+  /** Fertige Bild-URL, nicht der Storage-Pfad — siehe `publicImageUrl`. */
+  avatarSrc?: string | null;
   grade?: string;
   band?: GradeBand;
   time?: string;
@@ -36,6 +38,7 @@ export type SessionCardProps = {
 export function SessionCard({
   name,
   avatarTone = 'rock',
+  avatarSrc,
   grade,
   band = 'neutral',
   time,
@@ -48,7 +51,7 @@ export function SessionCard({
   return (
     <Card interactive={!!onPress} onPress={onPress}>
       <View className="flex-row items-start gap-3">
-        <Avatar name={name} tone={avatarTone} size="md" online={online} />
+        <Avatar name={name} tone={avatarTone} size="md" online={online} src={avatarSrc} />
         <View className="min-w-0 flex-1">
           <View className="flex-row items-center justify-between gap-2">
             <Text numberOfLines={1} className="flex-1 font-display text-[17px] text-rock-900">
