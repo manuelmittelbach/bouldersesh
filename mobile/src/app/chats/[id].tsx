@@ -13,10 +13,11 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MessageBubble } from '@/components/MessageBubble';
-import { IconButton } from '@/components/ui';
+import { Avatar, IconButton } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
-import { formatClock } from '@/lib/utils';
-import { useMessages, useSendMessage } from '@/queries/chat';
+import { publicImageUrl } from '@/lib/images';
+import { avatarTone, formatClock } from '@/lib/utils';
+import { useChatMembers, useMessages, useSendMessage } from '@/queries/chat';
 import type { Message } from '@/types/database';
 import { colors } from '@/theme/colors';
 
@@ -25,7 +26,15 @@ export default function Chat() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { data: messages, isLoading } = useMessages(id);
+  const { data: members } = useChatMembers(id);
   const send = useSendMessage(id);
+
+  const memberById = new Map((members ?? []).map((m) => [m.id, m]));
+  // Der Titel kommt aus den *anderen* Mitgliedern. Hat sich das Gegenüber
+  // gelöscht, ist seine chat_members-Zeile weg und der Chat hat nur noch ein
+  // Mitglied — dann bleibt es beim generischen „Chat“ (ADR-0004).
+  const other = (members ?? []).find((m) => m.id !== user?.id) ?? null;
+  const title = other?.display_name ?? 'Chat';
   const [body, setBody] = useState('');
   const listRef = useRef<FlatList<Message>>(null);
 
@@ -47,7 +56,9 @@ export default function Chat() {
         <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
           <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
         </IconButton>
-        <Text className="font-display text-base text-rock-900">Chat</Text>
+        <Text numberOfLines={1} className="flex-1 font-display text-base text-rock-900">
+          {title}
+        </Text>
       </View>
 
       <KeyboardAvoidingView
@@ -68,13 +79,30 @@ export default function Chat() {
             contentContainerClassName="px-4 py-4 gap-1"
             onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
             renderItem={({ item, index }) => {
-              const mine = item.sender_id === user?.id;
+              const mine = !!item.sender_id && item.sender_id === user?.id;
               const list = messages ?? [];
               // Zeitstempel nur an der letzten Blase einer Sender-Gruppe — sonst zu laut.
               const isGroupEnd =
                 index === list.length - 1 || list[index + 1]?.sender_id !== item.sender_id;
+              // sender_id === null: Account gelöscht, die Nachricht bleibt (ADR-0004).
+              const sender = item.sender_id ? memberById.get(item.sender_id) : undefined;
+              const senderName = item.sender_id
+                ? (sender?.display_name ?? 'Anonymous')
+                : 'Deleted user';
               return (
-                <MessageBubble mine={mine} time={isGroupEnd ? formatClock(item.sent_at) : undefined}>
+                <MessageBubble
+                  mine={mine}
+                  time={isGroupEnd ? formatClock(item.sent_at) : undefined}
+                  avatar={
+                    isGroupEnd ? (
+                      <Avatar
+                        name={senderName}
+                        tone={avatarTone(item.sender_id ?? senderName)}
+                        size="xs"
+                        src={publicImageUrl(sender?.avatar_path)}
+                      />
+                    ) : undefined
+                  }>
                   {item.body}
                 </MessageBubble>
               );

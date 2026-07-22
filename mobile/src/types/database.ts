@@ -33,7 +33,10 @@ export interface Database {
         Row: {
           id: string;
           display_name: string | null;
-          avatar_url: string | null;
+          /** Storage-Pfad, keine URL — siehe ADR-0003 und `lib/images.ts`. */
+          avatar_path: string | null;
+          /** Bis zu 6 Storage-Pfade; Array-Reihenfolge = Anzeigereihenfolge. */
+          gallery_paths: string[];
           bio: string | null;
           skill_level: SkillLevel | null;
           preferred_styles: string[] | null;
@@ -43,7 +46,8 @@ export interface Database {
         Insert: {
           id: string;
           display_name?: string | null;
-          avatar_url?: string | null;
+          avatar_path?: string | null;
+          gallery_paths?: string[];
           bio?: string | null;
           skill_level?: SkillLevel | null;
           preferred_styles?: string[] | null;
@@ -175,18 +179,39 @@ export interface Database {
         Row: {
           id: string;
           chat_id: string;
-          sender_id: string;
+          /** NULL = Absender:in hat ihren Account gelöscht (ADR-0004). */
+          sender_id: string | null;
           body: string;
           sent_at: string;
         };
         Insert: {
           id?: string;
           chat_id: string;
+          // Beim Schreiben immer gesetzt — NULL entsteht erst durch das Löschen.
           sender_id: string;
           body: string;
           sent_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["messages"]["Insert"]>;
+        Relationships: [];
+      };
+      profile_reports: {
+        Row: {
+          id: string;
+          reporter_id: string | null;
+          reported_id: string;
+          reason: string | null;
+          created_at: string;
+          handled_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          reporter_id: string;
+          reported_id: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["profile_reports"]["Insert"]>;
         Relationships: [];
       };
     };
@@ -208,3 +233,5 @@ export type Session = Database["public"]["Tables"]["sessions"]["Row"];
 export type MatchRequest = Database["public"]["Tables"]["match_requests"]["Row"];
 export type Chat = Database["public"]["Tables"]["chats"]["Row"];
 export type Message = Database["public"]["Tables"]["messages"]["Row"];
+export type ProfileReport =
+  Database["public"]["Tables"]["profile_reports"]["Row"];

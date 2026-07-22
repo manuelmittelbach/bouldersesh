@@ -92,6 +92,41 @@ export function useSendMessage(chatId: string | undefined) {
 }
 
 // ------------------------------------------------------------------
+// Chat members — who is in this chat, with their avatar.
+// ------------------------------------------------------------------
+// Bewusst getrennt von den Nachrichten statt als Join: Das Realtime-INSERT
+// liefert die rohe messages-Zeile ohne eingebettetes Profil. Mit Join müsste der
+// Screen bei jeder Nachricht nachladen statt den Cache zu patchen — genau der
+// Round-Trip-Flacker, den Lessons §3.3 vermeidet. Die Mitglieder ändern sich
+// dagegen so gut wie nie, ein eigener Query kostet nichts.
+
+export type ChatMember = {
+  id: string;
+  display_name: string | null;
+  avatar_path: string | null;
+};
+
+async function getChatMembers(chatId: string): Promise<ChatMember[]> {
+  const { data, error } = await supabase
+    .from("chat_members")
+    .select("profile:profiles ( id, display_name, avatar_path )")
+    .eq("chat_id", chatId);
+  if (error) throw error;
+  return (data ?? [])
+    .map((row) => (row as unknown as { profile: ChatMember | null }).profile)
+    .filter((p): p is ChatMember => !!p);
+}
+
+export function useChatMembers(chatId: string | undefined) {
+  return useQuery({
+    queryKey: ["chat", chatId ?? "", "members"] as const,
+    queryFn: () => getChatMembers(chatId!),
+    enabled: !!chatId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ------------------------------------------------------------------
 // Chat list — every chat the current user is a member of.
 // ------------------------------------------------------------------
 
@@ -102,16 +137,24 @@ export type ChatListItem = {
   other: {
     id: string;
     display_name: string | null;
-    avatar_url: string | null;
+    avatar_path: string | null;
     skill_level: string | null;
   } | null;
+  /**
+   * Es gibt außer mir kein Mitglied mehr — das Gegenüber hat seinen Account
+   * gelöscht, die `chat_members`-Zeile ist mitgegangen (ADR-0004). Zu
+   * unterscheiden von `other === null`, was auch heißen kann, dass das Profil
+   * nur nicht aufgelöst werden konnte.
+   */
+  counterpartDeleted: boolean;
   session: {
     id: string;
     starts_at: string;
     level: string;
     gym: { name: string } | null;
   } | null;
-  lastMessage: { body: string; sent_at: string; sender_id: string } | null;
+  /** `sender_id === null`: die Absender:in hat ihren Account gelöscht (ADR-0004). */
+  lastMessage: { body: string; sent_at: string; sender_id: string | null } | null;
   unread: boolean;
 };
 
@@ -138,7 +181,7 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
         id,
         created_at,
         session:sessions ( id, starts_at, level, gym:gyms ( name ) ),
-        members:chat_members ( user_id, profile:profiles ( id, display_name, avatar_url, skill_level ) )
+        members:chat_members ( user_id, profile:profiles ( id, display_name, avatar_path, skill_level ) )
       `,
     )
     .in("id", chatIds);
@@ -154,7 +197,7 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
 
   const lastByChat = new Map<
     string,
-    { body: string; sent_at: string; sender_id: string }
+    { body: string; sent_at: string; sender_id: string | null }
   >();
   for (const m of msgs ?? []) {
     if (!lastByChat.has(m.chat_id)) lastByChat.set(m.chat_id, m);
@@ -170,10 +213,8 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
   const items: ChatListItem[] = (
     (chats ?? []) as unknown as ChatRowRaw[]
   ).map((c) => {
-    const other =
-      (c.members ?? [])
-        .map((mem) => mem.profile)
-        .find((p) => p && p.id !== userId) ?? null;
+    const otherMembers = (c.members ?? []).filter((mem) => mem.user_id !== userId);
+    const other = otherMembers.map((mem) => mem.profile).find((p) => !!p) ?? null;
     const lastMessage = lastByChat.get(c.id) ?? null;
     const lastRead = lastReadByChat.get(c.id) ?? null;
     const unread =
@@ -185,6 +226,7 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
       id: c.id,
       createdAt: c.created_at,
       other,
+      counterpartDeleted: otherMembers.length === 0,
       session: c.session ?? null,
       lastMessage,
       unread,
