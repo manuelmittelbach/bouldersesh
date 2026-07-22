@@ -6,8 +6,9 @@ import { Avatar, Card, GradePill } from '@/components/ui';
 import type { AvatarTone, GradeBand } from '@/lib/utils';
 import { colors } from '@/theme/colors';
 
-// Die Signatur-Feed-Einheit: wer klettert, wann, wo, in welchem Grade. Komponiert
-// Avatar + GradePill + Card. Die Meta-Zeilen-Icons (Uhr/Pin) rendert die Karte selbst.
+// Die Signatur-Feed-Einheit: wer klettert, wann, wo, auf welchem Niveau. Komponiert
+// Avatar + GradePill + Card. Das Pill zeigt das Niveau der Ersteller:in (ADR-0005) —
+// fehlt es, wird keins gezeigt. Die Meta-Zeilen-Icons (Uhr/Pin) rendert die Karte selbst.
 function MetaRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
     <View className="mt-1 flex-row items-center gap-1.5">
@@ -24,7 +25,7 @@ export type SessionCardProps = {
   avatarTone?: AvatarTone;
   /** Fertige Bild-URL, nicht der Storage-Pfad — siehe `publicImageUrl`. */
   avatarSrc?: string | null;
-  grade?: string;
+  grade?: string | null;
   band?: GradeBand;
   time?: string;
   gym?: string;

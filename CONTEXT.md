@@ -32,12 +32,6 @@ Session findet immer in einer Halle statt, nie „irgendwo in der Stadt".
 
 Hallen sind derzeit kuratiert. Nutzer:innen dürfen sie (noch) nicht anlegen.
 
-## Stammhalle (Home Gym)
-
-Die Halle, die jemand im Profil als seine übliche hinterlegt. Optional.
-**Unabhängig von der aktiven Stadt** — die Stammhalle bestimmt nicht, welche
-Stadt der Feed zeigt, und die aktive Stadt ändert die Stammhalle nicht.
-
 ## Avatar
 
 Das Bild, das eine Person überall dort vertritt, wo sie nur beiläufig vorkommt —
@@ -73,6 +67,29 @@ Der Hinweis einer Person, dass ein Profil unangemessen ist. Eine Meldung
 Die Ankündigung „ich klettere zu dieser Zeit in dieser Halle und suche
 Buddies". Gehört genau einer Person (Ersteller:in) und genau einer Halle —
 und damit implizit einer Stadt.
+
+Eine Session trägt **keinen** strukturierten Kletter-Grade. Was jemand vorhat,
+steht in der (verpflichtenden) Notiz. Das Niveau, das an einer Session erscheint,
+ist das **der Ersteller:in** — ein Merkmal der Person, nicht der Session.
+
+## Niveau (Skill Level)
+
+Die grobe Selbsteinschätzung einer Person — beginner / intermediate / advanced /
+pro. **Optional** und **gym-unabhängig**: ein weiches soziales Signal, keine
+Filtergröße und kein hallen-bezogener Grade. Gehört zur Person, erscheint als
+Pill am Profil und an deren Sessions; fehlt es, wird kein Pill gezeigt.
+
+_Avoid_: Grade, Preferred level
+
+## Session-Notiz (Note)
+
+Der Freitext an einer Session, der sagt, was jemand an diesem Tag klettern will
+(„trying to crack some reds"). **Pflicht** — eine Session ohne Notiz gibt es
+nicht. Sie ist der ehrliche, **hallen-relative** Ausdruck des Vorhabens: lesbar,
+weil die Session eine Halle hat. Ersetzt den früheren strukturierten
+Session-Grade.
+
+_Avoid_: Preferred level, Grade
 
 ## Anfrage (Match Request)
 

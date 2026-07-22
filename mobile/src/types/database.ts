@@ -104,8 +104,8 @@ export interface Database {
           gym_id: string;
           starts_at: string;
           ends_at: string | null;
-          level: string;
-          note: string | null;
+          /** Pflicht (nicht-leer) — trägt „was ich klettern will", siehe ADR-0005. */
+          note: string;
           max_buddies: number;
           visibility: SessionVisibility;
           status: SessionStatus;
@@ -117,8 +117,7 @@ export interface Database {
           gym_id: string;
           starts_at: string;
           ends_at?: string | null;
-          level: string;
-          note?: string | null;
+          note: string;
           max_buddies?: number;
           visibility?: SessionVisibility;
           status?: SessionStatus;
