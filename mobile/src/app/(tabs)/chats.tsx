@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui';
 import { publicImageUrl } from '@/lib/images';
-import { avatarTone, cn, formatChatTime } from '@/lib/utils';
+import { avatarTone, cn, formatChatTime, formatSessionTime } from '@/lib/utils';
 import { useMyChats, type ChatListItem } from '@/queries/chat';
 import { colors } from '@/theme/colors';
 
@@ -55,7 +55,7 @@ function ChatRow({ chat }: { chat: ChatListItem }) {
         </View>
         {chat.session?.gym ? (
           <Text numberOfLines={1} className="mt-0.5 font-sans text-xs text-rock-400">
-            {chat.session.gym.name} · {chat.session.level}
+            {chat.session.gym.name} · {formatSessionTime(chat.session.starts_at)}
           </Text>
         ) : null}
       </View>

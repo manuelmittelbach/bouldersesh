@@ -1,6 +1,8 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+import type { SkillLevel } from '@/types/database';
+
 /** Klassennamen zusammenführen — shadcn-Stil. Läuft mit NativeWind-Klassen. */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -81,6 +83,23 @@ export function avatarTone(seed: string | null | undefined): AvatarTone {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   return AVATAR_TONES[h % AVATAR_TONES.length];
+}
+
+/**
+ * Anzeige-Labels der Niveau-Bänder. Einzige Quelle — das Niveau erscheint jetzt am
+ * Profil und, als Ersteller:innen-Pill, an Feed-Karte und Session-Detail.
+ */
+export const SKILL_LABEL: Record<SkillLevel, string> = {
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
+  pro: 'Pro',
+};
+export const SKILL_LEVELS = Object.keys(SKILL_LABEL) as SkillLevel[];
+
+/** Label für ein optionales Niveau — `null`, wenn keins gesetzt ist (dann kein Pill). */
+export function skillLabel(level: string | null | undefined): string | null {
+  return level && level in SKILL_LABEL ? SKILL_LABEL[level as SkillLevel] : null;
 }
 
 /** Skill-Level auf ein Grade-Pill-Farbband mappen. */

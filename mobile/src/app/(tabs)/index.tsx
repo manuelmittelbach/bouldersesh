@@ -8,7 +8,7 @@ import { SessionCard } from '@/components/SessionCard';
 import { Button, Chip, IconButton } from '@/components/ui';
 import { useActiveCity } from '@/hooks/useActiveCity';
 import { publicImageUrl } from '@/lib/images';
-import { avatarTone, formatDateShort, formatSessionTime, gradeBand } from '@/lib/utils';
+import { avatarTone, formatDateShort, formatSessionTime, gradeBand, skillLabel } from '@/lib/utils';
 import { useCities } from '@/queries/cities';
 import { useGyms, type GymWithCity } from '@/queries/gyms';
 import { useOpenSessions, type SessionWithMeta } from '@/queries/sessions';
@@ -205,7 +205,9 @@ export default function Dashboard() {
                 name={name}
                 avatarTone={avatarTone(item.creator?.id ?? name)}
                 avatarSrc={publicImageUrl(item.creator?.avatar_path)}
-                grade={item.level}
+                // Pill = Niveau der Ersteller:in (Merkmal der Person, nicht der Session).
+                // Kein Niveau gesetzt → skillLabel ist null → SessionCard zeigt kein Pill.
+                grade={skillLabel(item.creator?.skill_level)}
                 band={gradeBand(item.creator?.skill_level)}
                 time={formatSessionTime(item.starts_at)}
                 // Nur der Hallenname: die Stadt steht bereits im Titel des Feeds.

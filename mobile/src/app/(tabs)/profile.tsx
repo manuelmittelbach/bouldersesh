@@ -17,18 +17,10 @@ import { GalleryEditor } from '@/components/GalleryEditor';
 import { Avatar, Button, Chip, GradePill, Input } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
-import { avatarTone, gradeBand } from '@/lib/utils';
+import { avatarTone, gradeBand, SKILL_LABEL, SKILL_LEVELS } from '@/lib/utils';
 import { useRemoveAvatar, useSetAvatar, useUpdateProfile } from '@/queries/profiles';
 import type { SkillLevel } from '@/types/database';
 import { colors } from '@/theme/colors';
-
-const SKILL_LABEL: Record<SkillLevel, string> = {
-  beginner: 'Beginner',
-  intermediate: 'Intermediate',
-  advanced: 'Advanced',
-  pro: 'Pro',
-};
-const SKILL_LEVELS = Object.keys(SKILL_LABEL) as SkillLevel[];
 
 function Eyebrow({ children }: { children: string }) {
   return (

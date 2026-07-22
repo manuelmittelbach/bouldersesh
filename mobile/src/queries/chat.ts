@@ -150,7 +150,6 @@ export type ChatListItem = {
   session: {
     id: string;
     starts_at: string;
-    level: string;
     gym: { name: string } | null;
   } | null;
   /** `sender_id === null`: die Absender:in hat ihren Account gelöscht (ADR-0004). */
@@ -180,7 +179,7 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
       `
         id,
         created_at,
-        session:sessions ( id, starts_at, level, gym:gyms ( name ) ),
+        session:sessions ( id, starts_at, gym:gyms ( name ) ),
         members:chat_members ( user_id, profile:profiles ( id, display_name, avatar_path, skill_level ) )
       `,
     )

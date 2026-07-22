@@ -19,7 +19,7 @@ import { ProfileGallery } from '@/components/ProfileGallery';
 import { Avatar, Button, Card, GradePill, IconButton } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
-import { avatarTone, formatSessionTime, gradeBand } from '@/lib/utils';
+import { avatarTone, formatSessionTime, gradeBand, skillLabel } from '@/lib/utils';
 import { useChatForSession } from '@/queries/chat';
 import {
   useCreateMatchRequest,
@@ -30,13 +30,6 @@ import {
 import { useHasReported, useReportProfile } from '@/queries/reports';
 import { useSession } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
-
-const SKILL_LABEL: Record<string, string> = {
-  beginner: 'Beginner',
-  intermediate: 'Intermediate',
-  advanced: 'Advanced',
-  pro: 'Pro',
-};
 
 function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
@@ -85,7 +78,7 @@ function RequestRow({
           {name}
         </Text>
         {skill ? (
-          <Text className="font-sans text-xs text-rock-500">{SKILL_LABEL[skill] ?? skill}</Text>
+          <Text className="font-sans text-xs text-rock-500">{skillLabel(skill) ?? skill}</Text>
         ) : null}
       </View>
 
@@ -263,9 +256,15 @@ export default function SessionDetail() {
             src={publicImageUrl(session.creator?.avatar_path)}
           />
           <Text className="mt-3 font-display-bold text-[22px] text-rock-900">{name}</Text>
-          <View className="mt-3">
-            <GradePill grade={session.level} band={gradeBand(session.creator?.skill_level)} />
-          </View>
+          {/* Pill = Niveau der Ersteller:in (ADR-0005). Kein Niveau gesetzt → kein Pill. */}
+          {skillLabel(session.creator?.skill_level) ? (
+            <View className="mt-3">
+              <GradePill
+                grade={skillLabel(session.creator?.skill_level)!}
+                band={gradeBand(session.creator?.skill_level)}
+              />
+            </View>
+          ) : null}
         </View>
 
         {/* Galeriefotos der Ersteller:in — der einzige Ort, an dem fremde Fotos

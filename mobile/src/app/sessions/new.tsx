@@ -20,7 +20,6 @@ import { useCreateSession } from '@/queries/sessions';
 import { GYM_ACCESS_LABEL, useGyms } from '@/queries/gyms';
 import { colors } from '@/theme/colors';
 
-const LEVELS = ['5+', '6a', '6b', '6c', '7a', '7b'];
 // Zeitfenster als Chips statt nativem Date/Time-Picker (kein community/datetimepicker →
 // kein native Rebuild, siehe Handoff §6). Halbe-Stunden-Auflösung wäre zu viel; volle
 // Stunden von 7–22 decken Hallenöffnungszeiten ab.
@@ -57,7 +56,6 @@ export default function SessionCreate() {
   }
   const [dayIdx, setDayIdx] = useState(0);
   const [hour, setHour] = useState(18);
-  const [level, setLevel] = useState('6a');
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -126,13 +124,16 @@ export default function SessionCreate() {
       setError('That time is in the past — pick a later one.');
       return;
     }
+    if (!note.trim()) {
+      setError('Say what you’re climbing.');
+      return;
+    }
     setError(null);
     try {
       await createSession.mutateAsync({
         gym_id: gymId,
         starts_at: dt.toISOString(),
-        level,
-        note: note.trim() || null,
+        note: note.trim(),
       });
       leaveAfterCreate();
     } catch (e) {
@@ -251,26 +252,16 @@ export default function SessionCreate() {
             </ScrollView>
           </View>
 
-          {/* Level */}
-          <View className="mb-6">
-            <Eyebrow>Preferred level</Eyebrow>
-            <View className="flex-row flex-wrap gap-2">
-              {LEVELS.map((lvl) => (
-                <Chip key={lvl} active={level === lvl} onPress={() => setLevel(lvl)}>
-                  {lvl}
-                </Chip>
-              ))}
-            </View>
-          </View>
-
-          {/* Notiz */}
+          {/* Notiz — trägt jetzt „was ich klettern will" und ist Pflicht: hallen-relativ
+              formuliert (die Session hat eine Halle), statt eines strukturierten Grades.
+              Siehe ADR-0005. */}
           <Input
-            label="Note (optional)"
+            label="What are you climbing?"
             value={note}
             onChangeText={setNote}
             multiline
             maxLength={280}
-            placeholder="e.g. “Looking for someone to project a 6c+ with”"
+            placeholder="e.g. “trying to crack some reds”"
           />
 
           {error ? <Text className="mt-3 font-sans text-sm text-danger">{error}</Text> : null}
@@ -284,6 +275,7 @@ export default function SessionCreate() {
             variant="primary"
             size="lg"
             fullWidth
+            disabled={!note.trim()}
             loading={createSession.isPending}
             icon={<Send size={18} color={colors.rock[0]} strokeWidth={2} />}
             onPress={submit}>
