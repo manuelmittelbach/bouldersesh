@@ -1,0 +1,49 @@
+import { useMutation } from "@tanstack/react-query";
+
+import { supabase } from "@/lib/supabase";
+
+// Account löschen (CONTEXT.md „Gelöschte Nutzer:in", ADR-0004). Der eigentliche
+// Löschvorgang lebt in der Edge Function `delete-account` — nur sie hat den
+// service_role-Key und kann die Bucket-Dateien anfassen. Hier steht der Flow
+// drumherum: erneut das Passwort prüfen, die Function rufen, lokal abmelden.
+
+/** Falsches Passwort bei der Bestätigung. Eigener Typ, damit die UI „Passwort
+ *  stimmt nicht" von einem echten Serverfehler unterscheiden kann. */
+export class ReauthFailedError extends Error {
+  constructor() {
+    super("That password doesn’t match. Try again.");
+    this.name = "ReauthFailedError";
+  }
+}
+
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: async ({
+      email,
+      password,
+    }: {
+      email: string;
+      password: string;
+    }) => {
+      // Erneute Passworteingabe (ADR-0004): signInWithPassword bestätigt, dass am
+      // Gerät wirklich diese Person sitzt. Löschen ist endgültig, kein Undo.
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (reauthError) throw new ReauthFailedError();
+
+      // Die Function löscht zuerst die Bucket-Dateien, dann den Auth-User
+      // (Reihenfolge ADR-0004). invoke hängt das aktuelle JWT automatisch an.
+      const { error } = await supabase.functions.invoke("delete-account", {
+        method: "POST",
+      });
+      if (error) throw error;
+
+      // Der Auth-User ist weg; die lokale Session ist damit wertlos. Nur lokal
+      // abmelden — ein Server-Logout ginge gegen einen nicht mehr existierenden
+      // User. onAuthStateChange feuert SIGNED_OUT → das Root-Gate zeigt Login.
+      await supabase.auth.signOut({ scope: "local" });
+    },
+  });
+}
