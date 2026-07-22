@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { Camera, Check, LogOut } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -251,6 +252,17 @@ export default function Profile() {
               onPress={signOut}>
               Sign out
             </Button>
+
+            {/* Account löschen — endgültig, deshalb kein direkter Knopf, sondern
+                der Weg auf einen eigenen Bestätigungs-Screen (ADR-0004). Rot und
+                zurückhaltend: die seltene, gefährliche Handlung, nicht die
+                angebotene. */}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/delete-account')}
+              className="items-center py-2 active:opacity-60">
+              <Text className="font-sans-medium text-[15px] text-danger">Delete account</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

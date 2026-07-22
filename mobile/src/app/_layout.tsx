@@ -59,6 +59,10 @@ function RootNavigator() {
           <Stack.Screen name="chats/[id]" />
         </Stack.Protected>
         <Stack.Screen name="city" />
+        {/* Bewusst nur im Session-Guard, nicht im Stadt-Guard: erreichbar aus dem
+            Profil, und wenn die Löschung die Session verwirft, flippt der Guard
+            und leitet selbst auf Login (ADR-0004). */}
+        <Stack.Screen name="delete-account" />
       </Stack.Protected>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="login" />

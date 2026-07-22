@@ -8,7 +8,7 @@ import { colors } from '@/theme/colors';
 // secondary/outline/ghost. Icons kommen als Nodes rein — die aufrufende Seite setzt die
 // Icon-Farbe passend zur Variante (Lucide nimmt kein className). `loading` blendet einen
 // ActivityIndicator ein (pragmatische Ergänzung für Submit-Buttons, nicht im Web-DS).
-type Variant = 'primary' | 'secondary' | 'outline' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const variantContainer: Record<Variant, string> = {
@@ -16,6 +16,8 @@ const variantContainer: Record<Variant, string> = {
   secondary: 'bg-rock-900',
   outline: 'border border-rock-200 bg-transparent',
   ghost: 'bg-transparent',
+  // Gefülltes Rot nur für den einen zerstörerischen Primär-Hit (Account löschen).
+  danger: 'bg-danger',
 };
 
 const variantText: Record<Variant, string> = {
@@ -23,6 +25,7 @@ const variantText: Record<Variant, string> = {
   secondary: 'text-rock-0',
   outline: 'text-rock-900',
   ghost: 'text-rock-700',
+  danger: 'text-rock-0',
 };
 
 // Höhen 36/44/52 wie im DS (sm/md/lg), enge Radien.
@@ -64,7 +67,9 @@ export function Button({
   const isDisabled = disabled || loading;
   // Spinner-Farbe: weiß auf gefüllten Varianten, sonst Ink.
   const spinnerColor =
-    variant === 'primary' || variant === 'secondary' ? colors.rock[0] : colors.rock[700];
+    variant === 'primary' || variant === 'secondary' || variant === 'danger'
+      ? colors.rock[0]
+      : colors.rock[700];
 
   return (
     <Pressable
