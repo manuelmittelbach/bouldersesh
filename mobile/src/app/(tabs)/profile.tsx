@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Camera, Check, LogOut } from 'lucide-react-native';
+import { Camera, LogOut } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,7 +18,6 @@ import { Avatar, Button, Chip, GradePill, Input } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, gradeBand } from '@/lib/utils';
-import { GYM_ACCESS_LABEL, useGyms } from '@/queries/gyms';
 import { useRemoveAvatar, useSetAvatar, useUpdateProfile } from '@/queries/profiles';
 import type { SkillLevel } from '@/types/database';
 import { colors } from '@/theme/colors';
@@ -41,7 +40,6 @@ function Eyebrow({ children }: { children: string }) {
 
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
-  const { data: gyms } = useGyms();
   const update = useUpdateProfile();
   const setAvatar = useSetAvatar();
   const removeAvatar = useRemoveAvatar();
@@ -49,7 +47,6 @@ export default function Profile() {
   const [displayName, setDisplayName] = useState('');
   const [skill, setSkill] = useState<SkillLevel | null>(null);
   const [bio, setBio] = useState('');
-  const [homeGymId, setHomeGymId] = useState<string | null>(null);
 
   // Formularfelder EINMAL pro Profil-Identität aus dem geladenen Profil seeden. Nicht bei
   // jeder Daten-Änderung neu setzen — sonst würde ein Hintergrund-Refetch laufende (noch
@@ -61,15 +58,13 @@ export default function Profile() {
     setDisplayName(profile.display_name ?? '');
     setSkill(profile.skill_level);
     setBio(profile.bio ?? '');
-    setHomeGymId(profile.home_gym_id);
   }, [profile]);
 
   const dirty =
     !!profile &&
     (displayName !== (profile.display_name ?? '') ||
       skill !== profile.skill_level ||
-      bio !== (profile.bio ?? '') ||
-      homeGymId !== profile.home_gym_id);
+      bio !== (profile.bio ?? ''));
 
   async function save() {
     if (!user || !dirty || update.isPending) return;
@@ -78,7 +73,6 @@ export default function Profile() {
       display_name: displayName.trim() || null,
       skill_level: skill,
       bio: bio.trim() || null,
-      home_gym_id: homeGymId,
     });
   }
 
@@ -193,40 +187,6 @@ export default function Profile() {
               maxLength={280}
               placeholder="A line or two about you and your climbing."
             />
-
-            <View>
-              <Eyebrow>Home gym (optional)</Eyebrow>
-              <View className="gap-2">
-                {gyms?.map((gym) => {
-                  const active = homeGymId === gym.id;
-                  return (
-                    <Pressable
-                      key={gym.id}
-                      onPress={() => setHomeGymId(active ? null : gym.id)}
-                      className={
-                        'h-12 flex-row items-center justify-between rounded-md border px-4 active:scale-[0.99] ' +
-                        (active ? 'border-brand-500 bg-brand-50' : 'border-rock-200 bg-rock-0')
-                      }>
-                      <Text
-                        numberOfLines={1}
-                        className={
-                          'flex-1 font-sans-medium text-[15px] ' +
-                          (active ? 'text-brand-700' : 'text-rock-900')
-                        }>
-                        {gym.name}
-                        {gym.city ? (
-                          <Text className="text-rock-400">{`  ·  ${gym.city.name}`}</Text>
-                        ) : null}
-                        {gym.access ? (
-                          <Text className="text-rock-400">{`  ·  ${GYM_ACCESS_LABEL[gym.access]}`}</Text>
-                        ) : null}
-                      </Text>
-                      {active ? <Check size={18} color={colors.brand[600]} strokeWidth={2.5} /> : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
 
             <Button
               variant="primary"
