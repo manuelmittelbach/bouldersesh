@@ -8,6 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { GalleryEditor } from "@/components/GalleryEditor";
 import { Avatar, Button, Chip, Input } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
+import { useKeyboardAwareField } from "@/hooks/useKeyboardAwareField";
 import { publicImageUrl } from "@/lib/images";
 import { avatarTone, SKILL_LABEL, SKILL_LEVELS } from "@/lib/utils";
 import {
@@ -34,6 +35,10 @@ export default function Profile() {
 
   const [skill, setSkill] = useState<SkillLevel | null>(null);
   const [bio, setBio] = useState("");
+
+  // bottomOffset aus der gemessenen Bio-Höhe (mehrzeilig, wächst mit dem Text).
+  const { bottomOffset, extraKeyboardSpace, onFieldLayout } =
+    useKeyboardAwareField();
 
   // Formularfelder EINMAL pro Profil-Identität aus dem geladenen Profil seeden. Nicht bei
   // jeder Daten-Änderung neu setzen — sonst würde ein Hintergrund-Refetch laufende (noch
@@ -92,7 +97,8 @@ export default function Profile() {
       <KeyboardAwareScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-10"
-        bottomOffset={40}
+        bottomOffset={bottomOffset}
+        extraKeyboardSpace={extraKeyboardSpace}
         keyboardShouldPersistTaps="handled"
       >
         <View className="pb-3 pt-2">
@@ -165,6 +171,7 @@ export default function Profile() {
             label="Bio (optional)"
             value={bio}
             onChangeText={setBio}
+            onFieldLayout={onFieldLayout}
             multiline
             maxLength={280}
             placeholder="A line or two about you and your climbing."

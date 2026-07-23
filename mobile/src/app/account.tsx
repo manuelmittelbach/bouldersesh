@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button, IconButton, Input } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
+import { useKeyboardAwareField } from "@/hooks/useKeyboardAwareField";
 import {
   ReauthFailedError,
   useChangeEmail,
@@ -35,6 +36,11 @@ export default function Account() {
   const updateProfile = useUpdateProfile();
   const changeEmail = useChangeEmail();
   const changePassword = useChangePassword();
+
+  // Alle Felder hier sind einzeilig und gleich hoch — ein gemessenes Feld genügt, um
+  // den Scroll-Offset zu speisen (siehe onFieldLayout an der Name-Eingabe unten).
+  const { bottomOffset, extraKeyboardSpace, onFieldLayout } =
+    useKeyboardAwareField();
 
   // Name — wie auf dem Profil einmal pro Identität seeden, damit ein
   // Hintergrund-Refetch keine laufende Eingabe überschreibt.
@@ -118,7 +124,8 @@ export default function Account() {
       <KeyboardAwareScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-10"
-        bottomOffset={40}
+        bottomOffset={bottomOffset}
+        extraKeyboardSpace={extraKeyboardSpace}
         keyboardShouldPersistTaps="handled"
       >
         <Text className="mt-2 font-display-bold text-[28px] leading-8 text-rock-900">
@@ -131,6 +138,7 @@ export default function Account() {
           <Input
             value={displayName}
             onChangeText={setDisplayName}
+            onFieldLayout={onFieldLayout}
             placeholder="What should we call you?"
           />
           <Button
