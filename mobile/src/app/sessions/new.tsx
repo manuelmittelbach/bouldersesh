@@ -25,6 +25,7 @@ import { DateFilter } from "@/components/DateFilter";
 import { GymPickerSheet } from "@/components/GymPickerSheet";
 import { Button, Chip, IconButton, Input } from "@/components/ui";
 import { useActiveCity } from "@/hooks/useActiveCity";
+import { useKeyboardAwareField } from "@/hooks/useKeyboardAwareField";
 import { startOfDay, toDateKey } from "@/lib/utils";
 import { useCities } from "@/queries/cities";
 import { useCreateSession } from "@/queries/sessions";
@@ -46,6 +47,12 @@ function Eyebrow({ children }: { children: string }) {
 
 export default function SessionCreate() {
   const insets = useSafeAreaInsets();
+  // Das Notizfeld ist mehrzeilig UND darunter reitet die Submit-Leiste über der
+  // Tastatur. Beide Höhen werden gemessen (barHeight per onLayout an der Leiste), damit
+  // der Scroll-Offset das ganze Feld über Leiste + Tastatur hebt — ohne feste Zahl.
+  const [barHeight, setBarHeight] = useState(0);
+  const { bottomOffset, extraKeyboardSpace, onFieldLayout } =
+    useKeyboardAwareField({ clearance: barHeight });
   // Optionale Vorauswahl-Params aus dem Feed:
   //  - `date` ("YYYY-MM-DD", passend zum Chip-Fenster unten). Fehlt/passt er nicht ins
   //    7-Tage-Fenster, bleibt es bei Today.
@@ -202,9 +209,8 @@ export default function SessionCreate() {
         className="flex-1"
         contentContainerClassName="px-5 pt-2"
         contentContainerStyle={{ paddingBottom: 32 }}
-        // Notizfeld ist das letzte Feld und hätte sonst die Submit-Leiste (~76 px)
-        // plus einen Rand vor sich — genug Abstand, damit es voll über beidem steht.
-        bottomOffset={90}
+        bottomOffset={bottomOffset}
+        extraKeyboardSpace={extraKeyboardSpace}
         keyboardShouldPersistTaps="handled"
       >
         {/* Stadt — erstes Feld, filtert die Hallenliste darunter */}
@@ -328,6 +334,7 @@ export default function SessionCreate() {
           label="What are you climbing?"
           value={note}
           onChangeText={setNote}
+          onFieldLayout={onFieldLayout}
           multiline
           maxLength={280}
           placeholder="e.g. “trying to crack some reds”"
@@ -342,6 +349,7 @@ export default function SessionCreate() {
           beim Tippen im Notizfeld sichtbar bleibt und nicht verdeckt wird. */}
       <KeyboardStickyView>
         <View
+          onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
           className="border-t border-rock-100 bg-rock-0 px-5 pt-3"
           style={{ paddingBottom: insets.bottom + 12 }}
         >

@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react';
-import { forwardRef, useState } from 'react';
-import { Text, TextInput, View, type TextInputProps } from 'react-native';
+import type { ReactNode } from "react";
+import { forwardRef, useState } from "react";
+import { Text, TextInput, View, type TextInputProps } from "react-native";
 
-import { cn } from '@/lib/utils';
-import { colors } from '@/theme/colors';
+import { cn } from "@/lib/utils";
+import { colors } from "@/theme/colors";
 
 // Textfeld / Textarea mit optionalem Uppercase-Eyebrow-Label, Leading-Icon, Hint und
 // Error-State. Fokus tönt den Rahmen orange (+ dezenter Glow auf iOS). `multiline` rendert
@@ -15,26 +15,51 @@ export type InputProps = TextInputProps & {
   error?: string;
   multiline?: boolean;
   containerClassName?: string;
+  // Meldet die Höhe der (umrandeten) Feld-Box — nicht des Labels. Ein
+  // KeyboardAwareScrollView leitet daraus ab, wie weit es scrollen muss, damit das
+  // ganze Feld über der Tastatur steht, statt eine feste Zahl zu raten.
+  onFieldLayout?: (height: number) => void;
 };
 
 export const Input = forwardRef<TextInput, InputProps>(function Input(
-  { label, icon, hint, error, multiline, containerClassName, className, onFocus, onBlur, ...rest },
+  {
+    label,
+    icon,
+    hint,
+    error,
+    multiline,
+    containerClassName,
+    className,
+    onFocus,
+    onBlur,
+    onFieldLayout,
+    ...rest
+  },
   ref,
 ) {
   const [focused, setFocused] = useState(false);
-  const borderClass = error ? 'border-danger' : focused ? 'border-brand-500' : 'border-rock-200';
+  const borderClass = error
+    ? "border-danger"
+    : focused
+      ? "border-brand-500"
+      : "border-rock-200";
 
   return (
-    <View className={cn('gap-1.5', containerClassName)}>
+    <View className={cn("gap-1.5", containerClassName)}>
       {label ? (
         <Text className="font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
           {label}
         </Text>
       ) : null}
       <View
+        onLayout={
+          onFieldLayout
+            ? (e) => onFieldLayout(e.nativeEvent.layout.height)
+            : undefined
+        }
         className={cn(
-          'flex-row gap-2 rounded-md border bg-rock-0 px-3.5',
-          multiline ? 'items-start py-3' : 'h-[46px] items-center',
+          "flex-row gap-2 rounded-md border bg-rock-0 px-3.5",
+          multiline ? "items-start py-3" : "h-[46px] items-center",
           borderClass,
         )}
         // Fokus-Ring als dezenter Brand-Glow (iOS-Shadow / Android-Elevation).
@@ -47,8 +72,11 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
           shadowRadius: 4,
           shadowOffset: { width: 0, height: 0 },
           elevation: focused ? 2 : 0,
-        }}>
-        {icon ? <View className={cn('shrink-0', multiline && 'pt-0.5')}>{icon}</View> : null}
+        }}
+      >
+        {icon ? (
+          <View className={cn("shrink-0", multiline && "pt-0.5")}>{icon}</View>
+        ) : null}
         <TextInput
           ref={ref}
           multiline={multiline}
@@ -61,8 +89,12 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             setFocused(false);
             onBlur?.(e);
           }}
-          className={cn('flex-1 font-sans text-[15px] text-rock-900', multiline && 'min-h-[72px]', className)}
-          style={multiline ? { textAlignVertical: 'top' } : undefined}
+          className={cn(
+            "flex-1 font-sans text-[15px] text-rock-900",
+            multiline && "min-h-[72px]",
+            className,
+          )}
+          style={multiline ? { textAlignVertical: "top" } : undefined}
           {...rest}
         />
       </View>
