@@ -57,11 +57,22 @@ export function endOfDay(d: Date): Date {
  * Ist `date` heute, beginnt das Fenster JETZT statt um Mitternacht — vergangene
  * Sessions von heute sollen aus dem Feed fallen (man kann bei ihnen nicht mehr
  * mitklettern). An allen anderen Tagen umspannt es den ganzen Kalendertag.
+ *
+ * Für „heute" wird der Startpunkt auf die volle Minute abgerundet: Sekunden/Millis
+ * würden bei jedem Aufruf einen minimal anderen ISO-String liefern → jeder Today-Tap
+ * ergäbe einen neuen React-Query-Key und damit einen unnötigen Refetch. Minutengenau
+ * reicht völlig, um vergangene Sessions herauszufiltern.
  */
 export function dayRange(date: Date): { from: string; to: string } {
   const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
-  const from = isToday ? now : startOfDay(date);
+  let from: Date;
+  if (isToday) {
+    from = new Date(now);
+    from.setSeconds(0, 0);
+  } else {
+    from = startOfDay(date);
+  }
   return { from: from.toISOString(), to: endOfDay(date).toISOString() };
 }
 
