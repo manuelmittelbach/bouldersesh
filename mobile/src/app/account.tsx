@@ -55,11 +55,8 @@ export default function Account() {
 
   // E-Mail
   const [newEmail, setNewEmail] = useState('');
-  const [emailPassword, setEmailPassword] = useState('');
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
-  const emailWrongPw = changeEmail.error instanceof ReauthFailedError;
-  const emailOtherError =
-    changeEmail.error && !emailWrongPw ? (changeEmail.error as Error) : null;
+  const emailError = changeEmail.error ? (changeEmail.error as Error) : null;
 
   // Passwort
   const [currentPassword, setCurrentPassword] = useState('');
@@ -84,15 +81,14 @@ export default function Account() {
   }
 
   function submitEmail() {
-    if (!user?.email || !newEmail.trim() || !emailPassword || changeEmail.isPending) return;
+    if (!user?.email || !newEmail.trim() || changeEmail.isPending) return;
     const target = newEmail.trim();
     changeEmail.mutate(
-      { email: user.email, currentPassword: emailPassword, newEmail: target },
+      { newEmail: target },
       {
         onSuccess: () => {
           setPendingEmail(target);
           setNewEmail('');
-          setEmailPassword('');
         },
       },
     );
@@ -173,35 +169,26 @@ export default function Account() {
                 keyboardType="email-address"
                 inputMode="email"
               />
-              <Input
-                value={emailPassword}
-                onChangeText={setEmailPassword}
-                placeholder="Current password"
-                icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
-                secureTextEntry
-                autoCapitalize="none"
-                autoComplete="current-password"
-                error={emailWrongPw ? (changeEmail.error as Error).message : undefined}
-              />
               <Button
                 variant="outline"
                 size="lg"
                 fullWidth
-                disabled={!newEmail.trim() || !emailPassword}
+                disabled={!newEmail.trim()}
                 loading={changeEmail.isPending}
                 onPress={submitEmail}>
                 Update email
               </Button>
-              {emailOtherError ? (
+              {emailError ? (
                 <Text className="text-center font-sans text-sm text-danger">
-                  {emailOtherError.message}
+                  {emailError.message}
                 </Text>
               ) : null}
               {changeEmail.isSuccess && pendingEmail ? (
                 <View className="rounded-lg bg-success-surface p-4">
                   <Text className="font-display text-[15px] text-success">Check your inbox</Text>
                   <Text className="mt-1 font-sans text-[13px] leading-5 text-rock-700">
-                    We sent a confirmation link to {pendingEmail}. Your email changes once you tap it.
+                    We sent a confirmation link to {pendingEmail} and to your current address. Your
+                    email changes once you’ve confirmed from both.
                   </Text>
                 </View>
               ) : null}
@@ -220,6 +207,7 @@ export default function Account() {
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="current-password"
+                textContentType="password"
                 error={pwWrongCurrent ? (changePassword.error as Error).message : undefined}
               />
               <Input
@@ -230,6 +218,8 @@ export default function Account() {
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="new-password"
+                textContentType="newPassword"
+                passwordRules={`minlength: ${MIN_PASSWORD};`}
                 error={pwTooShort ? `Use at least ${MIN_PASSWORD} characters.` : undefined}
               />
               <Input
@@ -240,6 +230,8 @@ export default function Account() {
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="new-password"
+                textContentType="newPassword"
+                passwordRules={`minlength: ${MIN_PASSWORD};`}
                 error={pwMismatch ? 'Passwords don’t match.' : undefined}
               />
               <Button

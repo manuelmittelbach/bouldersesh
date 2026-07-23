@@ -16,32 +16,24 @@ export class ReauthFailedError extends Error {
   }
 }
 
-// E-Mail und Passwort leben in Supabase Auth, nicht in `profiles`. Beide sind
-// sicherheitsrelevant, deshalb geht ihnen — wie beim Löschen — eine erneute
-// Passworteingabe voraus (signInWithPassword bestätigt, dass am Gerät wirklich
-// diese Person sitzt). ReauthFailedError wird wiederverwendet, damit die UI ein
-// falsches Passwort am Feld zeigen kann statt als allgemeinen Serverfehler.
+// E-Mail und Passwort leben in Supabase Auth, nicht in `profiles`.
+//
+// E-Mail-Wechsel braucht KEINE erneute Passworteingabe: Supabase schützt ihn
+// schon durch „Secure email change" — der Wechsel gilt erst nach Bestätigung
+// über BEIDE Adressen (alte und neue). Wer am offenen Gerät sitzt, kann die
+// E-Mail also ohnehin nicht heimlich übernehmen. Das ist der Konsumenten-App-
+// Standard und erspart das iOS-Strong-Password-Feld am Screen.
+//
+// Passwort-Wechsel dagegen bleibt re-auth-pflichtig (signInWithPassword
+// bestätigt, dass am Gerät wirklich diese Person sitzt); ReauthFailedError
+// zeigt die UI als falsches Passwort direkt am Feld.
 
-/** E-Mail ändern. Supabase schickt einen Bestätigungslink an die neue (und je
- *  nach Projekt-Setting auch alte) Adresse — die E-Mail wechselt erst nach dem
- *  Klick, nicht sofort. */
+/** E-Mail ändern. Supabase schickt einen Bestätigungslink an die alte UND neue
+ *  Adresse („Secure email change") — die E-Mail wechselt erst nach dem Klick,
+ *  nicht sofort. */
 export function useChangeEmail() {
   return useMutation({
-    mutationFn: async ({
-      email,
-      currentPassword,
-      newEmail,
-    }: {
-      email: string;
-      currentPassword: string;
-      newEmail: string;
-    }) => {
-      const { error: reauthError } = await supabase.auth.signInWithPassword({
-        email,
-        password: currentPassword,
-      });
-      if (reauthError) throw new ReauthFailedError();
-
+    mutationFn: async ({ newEmail }: { newEmail: string }) => {
       const { error } = await supabase.auth.updateUser({ email: newEmail });
       if (error) throw error;
     },
