@@ -49,26 +49,25 @@ function Header({
 }) {
   return (
     <View className="pb-3 pt-2">
-      {/* Titel „Who's climbing in [Munich]?" — FESTE Schriftgröße (auf „Munich" getrimmt,
-          bewusst NICHT dynamisch skaliert), Stadt + „?" inline auf einer Zeile; der
+      {/* Titel „Sessions in [Munich]" — FESTE Schriftgröße (auf „Munich" getrimmt,
+          bewusst NICHT dynamisch skaliert), Stadt inline auf einer Zeile; der
           Dropdown-Caret sitzt zentriert UNTER der Stadt. Stadt + Caret bilden den tappbaren
           Bereich → Bottom-Sheet (CitySwitcherSheet) auf Dashboard-Ebene. */}
       <View className="flex-row items-start">
-        <Text className="font-display-bold text-[24px] text-rock-900">
-          {"Who's climbing in "}
+        <Text className="font-display-bold text-[30px] leading-none text-rock-900">
+          {'Sessions in '}
         </Text>
         <Pressable
           onPress={onOpenCityMenu}
           hitSlop={8}
           className="items-center active:opacity-70">
-          <Text className="font-display-bold text-[24px] text-brand-600">
+          <Text className="font-display-bold text-[30px] leading-none text-brand-600">
             {cityName ?? 'your city'}
           </Text>
-          <View className="-mt-1">
-            <ChevronDown size={18} color={colors.brand[600]} strokeWidth={2.5} />
+          <View className="mt-0.5">
+            <ChevronDown size={20} color={colors.brand[600]} strokeWidth={2.5} />
           </View>
         </Pressable>
-        <Text className="font-display-bold text-[24px] text-rock-900">?</Text>
       </View>
 
       {/* Tag-Filter — immer sichtbar. */}
