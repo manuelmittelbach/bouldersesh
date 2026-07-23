@@ -1,5 +1,5 @@
 import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui';
-import { Home, MessageCircle, User } from 'lucide-react-native';
+import { Mountain, MessageCircle, User } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NavItem, navBarStyle } from '@/components/BottomNav';
@@ -15,7 +15,7 @@ export default function TabsLayout() {
       <TabSlot />
       <TabList style={navBarStyle(insets.bottom)}>
         <TabTrigger name="index" href="/" asChild>
-          <NavItem icon={Home} label="Home" />
+          <NavItem icon={Mountain} label="Sessions" />
         </TabTrigger>
         <TabTrigger name="chats" href="/chats" asChild>
           <NavItem icon={MessageCircle} label="Chats" />
