@@ -1,14 +1,31 @@
 import { router } from 'expo-router';
-import { MessageCircle } from 'lucide-react-native';
+import { MessageCircle, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, cn, formatChatTime, formatSessionTime } from '@/lib/utils';
-import { useMyChats, type ChatListItem } from '@/queries/chat';
+import { useHideChat, useMyChats, type ChatListItem } from '@/queries/chat';
 import { colors } from '@/theme/colors';
+
+// Wischt man eine Chat-Zeile nach links auf, kommt darunter diese rote Aktion zum
+// Vorschein. Tippen blendet den Chat aus (löscht ihn aus MEINER Liste, nicht für das
+// Gegenüber) — siehe useHideChat.
+function DeleteAction({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Delete chat"
+      className="w-24 items-center justify-center bg-danger active:opacity-90">
+      <Trash2 size={22} color={colors.rock[0]} strokeWidth={2} />
+      <Text className="mt-1 font-sans-medium text-xs text-rock-0">Delete</Text>
+    </Pressable>
+  );
+}
 
 function ChatRow({ chat }: { chat: ChatListItem }) {
   const name =
@@ -20,7 +37,9 @@ function ChatRow({ chat }: { chat: ChatListItem }) {
   return (
     <Pressable
       onPress={() => router.push(`/chats/${chat.id}`)}
-      className="flex-row items-center gap-3 px-5 py-3 active:bg-rock-50">
+      // Deckende Fläche (bg-rock-25 = Seitenhintergrund): sonst schimmert beim Wischen
+      // die rote Delete-Aktion durch die Zeile.
+      className="flex-row items-center gap-3 bg-rock-25 px-5 py-3 active:bg-rock-50">
       <Avatar
         name={name}
         tone={avatarTone(chat.other?.id ?? name)}
@@ -65,6 +84,7 @@ function ChatRow({ chat }: { chat: ChatListItem }) {
 
 export default function ChatList() {
   const { data: chats, isLoading, error, refetch } = useMyChats();
+  const hide = useHideChat();
   const [refreshing, setRefreshing] = useState(false);
   async function onRefresh() {
     setRefreshing(true);
@@ -98,7 +118,17 @@ export default function ChatList() {
           onRefresh={onRefresh}
           refreshing={refreshing}
           ItemSeparatorComponent={() => <View className="ml-[76px] h-px bg-rock-100" />}
-          renderItem={({ item }) => <ChatRow chat={item} />}
+          renderItem={({ item }) => (
+            <ReanimatedSwipeable
+              friction={2}
+              rightThreshold={40}
+              overshootRight={false}
+              renderRightActions={() => (
+                <DeleteAction onPress={() => hide.mutate(item.id)} />
+              )}>
+              <ChatRow chat={item} />
+            </ReanimatedSwipeable>
+          )}
           ListEmptyComponent={
             <View className="items-center px-6 py-16">
               <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-brand-50">

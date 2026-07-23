@@ -164,12 +164,14 @@ export interface Database {
           user_id: string;
           joined_at: string;
           last_read_at: string | null;
+          hidden_at: string | null;
         };
         Insert: {
           chat_id: string;
           user_id: string;
           joined_at?: string;
           last_read_at?: string | null;
+          hidden_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["chat_members"]["Insert"]>;
         Relationships: [];

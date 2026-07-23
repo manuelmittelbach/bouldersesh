@@ -158,10 +158,10 @@ export type ChatListItem = {
 };
 
 async function getMyChats(userId: string): Promise<ChatListItem[]> {
-  // 1. Which chats am I in, and when did I last read them?
+  // 1. Which chats am I in, when did I last read them, und habe ich sie ausgeblendet?
   const { data: memberships, error: mErr } = await supabase
     .from("chat_members")
-    .select("chat_id, last_read_at")
+    .select("chat_id, last_read_at, hidden_at")
     .eq("user_id", userId);
   if (mErr) throw mErr;
 
@@ -169,6 +169,7 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
   const chatIds = rows.map((r) => r.chat_id);
   if (chatIds.length === 0) return [];
   const lastReadByChat = new Map(rows.map((r) => [r.chat_id, r.last_read_at]));
+  const hiddenByChat = new Map(rows.map((r) => [r.chat_id, r.hidden_at]));
 
   // 2. The chats with the other member's profile and the session context.
   //    RLS lets a member read every chat_members row of chats they belong to,
@@ -239,7 +240,14 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
     return tb.localeCompare(ta);
   });
 
-  return items;
+  // Ausgeblendete Chats raushalten — aber nur, solange keine NEUE Nachricht seit
+  // dem Ausblenden kam. Trifft eine Nachricht ein (sent_at > hidden_at), ist der
+  // Chat wieder relevant und taucht von selbst auf.
+  return items.filter((it) => {
+    const hiddenAt = hiddenByChat.get(it.id) ?? null;
+    if (!hiddenAt) return true;
+    return !!it.lastMessage && it.lastMessage.sent_at > hiddenAt;
+  });
 }
 
 export function useMyChats() {
@@ -286,6 +294,46 @@ export function useMyChats() {
   }, [userId, queryClient]);
 
   return query;
+}
+
+/**
+ * Einen Chat für mich ausblenden ("löschen" aus Nutzersicht): setzt hidden_at auf
+ * meiner eigenen chat_members-Zeile. Der Chat, das Gegenüber und alle Nachrichten
+ * bleiben; getMyChats filtert ihn nur weg, bis eine neue Nachricht kommt. Optimistisch
+ * aus der Liste entfernt, damit die Zeile sofort verschwindet.
+ */
+export function useHideChat() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  return useMutation({
+    mutationFn: async (chatId: string) => {
+      if (!userId) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("chat_members")
+        .update({ hidden_at: new Date().toISOString() })
+        .eq("chat_id", chatId)
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onMutate: async (chatId) => {
+      if (!userId) return;
+      const key = CHATS_LIST_KEY(userId);
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<ChatListItem[]>(key);
+      queryClient.setQueryData<ChatListItem[]>(key, (list = []) =>
+        list.filter((c) => c.id !== chatId),
+      );
+      return { prev, key };
+    },
+    onError: (_err, _chatId, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(ctx.key, ctx.prev);
+    },
+    onSettled: () => {
+      if (userId) queryClient.invalidateQueries({ queryKey: CHATS_LIST_KEY(userId) });
+    },
+  });
 }
 
 /** The chat that belongs to a session (created when a request was accepted). */
