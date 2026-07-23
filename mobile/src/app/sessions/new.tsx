@@ -1,7 +1,7 @@
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronDown, Clock, Send, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -38,6 +38,10 @@ function Eyebrow({ children }: { children: string }) {
 
 export default function SessionCreate() {
   const insets = useSafeAreaInsets();
+  // Das Notizfeld ist das letzte im Formular. Fokussiert man es, verdeckt die Tastatur
+  // es sonst — deshalb ans Ende scrollen, sobald sie aufgeht (kurzer Delay, damit das
+  // KeyboardAvoidingView-Padding schon steht).
+  const scrollRef = useRef<ScrollView>(null);
   // Optionale Vorauswahl-Params aus dem Feed:
   //  - `date` ("YYYY-MM-DD", passend zum Chip-Fenster unten). Fehlt/passt er nicht ins
   //    7-Tage-Fenster, bleibt es bei Today.
@@ -188,6 +192,7 @@ export default function SessionCreate() {
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
+          ref={scrollRef}
           className="flex-1"
           contentContainerClassName="px-5 pt-2"
           contentContainerStyle={{ paddingBottom: 32 }}
@@ -298,6 +303,7 @@ export default function SessionCreate() {
             label="What are you climbing?"
             value={note}
             onChangeText={setNote}
+            onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
             multiline
             maxLength={280}
             placeholder="e.g. “trying to crack some reds”"
