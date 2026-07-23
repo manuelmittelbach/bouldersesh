@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
-import { Check, MapPin, X } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import { useEffect, useRef } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CityOptionList } from '@/components/CityOptionList';
 import { IconButton } from '@/components/ui';
 import { useActiveCity } from '@/hooks/useActiveCity';
 import { useCities, useOpenSessionCountsByCity } from '@/queries/cities';
@@ -69,45 +70,7 @@ export default function CityPicker() {
         ) : !cities || cities.length === 0 ? (
           <Text className="py-2 font-sans text-sm text-rock-500">No cities available yet.</Text>
         ) : (
-          <View className="gap-2">
-            {cities.map((city) => {
-              const active = cityId === city.id;
-              const count = counts?.[city.id] ?? 0;
-              return (
-                <Pressable
-                  key={city.id}
-                  onPress={() => pick(city.id)}
-                  className={
-                    'flex-row items-center gap-3 rounded-md border px-4 py-3.5 active:scale-[0.99] ' +
-                    (active ? 'border-brand-500 bg-brand-50' : 'border-rock-200 bg-rock-0')
-                  }>
-                  <MapPin
-                    size={18}
-                    color={active ? colors.brand[600] : colors.rock[400]}
-                    strokeWidth={2}
-                  />
-                  <View className="min-w-0 flex-1">
-                    <Text
-                      numberOfLines={1}
-                      className={
-                        'font-sans-semibold text-[15px] ' +
-                        (active ? 'text-brand-700' : 'text-rock-900')
-                      }>
-                      {city.name}
-                    </Text>
-                    {/* Solange `counts` lädt, gar keine Zeile — lieber nichts sagen
-                        als „0 open sessions" behaupten. */}
-                    {counts ? (
-                      <Text className="mt-0.5 font-sans text-[13px] text-rock-500">
-                        {count === 1 ? '1 open session' : `${count} open sessions`}
-                      </Text>
-                    ) : null}
-                  </View>
-                  {active ? <Check size={18} color={colors.brand[600]} strokeWidth={2.5} /> : null}
-                </Pressable>
-              );
-            })}
-          </View>
+          <CityOptionList cities={cities} counts={counts} activeId={cityId} onPick={pick} />
         )}
       </ScrollView>
     </SafeAreaView>

@@ -1,6 +1,7 @@
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Check, Send, X } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { Check, Clock, Send, X } from 'lucide-react-native';
+import { useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -12,18 +13,19 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { DateFilter } from '@/components/DateFilter';
 import { Button, Chip, IconButton, Input } from '@/components/ui';
 import { useActiveCity } from '@/hooks/useActiveCity';
-import { formatDateShort, startOfDay, toDateKey } from '@/lib/utils';
+import { startOfDay, toDateKey } from '@/lib/utils';
 import { useCities } from '@/queries/cities';
 import { useCreateSession } from '@/queries/sessions';
 import { GYM_ACCESS_LABEL, useGyms } from '@/queries/gyms';
 import { colors } from '@/theme/colors';
 
-// Zeitfenster als Chips statt nativem Date/Time-Picker (kein community/datetimepicker →
-// kein native Rebuild, siehe Handoff §6). Halbe-Stunden-Auflösung wäre zu viel; volle
-// Stunden von 7–22 decken Hallenöffnungszeiten ab.
-const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); // 7 … 22
+// Uhrzeit über den nativen Time-Picker (@react-native-community/datetimepicker): iOS zeigt
+// das native Spinner-Rad inline, Android den nativen Uhr-Dialog. 15-Minuten-Raster deckt
+// Hallen-Startzeiten ab, ohne minutengenaue Übergenauigkeit.
+const TIME_MINUTE_INTERVAL = 15;
 
 function Eyebrow({ children }: { children: string }) {
   return (
@@ -35,10 +37,13 @@ function Eyebrow({ children }: { children: string }) {
 
 export default function SessionCreate() {
   const insets = useSafeAreaInsets();
-  // Optionaler Tag-Vorauswahl-Param (z. B. aus dem „Erste Session anlegen"-CTA eines
-  // leeren Feed-Tags). "YYYY-MM-DD", passend zum Chip-Fenster unten. Fehlt/passt er
-  // nicht ins 7-Tage-Fenster, bleibt es bei Today.
-  const params = useLocalSearchParams<{ date?: string }>();
+  // Optionale Vorauswahl-Params aus dem Feed:
+  //  - `date` ("YYYY-MM-DD", passend zum Chip-Fenster unten). Fehlt/passt er nicht ins
+  //    7-Tage-Fenster, bleibt es bei Today.
+  //  - `gym` (Hallen-ID). Kommt aus dem aktiven Hallen-Filter des Feeds — die Halle liegt
+  //    darum in der aktiven Stadt, die hier auch als cityId vorbelegt ist, also stimmig.
+  //    Wird die Stadt im Formular gewechselt, setzt selectCity die Halle zurück.
+  const params = useLocalSearchParams<{ date?: string; gym?: string }>();
   const { cityId: activeCityId, setActiveCity } = useActiveCity();
   const { data: cities } = useCities();
   const createSession = useCreateSession();
@@ -48,7 +53,9 @@ export default function SessionCreate() {
   // Der Screen ist nur erreichbar, wenn eine aktive Stadt steht (Gate im RootNavigator) —
   // der Initialwert ist also nie null.
   const [cityId, setCityId] = useState<string | null>(activeCityId);
-  const [gymId, setGymId] = useState<string | null>(null);
+  const [gymId, setGymId] = useState<string | null>(
+    typeof params.gym === 'string' ? params.gym : null,
+  );
 
   const { data: gyms, isLoading: gymsLoading, error: gymsError } = useGyms(cityId);
 
@@ -58,37 +65,45 @@ export default function SessionCreate() {
     // Die bisherige Halle liegt in der alten Stadt — Auswahl zurücksetzen.
     setGymId(null);
   }
-  const [dayIdx, setDayIdx] = useState(() => {
+  // Gewählter Tag als Date (Mitternacht-Anker). Optional aus params.date vorbelegt, sofern
+  // er ins 7-Tage-Fenster (heute..heute+6) fällt — sonst Today. Auswahl-UI ist dieselbe
+  // geteilte DateFilter wie im Home-Feed.
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const raw = typeof params.date === 'string' ? params.date : null;
-    if (!raw) return 0;
     const base = startOfDay(new Date());
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(base);
-      d.setDate(base.getDate() + i);
-      if (toDateKey(d) === raw) return i;
+    if (raw) {
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(base);
+        d.setDate(base.getDate() + i);
+        if (toDateKey(d) === raw) return d;
+      }
     }
-    return 0;
+    return base;
   });
-  const [hour, setHour] = useState(18);
+  // Uhrzeit als Date (nur H/M relevant), Default 18:00. Wird beim Submit mit selectedDate
+  // (Tag) zu einem vollen Zeitstempel zusammengesetzt.
+  const [time, setTime] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(18, 0, 0, 0);
+    return d;
+  });
+  // Auf iOS ist der Spinner ein Inline-Element, das wir per Tap ein-/ausklappen; auf Android
+  // ist es ein Dialog, der nur bei true kurz erscheint und sich selbst wieder schließt.
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  // Die nächsten 7 Tage als Chip-Auswahl (Mitternacht-Anker, Uhrzeit kommt aus HOURS).
-  const days = useMemo(() => {
-    const base = new Date();
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(base);
-      d.setDate(base.getDate() + i);
-      d.setHours(0, 0, 0, 0);
-      return d;
-    });
-  }, []);
-
-  function dayLabel(i: number): string {
-    if (i === 0) return 'Today';
-    if (i === 1) return 'Tomorrow';
-    return formatDateShort(days[i]);
+  function onChangeTime(event: DateTimePickerEvent, picked?: Date) {
+    // Android-Dialog schließt sich nach der Wahl selbst; iOS-Spinner bleibt offen.
+    if (Platform.OS !== 'ios') setShowTimePicker(false);
+    if (event.type === 'dismissed') return;
+    if (picked) setTime(picked);
   }
+
+  const clockLabel = `${time.getHours().toString().padStart(2, '0')}:${time
+    .getMinutes()
+    .toString()
+    .padStart(2, '0')}`;
 
   /**
    * Eine Session in einer anderen als der aktiven Stadt wechselt den Kontext NICHT
@@ -132,8 +147,8 @@ export default function SessionCreate() {
       setError('Please pick a gym.');
       return;
     }
-    const dt = new Date(days[dayIdx]);
-    dt.setHours(hour, 0, 0, 0);
+    const dt = new Date(selectedDate);
+    dt.setHours(time.getHours(), time.getMinutes(), 0, 0);
     if (dt.getTime() < Date.now()) {
       setError('That time is in the past — pick a later one.');
       return;
@@ -236,34 +251,45 @@ export default function SessionCreate() {
             </View>
           </View>
 
-          {/* Wann — Tag */}
+          {/* Wann — Tag. Gleiche DateFilter wie im Home-Feed (Today/Tomorrow + Kalender). */}
           <View className="mb-5">
             <Eyebrow>When</Eyebrow>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerClassName="gap-2 pr-4">
-              {days.map((_, i) => (
-                <Chip key={i} active={dayIdx === i} onPress={() => setDayIdx(i)}>
-                  {dayLabel(i)}
-                </Chip>
-              ))}
-            </ScrollView>
+            <DateFilter selected={selectedDate} onSelect={setSelectedDate} />
           </View>
 
-          {/* Wann — Uhrzeit */}
+          {/* Wann — Uhrzeit (nativer Time-Picker). Zeile zeigt die gewählte Zeit und klappt
+              den nativen Picker auf: iOS-Spinner inline, Android-Uhr-Dialog. */}
           <View className="mb-6">
             <Eyebrow>Time</Eyebrow>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerClassName="gap-2 pr-4">
-              {HOURS.map((h) => (
-                <Chip key={h} active={hour === h} onPress={() => setHour(h)}>
-                  {`${h.toString().padStart(2, '0')}:00`}
-                </Chip>
-              ))}
-            </ScrollView>
+            <Pressable
+              onPress={() => setShowTimePicker((v) => !v)}
+              className={
+                'h-12 flex-row items-center justify-between rounded-md border px-4 active:scale-[0.99] ' +
+                (showTimePicker ? 'border-brand-500 bg-brand-50' : 'border-rock-200 bg-rock-0')
+              }>
+              <Text
+                className={
+                  'font-sans-medium text-[15px] ' +
+                  (showTimePicker ? 'text-brand-700' : 'text-rock-900')
+                }>
+                {clockLabel}
+              </Text>
+              <Clock
+                size={18}
+                color={showTimePicker ? colors.brand[600] : colors.rock[400]}
+                strokeWidth={2}
+              />
+            </Pressable>
+            {showTimePicker ? (
+              <DateTimePicker
+                value={time}
+                mode="time"
+                is24Hour
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                minuteInterval={TIME_MINUTE_INTERVAL}
+                onChange={onChangeTime}
+              />
+            ) : null}
           </View>
 
           {/* Notiz — trägt jetzt „was ich klettern will" und ist Pflicht: hallen-relativ
