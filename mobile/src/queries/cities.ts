@@ -30,12 +30,18 @@ export function useCities() {
  * column of its own (see ADR 0002) — so the count goes through the join. Only
  * `gym.city_id` is fetched, not the whole session row; tallying client-side saves a
  * dedicated view/RPC at this data volume.
+ *
+ * `starts_at >= now` mirrors the feed (`dayRange` fixes its `from` at now for today):
+ * a session whose start has passed can't be joined and never shows in the feed, so it
+ * must not inflate this count. Without it, a stale `open` session — one whose start
+ * time passed but whose status was never advanced — makes a dead city read as active.
  */
 async function getOpenSessionCountsByCity(): Promise<Record<string, number>> {
   const { data, error } = await supabase
     .from("sessions")
     .select("gym:gyms!inner ( city_id )")
-    .eq("status", "open");
+    .eq("status", "open")
+    .gte("starts_at", new Date().toISOString());
   if (error) throw error;
 
   const rows = (data ?? []) as unknown as { gym: { city_id: string } | null }[];
