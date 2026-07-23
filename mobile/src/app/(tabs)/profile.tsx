@@ -1,26 +1,22 @@
-import { router } from 'expo-router';
-import { Camera, ChevronRight, UserCog } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from "expo-router";
+import { Camera, ChevronRight, UserCog } from "lucide-react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { GalleryEditor } from '@/components/GalleryEditor';
-import { Avatar, Button, Chip, Input } from '@/components/ui';
-import { useAuth } from '@/hooks/useAuth';
-import { publicImageUrl } from '@/lib/images';
-import { avatarTone, SKILL_LABEL, SKILL_LEVELS } from '@/lib/utils';
-import { useRemoveAvatar, useSetAvatar, useUpdateProfile } from '@/queries/profiles';
-import type { SkillLevel } from '@/types/database';
-import { colors } from '@/theme/colors';
+import { GalleryEditor } from "@/components/GalleryEditor";
+import { Avatar, Button, Chip, Input } from "@/components/ui";
+import { useAuth } from "@/hooks/useAuth";
+import { publicImageUrl } from "@/lib/images";
+import { avatarTone, SKILL_LABEL, SKILL_LEVELS } from "@/lib/utils";
+import {
+  useRemoveAvatar,
+  useSetAvatar,
+  useUpdateProfile,
+} from "@/queries/profiles";
+import type { SkillLevel } from "@/types/database";
+import { colors } from "@/theme/colors";
 
 function Eyebrow({ children }: { children: string }) {
   return (
@@ -37,7 +33,7 @@ export default function Profile() {
   const removeAvatar = useRemoveAvatar();
 
   const [skill, setSkill] = useState<SkillLevel | null>(null);
-  const [bio, setBio] = useState('');
+  const [bio, setBio] = useState("");
 
   // Formularfelder EINMAL pro Profil-Identität aus dem geladenen Profil seeden. Nicht bei
   // jeder Daten-Änderung neu setzen — sonst würde ein Hintergrund-Refetch laufende (noch
@@ -47,11 +43,11 @@ export default function Profile() {
     if (!profile || seededFor.current === profile.id) return;
     seededFor.current = profile.id;
     setSkill(profile.skill_level);
-    setBio(profile.bio ?? '');
+    setBio(profile.bio ?? "");
   }, [profile]);
 
   const dirty =
-    !!profile && (skill !== profile.skill_level || bio !== (profile.bio ?? ''));
+    !!profile && (skill !== profile.skill_level || bio !== (profile.bio ?? ""));
 
   async function save() {
     if (!user || !dirty || update.isPending) return;
@@ -66,7 +62,7 @@ export default function Profile() {
 
   // Avatar-Initialen brauchen einen Namen, obwohl der Name hier nicht mehr
   // editierbar ist — aus dem geladenen Profil ableiten.
-  const name = profile?.display_name?.trim() || user?.email || 'Profile';
+  const name = profile?.display_name?.trim() || user?.email || "Profile";
 
   // Der Avatar wird sofort gespeichert, das Formular erst per Save-Button
   // (ADR-0003). Damit das nicht wie ein Bug wirkt, sagt der Screen es an beiden
@@ -80,130 +76,139 @@ export default function Profile() {
       setAvatar.mutate(profile);
       return;
     }
-    Alert.alert('Profile picture', undefined, [
-      { text: 'Choose a new one', onPress: () => setAvatar.mutate(profile) },
+    Alert.alert("Profile picture", undefined, [
+      { text: "Choose a new one", onPress: () => setAvatar.mutate(profile) },
       {
-        text: 'Remove',
-        style: 'destructive',
+        text: "Remove",
+        style: "destructive",
         onPress: () => removeAvatar.mutate(profile),
       },
-      { text: 'Cancel', style: 'cancel' },
+      { text: "Cancel", style: "cancel" },
     ]);
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
-      <KeyboardAvoidingView
+    <SafeAreaView className="flex-1 bg-rock-25" edges={["top"]}>
+      <KeyboardAwareScrollView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-5 pb-10"
-          keyboardShouldPersistTaps="handled">
-          <View className="pb-3 pt-2">
-            <Text className="font-display-bold text-[30px] leading-none text-rock-900">Profile</Text>
-          </View>
+        contentContainerClassName="px-5 pb-10"
+        bottomOffset={40}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View className="pb-3 pt-2">
+          <Text className="font-display-bold text-[30px] leading-none text-rock-900">
+            Profile
+          </Text>
+        </View>
 
-          {/* Kopf — nur noch der Avatar als visuelle Identität. Name, E-Mail und
+        {/* Kopf — nur noch der Avatar als visuelle Identität. Name, E-Mail und
               Skill-Badge sind raus; Name/E-Mail wohnen auf dem Account-Screen. */}
-          <View className="mt-4 items-center">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Change profile picture"
-              disabled={!profile || avatarBusy}
-              onPress={editAvatar}
-              className="active:scale-[0.98]">
-              <Avatar
-                name={name}
-                tone={avatarTone(user?.id ?? name)}
-                size="xl"
-                src={publicImageUrl(profile?.avatar_path)}
-              />
-              <View className="absolute -bottom-1 -right-1 h-8 w-8 items-center justify-center rounded-full border-2 border-rock-25 bg-rock-900">
-                {avatarBusy ? (
-                  <ActivityIndicator size="small" color={colors.rock[0]} />
-                ) : (
-                  <Camera size={15} color={colors.rock[0]} strokeWidth={2} />
-                )}
-              </View>
-            </Pressable>
-            <Text className="mt-2 font-sans text-[13px] text-rock-400">
-              Tap to change — saves right away
-            </Text>
-            {avatarError ? (
-              <Text className="mt-1 text-center font-sans text-sm text-danger">
-                {avatarError.message}
-              </Text>
-            ) : null}
-          </View>
-
-          {/* Galerie — wie der Avatar sofort gespeichert, deshalb oberhalb des
-              Formulars und optisch von ihm getrennt. */}
-          {profile ? (
-            <View className="mt-8">
-              <Eyebrow>Photos</Eyebrow>
-              <GalleryEditor profile={profile} />
-            </View>
-          ) : null}
-
-          {/* Editierbar — ab hier zählt der Save-Button. */}
-          <View className="mt-8 border-t border-rock-100 pt-8 gap-6">
-            <View>
-              <Eyebrow>Skill level</Eyebrow>
-              <View className="flex-row flex-wrap gap-2">
-                {SKILL_LEVELS.map((lvl) => (
-                  <Chip key={lvl} active={skill === lvl} onPress={() => setSkill(lvl)}>
-                    {SKILL_LABEL[lvl]}
-                  </Chip>
-                ))}
-              </View>
-            </View>
-
-            <Input
-              label="Bio (optional)"
-              value={bio}
-              onChangeText={setBio}
-              multiline
-              maxLength={280}
-              placeholder="A line or two about you and your climbing."
-            />
-
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              disabled={!dirty}
-              loading={update.isPending}
-              onPress={save}>
-              Save
-            </Button>
-
-            {update.isError ? (
-              <Text className="-mt-3 text-center font-sans text-sm text-danger">
-                {(update.error as Error).message}
-              </Text>
-            ) : null}
-          </View>
-
-          {/* Persönliche Daten — Name, E-Mail, Passwort, Abmelden, Löschen. Ein
-              eigener Screen, damit der Tab bei der Kletter-Identität bleibt. */}
+        <View className="mt-4 items-center">
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push('/account')}
-            className="mt-8 flex-row items-center gap-3 rounded-lg border border-rock-100 bg-rock-0 px-4 py-4 active:opacity-70">
-            <View className="h-9 w-9 items-center justify-center rounded-full bg-rock-100">
-              <UserCog size={18} color={colors.rock[700]} strokeWidth={2} />
+            accessibilityLabel="Change profile picture"
+            disabled={!profile || avatarBusy}
+            onPress={editAvatar}
+            className="active:scale-[0.98]"
+          >
+            <Avatar
+              name={name}
+              tone={avatarTone(user?.id ?? name)}
+              size="xl"
+              src={publicImageUrl(profile?.avatar_path)}
+            />
+            <View className="absolute -bottom-1 -right-1 h-8 w-8 items-center justify-center rounded-full border-2 border-rock-25 bg-rock-900">
+              {avatarBusy ? (
+                <ActivityIndicator size="small" color={colors.rock[0]} />
+              ) : (
+                <Camera size={15} color={colors.rock[0]} strokeWidth={2} />
+              )}
             </View>
-            <View className="flex-1">
-              <Text className="font-sans-semibold text-[15px] text-rock-900">Account</Text>
-              <Text className="font-sans text-[13px] text-rock-400">
-                Name, email, password
-              </Text>
-            </View>
-            <ChevronRight size={20} color={colors.rock[400]} strokeWidth={2} />
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <Text className="mt-2 font-sans text-[13px] text-rock-400">
+            Tap to change — saves right away
+          </Text>
+          {avatarError ? (
+            <Text className="mt-1 text-center font-sans text-sm text-danger">
+              {avatarError.message}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* Galerie — wie der Avatar sofort gespeichert, deshalb oberhalb des
+              Formulars und optisch von ihm getrennt. */}
+        {profile ? (
+          <View className="mt-8">
+            <Eyebrow>Photos</Eyebrow>
+            <GalleryEditor profile={profile} />
+          </View>
+        ) : null}
+
+        {/* Editierbar — ab hier zählt der Save-Button. */}
+        <View className="mt-8 border-t border-rock-100 pt-8 gap-6">
+          <View>
+            <Eyebrow>Skill level</Eyebrow>
+            <View className="flex-row flex-wrap gap-2">
+              {SKILL_LEVELS.map((lvl) => (
+                <Chip
+                  key={lvl}
+                  active={skill === lvl}
+                  onPress={() => setSkill(lvl)}
+                >
+                  {SKILL_LABEL[lvl]}
+                </Chip>
+              ))}
+            </View>
+          </View>
+
+          <Input
+            label="Bio (optional)"
+            value={bio}
+            onChangeText={setBio}
+            multiline
+            maxLength={280}
+            placeholder="A line or two about you and your climbing."
+          />
+
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            disabled={!dirty}
+            loading={update.isPending}
+            onPress={save}
+          >
+            Save
+          </Button>
+
+          {update.isError ? (
+            <Text className="-mt-3 text-center font-sans text-sm text-danger">
+              {(update.error as Error).message}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* Persönliche Daten — Name, E-Mail, Passwort, Abmelden, Löschen. Ein
+              eigener Screen, damit der Tab bei der Kletter-Identität bleibt. */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push("/account")}
+          className="mt-8 flex-row items-center gap-3 rounded-lg border border-rock-100 bg-rock-0 px-4 py-4 active:opacity-70"
+        >
+          <View className="h-9 w-9 items-center justify-center rounded-full bg-rock-100">
+            <UserCog size={18} color={colors.rock[700]} strokeWidth={2} />
+          </View>
+          <View className="flex-1">
+            <Text className="font-sans-semibold text-[15px] text-rock-900">
+              Account
+            </Text>
+            <Text className="font-sans text-[13px] text-rock-400">
+              Name, email, password
+            </Text>
+          </View>
+          <ChevronRight size={20} color={colors.rock[400]} strokeWidth={2} />
+        </Pressable>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
