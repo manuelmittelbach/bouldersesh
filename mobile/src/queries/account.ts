@@ -16,6 +16,62 @@ export class ReauthFailedError extends Error {
   }
 }
 
+// E-Mail und Passwort leben in Supabase Auth, nicht in `profiles`. Beide sind
+// sicherheitsrelevant, deshalb geht ihnen — wie beim Löschen — eine erneute
+// Passworteingabe voraus (signInWithPassword bestätigt, dass am Gerät wirklich
+// diese Person sitzt). ReauthFailedError wird wiederverwendet, damit die UI ein
+// falsches Passwort am Feld zeigen kann statt als allgemeinen Serverfehler.
+
+/** E-Mail ändern. Supabase schickt einen Bestätigungslink an die neue (und je
+ *  nach Projekt-Setting auch alte) Adresse — die E-Mail wechselt erst nach dem
+ *  Klick, nicht sofort. */
+export function useChangeEmail() {
+  return useMutation({
+    mutationFn: async ({
+      email,
+      currentPassword,
+      newEmail,
+    }: {
+      email: string;
+      currentPassword: string;
+      newEmail: string;
+    }) => {
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword,
+      });
+      if (reauthError) throw new ReauthFailedError();
+
+      const { error } = await supabase.auth.updateUser({ email: newEmail });
+      if (error) throw error;
+    },
+  });
+}
+
+/** Passwort ändern. Wirkt sofort — die aktuelle Session bleibt gültig. */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: async ({
+      email,
+      currentPassword,
+      newPassword,
+    }: {
+      email: string;
+      currentPassword: string;
+      newPassword: string;
+    }) => {
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword,
+      });
+      if (reauthError) throw new ReauthFailedError();
+
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+    },
+  });
+}
+
 export function useDeleteAccount() {
   return useMutation({
     mutationFn: async ({

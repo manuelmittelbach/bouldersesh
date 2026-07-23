@@ -80,12 +80,6 @@ export function GalleryEditor({ profile }: Props) {
         )}
       </View>
 
-      <Text className="mt-2 font-sans text-[13px] text-rock-400">
-        {full
-          ? `That's the maximum of ${MAX_GALLERY_PHOTOS} photos.`
-          : `Up to ${MAX_GALLERY_PHOTOS} photos. Only people who open your profile see these.`}
-      </Text>
-
       {error ? (
         <Text className="mt-1 font-sans text-sm text-danger">{error.message}</Text>
       ) : null}
