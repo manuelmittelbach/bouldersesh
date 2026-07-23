@@ -1,30 +1,31 @@
 // Subpath-Imports statt Barrel (@expo-google-fonts/inter): Metro macht kein
 // Tree-Shaking, ein Barrel-Import würde ALLE Gewichte ins Bundle ziehen. Der Subpath
 // zieht nur genau dieses eine Gewicht.
-import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
-import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
-import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
-import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
-import { JetBrainsMono_500Medium } from '@expo-google-fonts/jetbrains-mono/500Medium';
-import { JetBrainsMono_600SemiBold } from '@expo-google-fonts/jetbrains-mono/600SemiBold';
-import { JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono/700Bold';
-import { SpaceGrotesk_500Medium } from '@expo-google-fonts/space-grotesk/500Medium';
-import { SpaceGrotesk_600SemiBold } from '@expo-google-fonts/space-grotesk/600SemiBold';
-import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk/700Bold';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Inter_400Regular } from "@expo-google-fonts/inter/400Regular";
+import { Inter_500Medium } from "@expo-google-fonts/inter/500Medium";
+import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
+import { Inter_700Bold } from "@expo-google-fonts/inter/700Bold";
+import { JetBrainsMono_500Medium } from "@expo-google-fonts/jetbrains-mono/500Medium";
+import { JetBrainsMono_600SemiBold } from "@expo-google-fonts/jetbrains-mono/600SemiBold";
+import { JetBrainsMono_700Bold } from "@expo-google-fonts/jetbrains-mono/700Bold";
+import { SpaceGrotesk_500Medium } from "@expo-google-fonts/space-grotesk/500Medium";
+import { SpaceGrotesk_600SemiBold } from "@expo-google-fonts/space-grotesk/600SemiBold";
+import { SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk/700Bold";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { useFonts } from "expo-font";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { useActiveCity } from '@/hooks/useActiveCity';
-import { useAuth } from '@/hooks/useAuth';
-import { queryClient } from '@/lib/queryClient';
+import { useActiveCity } from "@/hooks/useActiveCity";
+import { useAuth } from "@/hooks/useAuth";
+import { queryClient } from "@/lib/queryClient";
 
-import '../global.css';
+import "../global.css";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -95,12 +96,14 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <RootNavigator />
-          <StatusBar style="dark" />
-        </QueryClientProvider>
-      </SafeAreaProvider>
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          <QueryClientProvider client={queryClient}>
+            <RootNavigator />
+            <StatusBar style="dark" />
+          </QueryClientProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }
