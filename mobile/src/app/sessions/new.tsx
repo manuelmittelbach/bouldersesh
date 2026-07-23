@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Check, Send, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import {
@@ -14,7 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Button, Chip, IconButton, Input } from '@/components/ui';
 import { useActiveCity } from '@/hooks/useActiveCity';
-import { formatDateShort } from '@/lib/utils';
+import { formatDateShort, startOfDay, toDateKey } from '@/lib/utils';
 import { useCities } from '@/queries/cities';
 import { useCreateSession } from '@/queries/sessions';
 import { GYM_ACCESS_LABEL, useGyms } from '@/queries/gyms';
@@ -35,6 +35,10 @@ function Eyebrow({ children }: { children: string }) {
 
 export default function SessionCreate() {
   const insets = useSafeAreaInsets();
+  // Optionaler Tag-Vorauswahl-Param (z. B. aus dem „Erste Session anlegen"-CTA eines
+  // leeren Feed-Tags). "YYYY-MM-DD", passend zum Chip-Fenster unten. Fehlt/passt er
+  // nicht ins 7-Tage-Fenster, bleibt es bei Today.
+  const params = useLocalSearchParams<{ date?: string }>();
   const { cityId: activeCityId, setActiveCity } = useActiveCity();
   const { data: cities } = useCities();
   const createSession = useCreateSession();
@@ -54,7 +58,17 @@ export default function SessionCreate() {
     // Die bisherige Halle liegt in der alten Stadt — Auswahl zurücksetzen.
     setGymId(null);
   }
-  const [dayIdx, setDayIdx] = useState(0);
+  const [dayIdx, setDayIdx] = useState(() => {
+    const raw = typeof params.date === 'string' ? params.date : null;
+    if (!raw) return 0;
+    const base = startOfDay(new Date());
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      if (toDateKey(d) === raw) return i;
+    }
+    return 0;
+  });
   const [hour, setHour] = useState(18);
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);

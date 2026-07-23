@@ -22,6 +22,49 @@ export function formatDateShort(d: Date): string {
   return `${WEEKDAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
 }
 
+/** "Sat 25" — kompaktes Wochentag+Tag-Label für den dynamischen Datum-Chip. */
+export function formatDayChip(d: Date): string {
+  return `${WEEKDAYS[d.getDay()]} ${d.getDate()}`;
+}
+
+/** Lokaler Kalendertag als "YYYY-MM-DD" — Schlüssel für react-native-calendars und
+ *  den Vorauswahl-Param des Create-Flows. Bewusst lokal (kein toISOString, das UTC nimmt). */
+export function toDateKey(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+  const dd = d.getDate().toString().padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/** Kopie von `d` auf 00:00:00.000 desselben Kalendertags (lokale Zone). */
+export function startOfDay(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+/** Kopie von `d` auf 23:59:59.999 desselben Kalendertags (lokale Zone). */
+export function endOfDay(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+
+/**
+ * Tages-Zeitfenster für den Feed-Filter als ISO-Strings. `toISOString()` schreibt den
+ * korrekten UTC-Offset, deshalb rechnen wir die Grenzen in lokaler Gerätezeit.
+ *
+ * Ist `date` heute, beginnt das Fenster JETZT statt um Mitternacht — vergangene
+ * Sessions von heute sollen aus dem Feed fallen (man kann bei ihnen nicht mehr
+ * mitklettern). An allen anderen Tagen umspannt es den ganzen Kalendertag.
+ */
+export function dayRange(date: Date): { from: string; to: string } {
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const from = isToday ? now : startOfDay(date);
+  return { from: from.toISOString(), to: endOfDay(date).toISOString() };
+}
+
 /** "HH:MM" — reine Uhrzeit aus einem UTC-Timestamp (lokale Zone). */
 export function formatClock(iso: string): string {
   const d = new Date(iso);
@@ -44,19 +87,26 @@ export function formatChatTime(iso: string): string {
   return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
 }
 
-/** UTC-Timestamp in ein kurzes Label formatieren, z. B. "Today · 18:00". */
-export function formatSessionTime(starts_at: string): string {
+/**
+ * UTC-Timestamp in ein kurzes Label formatieren, z. B. "Today · 18:00".
+ *
+ * `withDay: false` lässt den Tages-Präfix weg und gibt nur die Uhrzeit zurück — für den
+ * Feed, der ohnehin auf genau einen Tag gefiltert ist (der Tag steht schon im Header).
+ */
+export function formatSessionTime(starts_at: string, opts: { withDay?: boolean } = {}): string {
+  const { withDay = true } = opts;
   const d = new Date(starts_at);
+  const hh = d.getHours().toString().padStart(2, '0');
+  const mm = d.getMinutes().toString().padStart(2, '0');
+  const time = `${hh}:${mm}`;
+  if (!withDay) return time;
+
   const today = new Date();
   const isToday = d.toDateString() === today.toDateString();
 
   const tomorrow = new Date();
   tomorrow.setDate(today.getDate() + 1);
   const isTomorrow = d.toDateString() === tomorrow.toDateString();
-
-  const hh = d.getHours().toString().padStart(2, '0');
-  const mm = d.getMinutes().toString().padStart(2, '0');
-  const time = `${hh}:${mm}`;
 
   if (isToday) return `Today · ${time}`;
   if (isTomorrow) return `Tomorrow · ${time}`;
