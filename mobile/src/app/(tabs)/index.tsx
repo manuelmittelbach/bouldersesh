@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
-import { Calendar as CalendarIcon, Mountain, Plus } from 'lucide-react-native';
+import { ChevronDown, Mountain, Plus } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { Calendar } from 'react-native-calendars';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CitySwitcherSheet } from '@/components/CitySwitcherSheet';
+import { DateFilter } from '@/components/DateFilter';
 import { SessionCard } from '@/components/SessionCard';
-import { Button, Chip, IconButton } from '@/components/ui';
+import { Button, Chip } from '@/components/ui';
 import { useActiveCity } from '@/hooks/useActiveCity';
 import { publicImageUrl } from '@/lib/images';
 import {
@@ -29,105 +30,9 @@ import { colors } from '@/theme/colors';
 // Beide kombinieren (Tag UND Halle). Die Halle ist ein OPTIONALER Filter, keine zweite
 // Pflichtstufe — Entdeckung über Hallengrenzen hinweg ist gewollt (CONTEXT.md).
 
-// Der Datum-Filter: feste Chips für heute/morgen, plus ein Kalender für die restlichen
-// Tage des 7-Tage-Fensters (weiter kann keine Session liegen — der Create-Flow lässt nur
-// heute+6 zu). Wird ein ferner Tag gewählt, erscheint ein dynamischer dritter Chip.
-function DateFilter({ selected, onSelect }: { selected: Date; onSelect: (d: Date) => void }) {
-  const [calendarOpen, setCalendarOpen] = useState(false);
-
-  const today = startOfDay(new Date());
-  const tomorrow = startOfDay(new Date());
-  tomorrow.setDate(today.getDate() + 1);
-  const maxDate = startOfDay(new Date());
-  maxDate.setDate(today.getDate() + 6);
-
-  const isToday = selected.toDateString() === today.toDateString();
-  const isTomorrow = selected.toDateString() === tomorrow.toDateString();
-  const isFar = !isToday && !isTomorrow;
-
-  function pickFromCalendar(dateString: string) {
-    // dateString ist lokales "YYYY-MM-DD" — als lokale Mitternacht parsen (nicht new
-    // Date(str), das UTC annähme und die Zeitzone verschieben könnte).
-    const [y, m, d] = dateString.split('-').map(Number);
-    onSelect(new Date(y, m - 1, d));
-    setCalendarOpen(false);
-  }
-
-  return (
-    <>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerClassName="gap-2 pr-4"
-        className="mt-4">
-        <Chip active={isToday} onPress={() => onSelect(today)}>
-          Today
-        </Chip>
-        <Chip active={isTomorrow} onPress={() => onSelect(tomorrow)}>
-          Tomorrow
-        </Chip>
-        {isFar ? (
-          <Chip active onPress={() => setCalendarOpen(true)}>
-            {formatDayChip(selected)}
-          </Chip>
-        ) : null}
-        <Chip
-          active={false}
-          className="w-11 justify-center px-0"
-          onPress={() => setCalendarOpen(true)}
-          icon={
-            <CalendarIcon
-              size={17}
-              color={isFar ? colors.brand[600] : colors.rock[700]}
-              strokeWidth={2}
-            />
-          }
-        />
-      </ScrollView>
-
-      <Modal
-        visible={calendarOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setCalendarOpen(false)}>
-        <Pressable
-          className="flex-1 items-center justify-center bg-rock-950/40 px-6"
-          onPress={() => setCalendarOpen(false)}>
-          {/* Inneres Pressable fängt Taps ab, damit ein Klick auf den Kalender selbst
-              das Modal nicht schließt. */}
-          <Pressable className="w-full max-w-sm overflow-hidden rounded-2xl bg-rock-0 p-2">
-            <Calendar
-              minDate={toDateKey(today)}
-              maxDate={toDateKey(maxDate)}
-              current={toDateKey(selected)}
-              markedDates={{ [toDateKey(selected)]: { selected: true } }}
-              onDayPress={(day) => pickFromCalendar(day.dateString)}
-              disableAllTouchEventsForDisabledDays
-              hideExtraDays
-              firstDay={1}
-              theme={{
-                calendarBackground: colors.rock[0],
-                textSectionTitleColor: colors.rock[500],
-                monthTextColor: colors.rock[900],
-                dayTextColor: colors.rock[900],
-                textDisabledColor: colors.rock[300],
-                todayTextColor: colors.brand[600],
-                selectedDayBackgroundColor: colors.brand[500],
-                selectedDayTextColor: colors.rock[0],
-                arrowColor: colors.brand[600],
-                textDayFontWeight: '500',
-                textMonthFontWeight: '600',
-              }}
-            />
-          </Pressable>
-        </Pressable>
-      </Modal>
-    </>
-  );
-}
-
 function Header({
   cityName,
+  onOpenCityMenu,
   selectedDate,
   onSelectDate,
   gyms,
@@ -135,6 +40,7 @@ function Header({
   onSelectGym,
 }: {
   cityName: string | null;
+  onOpenCityMenu: () => void;
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
   gyms: GymWithCity[] | undefined;
@@ -143,19 +49,32 @@ function Header({
 }) {
   return (
     <View className="pb-3 pt-2">
-      <View className="flex-row items-center justify-end">
-        <Pressable onPress={() => router.push('/city')} hitSlop={8}>
-          <Text className="font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-brand-600">
-            Change city
+      {/* Titel „Who's climbing in [Munich]?" — FESTE Schriftgröße (auf „Munich" getrimmt,
+          bewusst NICHT dynamisch skaliert), Stadt + „?" inline auf einer Zeile; der
+          Dropdown-Caret sitzt zentriert UNTER der Stadt. Stadt + Caret bilden den tappbaren
+          Bereich → Bottom-Sheet (CitySwitcherSheet) auf Dashboard-Ebene. */}
+      <View className="flex-row items-start">
+        <Text className="font-display-bold text-[24px] text-rock-900">
+          {"Who's climbing in "}
+        </Text>
+        <Pressable
+          onPress={onOpenCityMenu}
+          hitSlop={8}
+          className="items-center active:opacity-70">
+          <Text className="font-display-bold text-[24px] text-brand-600">
+            {cityName ?? 'your city'}
           </Text>
+          <View className="-mt-1">
+            <ChevronDown size={18} color={colors.brand[600]} strokeWidth={2.5} />
+          </View>
         </Pressable>
+        <Text className="font-display-bold text-[24px] text-rock-900">?</Text>
       </View>
-      <Text className="mt-1 font-display-bold text-[30px] leading-none text-rock-900">
-        {cityName ? `Who's climbing in ${cityName}?` : "Who's climbing?"}
-      </Text>
 
       {/* Tag-Filter — immer sichtbar. */}
-      <DateFilter selected={selectedDate} onSelect={onSelectDate} />
+      <View className="mt-4">
+        <DateFilter selected={selectedDate} onSelect={onSelectDate} />
+      </View>
 
       {/* Hallen-Filter — nur zeigen, wenn es in der Stadt überhaupt etwas zu filtern gibt. */}
       {gyms && gyms.length > 1 ? (
@@ -195,13 +114,13 @@ function dayPhrase(selected: Date): string {
 function EmptyState({
   cityName,
   gymName,
+  gymId,
   selectedDate,
-  onClearGym,
 }: {
   cityName: string | null;
   gymName: string | null;
+  gymId: string | null;
   selectedDate: Date;
-  onClearGym: () => void;
 }) {
   const phrase = dayPhrase(selectedDate);
   return (
@@ -212,29 +131,18 @@ function EmptyState({
       <Text className="text-center font-display text-base text-rock-900">
         {gymName
           ? `No sessions at ${gymName} ${phrase}`
-          : `No one's climbing ${phrase}${cityName ? ` in ${cityName}` : ''} yet`}
+          : `No sessions ${phrase}${cityName ? ` in ${cityName}` : ''} yet`}
       </Text>
-      <Text className="mb-4 mt-1 text-center font-sans text-sm text-rock-500">
-        {gymName
-          ? `Other gyms${cityName ? ` in ${cityName}` : ''} might be busier.`
-          : 'Be the first to head to the wall.'}
-      </Text>
-      {gymName ? (
-        <Button variant="primary" onPress={onClearGym}>
-          Show all gyms
-        </Button>
-      ) : (
-        <Button
-          variant="primary"
-          icon={<Plus size={16} color={colors.rock[0]} strokeWidth={2.5} />}
-          onPress={() => router.push(`/sessions/new?date=${toDateKey(selectedDate)}`)}>
-          Create the first session
-        </Button>
-      )}
-      {/* Bewusst KEIN Anteasern von Sessions aus anderen Städten — nur das Angebot,
-          den Kontext selbst zu wechseln. */}
-      <Button variant="ghost" className="mt-2" onPress={() => router.push('/city')}>
-        Change city
+      <View className="mt-4" />
+      <Button
+        variant="primary"
+        icon={<Plus size={16} color={colors.rock[0]} strokeWidth={2.5} />}
+        onPress={() =>
+          router.push(
+            `/sessions/new?date=${toDateKey(selectedDate)}${gymId ? `&gym=${gymId}` : ''}`,
+          )
+        }>
+        Create the first session
       </Button>
     </View>
   );
@@ -293,6 +201,9 @@ export default function Dashboard() {
   // Eigener Pull-Zustand: der RefreshControl-Spinner soll NUR bei echtem Runterziehen
   // laufen, nicht bei jedem Hintergrund-Refetch (refetchOnMount).
   const [refreshing, setRefreshing] = useState(false);
+  // Der Stadt-Wechsler ist jetzt ein Bottom-Sheet auf Screen-Ebene, kein Route-Push mehr.
+  // State hier oben, damit ihn sowohl der Header-Dropdown als auch der Empty-State öffnen.
+  const [cityMenuOpen, setCityMenuOpen] = useState(false);
   async function onRefresh() {
     setRefreshing(true);
     try {
@@ -324,6 +235,7 @@ export default function Dashboard() {
           ListHeaderComponent={
             <Header
               cityName={cityName}
+              onOpenCityMenu={() => setCityMenuOpen(true)}
               selectedDate={selectedDate}
               onSelectDate={setSelectedDate}
               gyms={gyms}
@@ -335,8 +247,8 @@ export default function Dashboard() {
             <EmptyState
               cityName={cityName}
               gymName={gymName}
+              gymId={gymId}
               selectedDate={selectedDate}
-              onClearGym={() => setGymId(null)}
             />
           }
           renderItem={({ item }) => {
@@ -363,17 +275,25 @@ export default function Dashboard() {
         />
       )}
 
-      {/* FAB — der eine Brand-Glow pro View. */}
+      {/* FAB — der eine Brand-Glow pro View. Erweitert: Plus-Icon + Label „Create session"
+          als Pille (rounded-full). Der sichtbare Text ist zugleich der Accessibility-Name. */}
       <View className="absolute bottom-6 right-5">
-        <IconButton
-          variant="brand"
+        <Button
+          variant="primary"
           size="lg"
-          label="Create session"
-          className="h-14 w-14 shadow-brand"
-          onPress={() => router.push('/sessions/new')}>
-          <Plus size={26} color={colors.rock[0]} strokeWidth={2.5} />
-        </IconButton>
+          className="rounded-full shadow-brand"
+          icon={<Plus size={22} color={colors.rock[0]} strokeWidth={2.5} />}
+          onPress={() => router.push(`/sessions/new${gymId ? `?gym=${gymId}` : ''}`)}>
+          Create session
+        </Button>
       </View>
+
+      <CitySwitcherSheet
+        visible={cityMenuOpen}
+        activeId={cityId}
+        onSelect={setActiveCity}
+        onClose={() => setCityMenuOpen(false)}
+      />
     </SafeAreaView>
   );
 }
