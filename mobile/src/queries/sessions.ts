@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
 import type { Session } from "@/types/database";
@@ -67,6 +72,12 @@ export function useOpenSessions(params: OpenSessionsParams = {}) {
   return useQuery({
     queryKey: OPEN_SESSIONS_KEY(params),
     queryFn: () => getOpenSessions(params),
+    // Beim Wechsel von Halle/Tag ändert sich der QueryKey. Ohne dies würde ein noch
+    // nicht gecachter Key `data` kurz auf undefined setzen → `isLoading` true → der
+    // Feed samt Hallen-Filterleiste flackert als Voll-Screen-Spinner weg (und die
+    // horizontale Leiste springt beim Remount nach links). keepPreviousData hält die
+    // alten Daten sichtbar, bis die neuen da sind — sanfter Übergang statt Reload.
+    placeholderData: keepPreviousData,
   });
 }
 

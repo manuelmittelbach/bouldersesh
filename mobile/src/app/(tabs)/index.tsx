@@ -214,65 +214,70 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
-      {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={colors.brand[500]} />
-        </View>
-      ) : error ? (
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-center font-sans text-sm text-danger">
-            Couldn’t load: {(error as Error).message}
-          </Text>
-        </View>
-      ) : (
-        <FlatList<SessionWithMeta>
-          data={sessions ?? []}
-          keyExtractor={(s) => s.id}
-          onRefresh={onRefresh}
-          refreshing={refreshing}
-          contentContainerClassName="px-5 pb-8 gap-3"
-          ListHeaderComponent={
-            <Header
-              cityName={cityName}
-              onOpenCityMenu={() => setCityMenuOpen(true)}
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-              gyms={gyms}
-              gymId={gymId}
-              onSelectGym={setGymId}
-            />
-          }
-          ListEmptyComponent={
+      {/* Die Liste bleibt IMMER gemountet — auch beim Laden/Fehler. Sonst würde der
+          ListHeaderComponent (mit der horizontalen Hallen-Filterleiste) mit aus- und
+          neu eingehängt, wodurch die Leiste ihre Scrollposition verliert. Lade- und
+          Fehlerzustand leben deshalb im Listen-Body (ListEmptyComponent), nicht als
+          Voll-Screen-Ersatz. */}
+      <FlatList<SessionWithMeta>
+        data={sessions ?? []}
+        keyExtractor={(s) => s.id}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+        contentContainerClassName="px-5 pb-8 gap-3"
+        ListHeaderComponent={
+          <Header
+            cityName={cityName}
+            onOpenCityMenu={() => setCityMenuOpen(true)}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+            gyms={gyms}
+            gymId={gymId}
+            onSelectGym={setGymId}
+          />
+        }
+        ListEmptyComponent={
+          isLoading ? (
+            <View className="items-center justify-center py-24">
+              <ActivityIndicator color={colors.brand[500]} />
+            </View>
+          ) : error ? (
+            <View className="items-center justify-center px-6 py-24">
+              <Text className="text-center font-sans text-sm text-danger">
+                Couldn’t load: {(error as Error).message}
+              </Text>
+            </View>
+          ) : (
             <EmptyState
               cityName={cityName}
               gymName={gymName}
               gymId={gymId}
               selectedDate={selectedDate}
             />
-          }
-          renderItem={({ item }) => {
-            const name = item.creator?.display_name ?? 'Anonymous';
-            return (
-              <SessionCard
-                name={name}
-                avatarTone={avatarTone(item.creator?.id ?? name)}
-                avatarSrc={publicImageUrl(item.creator?.avatar_path)}
-                // Pill = Niveau der Ersteller:in (Merkmal der Person, nicht der Session).
-                // Kein Niveau gesetzt → skillLabel ist null → SessionCard zeigt kein Pill.
-                grade={skillLabel(item.creator?.skill_level)}
-                band={gradeBand(item.creator?.skill_level)}
-                // Kein Tages-Präfix: der Feed ist bereits auf einen Tag gefiltert, der
-                // im Header steht — die Karte zeigt nur die Uhrzeit.
-                time={formatSessionTime(item.starts_at, { withDay: false })}
-                // Nur der Hallenname: die Stadt steht bereits im Titel des Feeds.
-                gym={item.gym?.name}
-                note={item.note}
-                onPress={() => router.push(`/sessions/${item.id}`)}
-              />
-            );
-          }}
-        />
-      )}
+          )
+        }
+        renderItem={({ item }) => {
+          const name = item.creator?.display_name ?? 'Anonymous';
+          return (
+            <SessionCard
+              name={name}
+              avatarTone={avatarTone(item.creator?.id ?? name)}
+              avatarSrc={publicImageUrl(item.creator?.avatar_path)}
+              // Pill = Niveau der Ersteller:in (Merkmal der Person, nicht der Session).
+              // Kein Niveau gesetzt → skillLabel ist null → SessionCard zeigt kein Pill.
+              grade={skillLabel(item.creator?.skill_level)}
+              band={gradeBand(item.creator?.skill_level)}
+              // Kein Tages-Präfix: der Feed ist bereits auf einen Tag gefiltert, der
+              // im Header steht — die Karte zeigt nur die Uhrzeit.
+              time={formatSessionTime(item.starts_at, { withDay: false })}
+              // Nur der Hallenname: die Stadt steht bereits im Titel des Feeds.
+              gym={item.gym?.name}
+              note={item.note}
+              onPress={() => router.push(`/sessions/${item.id}`)}
+            />
+          );
+        }}
+      />
 
       {/* FAB — der eine Brand-Glow pro View. Erweitert: Plus-Icon + Label „Create session"
           als Pille (rounded-full). Der sichtbare Text ist zugleich der Accessibility-Name. */}
