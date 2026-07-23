@@ -1,6 +1,6 @@
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Check, Clock, Send, X } from 'lucide-react-native';
+import { ChevronDown, Clock, Send, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   Alert,
@@ -14,6 +14,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DateFilter } from '@/components/DateFilter';
+import { GymPickerSheet } from '@/components/GymPickerSheet';
 import { Button, Chip, IconButton, Input } from '@/components/ui';
 import { useActiveCity } from '@/hooks/useActiveCity';
 import { startOfDay, toDateKey } from '@/lib/utils';
@@ -58,6 +59,8 @@ export default function SessionCreate() {
   );
 
   const { data: gyms, isLoading: gymsLoading, error: gymsError } = useGyms(cityId);
+  const selectedGym = gyms?.find((g) => g.id === gymId) ?? null;
+  const [gymSheetOpen, setGymSheetOpen] = useState(false);
 
   function selectCity(id: string) {
     if (id === cityId) return;
@@ -204,51 +207,47 @@ export default function SessionCreate() {
             </ScrollView>
           </View>
 
-          {/* Halle */}
+          {/* Halle — Dropdown statt Liste: eine Trigger-Zeile zeigt die gewählte Halle
+              (oder einen Platzhalter) und öffnet das Bottom-Sheet mit der Auswahl. So
+              steht im Formular nicht die ganze Hallenliste auf einmal. */}
           <View className="mb-6">
             <Eyebrow>Gym</Eyebrow>
-            {gymsLoading ? (
-              <Text className="py-2 font-sans text-sm text-rock-400">Loading…</Text>
-            ) : gymsError ? (
-              <Text className="py-2 font-sans text-sm text-danger">
-                Couldn’t load gyms.
-              </Text>
-            ) : !gyms || gyms.length === 0 ? (
+            {gymsError ? (
+              <Text className="py-2 font-sans text-sm text-danger">Couldn’t load gyms.</Text>
+            ) : !gymsLoading && (!gyms || gyms.length === 0) ? (
               <Text className="py-2 font-sans text-sm text-rock-500">
                 No gyms in this city yet.
               </Text>
-            ) : null}
-            <View className="gap-2">
-              {gyms?.map((gym) => {
-                const active = gymId === gym.id;
-                return (
-                  <Pressable
-                    key={gym.id}
-                    onPress={() => setGymId(gym.id)}
-                    className={
-                      'h-12 flex-row items-center justify-between rounded-md border px-4 active:scale-[0.99] ' +
-                      (active ? 'border-brand-500 bg-brand-50' : 'border-rock-200 bg-rock-0')
-                    }>
-                    <Text
-                      numberOfLines={1}
-                      className={
-                        'flex-1 font-sans-medium text-[15px] ' +
-                        (active ? 'text-brand-700' : 'text-rock-900')
-                      }>
-                      {/* Kein Stadt-Suffix mehr: die Liste ist bereits auf die
-                          oben gewählte Stadt gefiltert. */}
-                      {gym.name}
-                      {gym.access ? (
-                        <Text className="text-rock-400">{`  ·  ${GYM_ACCESS_LABEL[gym.access]}`}</Text>
-                      ) : null}
-                    </Text>
-                    {active ? (
-                      <Check size={18} color={colors.brand[600]} strokeWidth={2.5} />
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </View>
+            ) : (
+              <Pressable
+                disabled={gymsLoading || !gyms || gyms.length === 0}
+                onPress={() => setGymSheetOpen(true)}
+                className={
+                  'h-12 flex-row items-center justify-between rounded-md border px-4 active:scale-[0.99] ' +
+                  (gymSheetOpen ? 'border-brand-500 bg-brand-50' : 'border-rock-200 bg-rock-0')
+                }>
+                <Text
+                  numberOfLines={1}
+                  className={
+                    'flex-1 font-sans-medium text-[15px] ' +
+                    (selectedGym ? 'text-rock-900' : 'text-rock-400')
+                  }>
+                  {gymsLoading
+                    ? 'Loading…'
+                    : selectedGym
+                      ? selectedGym.name
+                      : 'Choose a gym'}
+                  {selectedGym?.access ? (
+                    <Text className="text-rock-400">{`  ·  ${GYM_ACCESS_LABEL[selectedGym.access]}`}</Text>
+                  ) : null}
+                </Text>
+                <ChevronDown
+                  size={18}
+                  color={gymSheetOpen ? colors.brand[600] : colors.rock[400]}
+                  strokeWidth={2}
+                />
+              </Pressable>
+            )}
           </View>
 
           {/* Wann — Tag. Gleiche DateFilter wie im Home-Feed (Today/Tomorrow + Kalender). */}
@@ -323,6 +322,14 @@ export default function SessionCreate() {
           </Button>
         </View>
       </KeyboardAvoidingView>
+
+      <GymPickerSheet
+        visible={gymSheetOpen}
+        gyms={gyms ?? []}
+        activeId={gymId}
+        onSelect={setGymId}
+        onClose={() => setGymSheetOpen(false)}
+      />
     </SafeAreaView>
   );
 }
