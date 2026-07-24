@@ -23,8 +23,10 @@ import { avatarTone, formatSessionTime, gradeBand, skillLabel } from '@/lib/util
 import { useChatForSession } from '@/queries/chat';
 import {
   useCreateMatchRequest,
+  useMyRequestForSession,
   useRequestsForSession,
   useRespondToMatchRequest,
+  useWithdrawRequest,
   type MatchRequestWithRequester,
 } from '@/queries/matches';
 import { useHasReported, useReportProfile } from '@/queries/reports';
@@ -204,6 +206,17 @@ export default function SessionDetail() {
   const { data: session, isLoading } = useSession(id);
   const { user } = useAuth();
   const request = useCreateMatchRequest();
+  const withdraw = useWithdrawRequest();
+
+  // Ist die Session meine? Vor den frühen Returns berechnet (session evtl. noch
+  // undefined → false), damit die folgenden Hooks unbedingt laufen (Hook-Regeln).
+  const isMine = !!session && user?.id === session.creator_id;
+
+  // Mein eigener Anfrage-Status an dieser fremden Session (ADR-0006). Realtime
+  // lässt „Request sent" live zu „Open chat" umschlagen, wenn angenommen wird.
+  const myRequest = useMyRequestForSession(id, !!session && !isMine);
+  const myStatus = myRequest.data?.status;
+  const chat = useChatForSession(id, myStatus === 'accepted');
 
   if (isLoading) {
     return (
@@ -230,10 +243,18 @@ export default function SessionDetail() {
     );
   }
 
-  const isMine = user?.id === session.creator_id;
-  const sent = request.isSuccess;
   const name = session.creator?.display_name ?? 'Anonymous';
   const buddies = session.max_buddies ?? 1;
+
+  // Der eine untere Aktions-Platz wechselt seinen Inhalt je nach eigenem Anfrage-
+  // Zustand (ADR-0006). Der geladene Status GEWINNT immer — so schlägt ein
+  // Realtime-Wechsel (Ersteller:in nimmt an/lehnt ab) sofort durch. `isSuccess`
+  // überbrückt nur das Fenster, bevor myRequest erstmals „pending" liefert (Status
+  // noch unbekannt), damit der Button nach dem Absenden nicht zurückblitzt.
+  const status = myStatus ?? (request.isSuccess ? 'pending' : undefined);
+  const pending = status === 'pending';
+  const accepted = status === 'accepted';
+  const declined = status === 'declined';
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
@@ -246,7 +267,7 @@ export default function SessionDetail() {
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5"
-        contentContainerStyle={{ paddingBottom: isMine ? 32 : 120 }}>
+        contentContainerStyle={{ paddingBottom: isMine ? 32 : 160 }}>
         {/* Creator — tippbar zum read-only Profil (profile/[id]). Ist die
             Ersteller:in gelöscht (kein creator), bleibt der Block untippbar. */}
         <Pressable
@@ -323,15 +344,65 @@ export default function SessionDetail() {
         {isMine ? <IncomingRequests sessionId={session.id} /> : null}
       </ScrollView>
 
-      {/* Aktionsleiste — nur für fremde Sessions. */}
+      {/* Aktionsleiste — nur für fremde Sessions. Ein Platz, Inhalt je Zustand
+          (ADR-0006): laden → still, pending → „Request sent", accepted → „Open
+          chat", declined → dezent, sonst der „Climb together?"-Button. */}
       {!isMine ? (
         <View
           className="absolute inset-x-0 bottom-0 border-t border-rock-100 bg-rock-0 px-5 pt-3"
           style={{ paddingBottom: insets.bottom + 12 }}>
-          {sent ? (
-            <View className="h-[52px] flex-row items-center justify-center gap-2 rounded-md bg-success-surface">
-              <CheckCircle2 size={16} color={colors.success} strokeWidth={2} />
-              <Text className="font-sans-semibold text-base text-success">Request sent</Text>
+          {myRequest.isLoading ? (
+            // Kein Button-Flackern, solange der eigene Status noch lädt.
+            <View className="h-[52px] items-center justify-center">
+              <ActivityIndicator color={colors.brand[500]} />
+            </View>
+          ) : pending ? (
+            // „Request sent" + Zurückziehen: hat man mehrere Sessions angefragt und
+            // wird nur bei einer angenommen, tritt man hier von den anderen zurück
+            // (ADR-0006). Zurückziehen ist umkehrbar → danach wieder der Button.
+            <View className="gap-2">
+              <View className="h-[52px] flex-row items-center justify-center gap-2 rounded-md bg-success-surface">
+                <CheckCircle2 size={16} color={colors.success} strokeWidth={2} />
+                <Text className="font-sans-semibold text-base text-success">Request sent</Text>
+              </View>
+              <Button
+                variant="ghost"
+                size="md"
+                fullWidth
+                loading={withdraw.isPending}
+                onPress={() =>
+                  Alert.alert('Withdraw request?', undefined, [
+                    { text: 'Keep', style: 'cancel' },
+                    {
+                      text: 'Withdraw',
+                      style: 'destructive',
+                      onPress: () => withdraw.mutate(session.id),
+                    },
+                  ])
+                }>
+                <Text className="font-sans-semibold text-[15px] text-rock-500">
+                  Withdraw request
+                </Text>
+              </Button>
+            </View>
+          ) : accepted ? (
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              // Nur solange der Chat wirklich noch lädt spinnen. Löst er (selten)
+              // auf null auf, bleibt der Button tippbar und versucht es erneut,
+              // statt ewig zu drehen.
+              loading={chat.isLoading}
+              icon={<MessageCircle size={18} color={colors.rock[0]} strokeWidth={2} />}
+              onPress={() =>
+                chat.data ? router.push(`/chats/${chat.data}`) : chat.refetch()
+              }>
+              Open chat
+            </Button>
+          ) : declined ? (
+            <View className="h-[52px] items-center justify-center">
+              <Text className="font-sans text-sm text-rock-400">Not this time</Text>
             </View>
           ) : (
             <>
