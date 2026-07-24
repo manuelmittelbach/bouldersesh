@@ -214,9 +214,23 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
-      {/* Die Liste bleibt IMMER gemountet — auch beim Laden/Fehler. Sonst würde der
-          ListHeaderComponent (mit der horizontalen Hallen-Filterleiste) mit aus- und
-          neu eingehängt, wodurch die Leiste ihre Scrollposition verliert. Lade- und
+      {/* Kopf klebt fest: Titel „Sessions in [Stadt]", Tag-Filter und Hallen-Leiste
+          bleiben oben stehen, während der Feed darunter scrollt (kein ListHeaderComponent
+          mehr). Als eigener View über der Liste behält die horizontale Hallen-Leiste
+          zudem immer ihre Scrollposition — sie hängt nie mit der Liste aus. */}
+      <View className="px-5">
+        <Header
+          cityName={cityName}
+          onOpenCityMenu={() => setCityMenuOpen(true)}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          gyms={gyms}
+          gymId={gymId}
+          onSelectGym={setGymId}
+        />
+      </View>
+
+      {/* Die Liste bleibt IMMER gemountet — auch beim Laden/Fehler. Lade- und
           Fehlerzustand leben deshalb im Listen-Body (ListEmptyComponent), nicht als
           Voll-Screen-Ersatz. */}
       <FlatList<SessionWithMeta>
@@ -224,18 +238,7 @@ export default function Dashboard() {
         keyExtractor={(s) => s.id}
         onRefresh={onRefresh}
         refreshing={refreshing}
-        contentContainerClassName="px-5 pb-8 gap-3"
-        ListHeaderComponent={
-          <Header
-            cityName={cityName}
-            onOpenCityMenu={() => setCityMenuOpen(true)}
-            selectedDate={selectedDate}
-            onSelectDate={setSelectedDate}
-            gyms={gyms}
-            gymId={gymId}
-            onSelectGym={setGymId}
-          />
-        }
+        contentContainerClassName="px-5 pb-8 gap-3 pt-1"
         ListEmptyComponent={
           isLoading ? (
             <View className="items-center justify-center py-24">

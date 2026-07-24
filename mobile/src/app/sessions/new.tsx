@@ -51,8 +51,9 @@ export default function SessionCreate() {
   // Tastatur. Beide Höhen werden gemessen (barHeight per onLayout an der Leiste), damit
   // der Scroll-Offset das ganze Feld über Leiste + Tastatur hebt — ohne feste Zahl.
   const [barHeight, setBarHeight] = useState(0);
-  const { bottomOffset, extraKeyboardSpace, onFieldLayout } =
-    useKeyboardAwareField({ clearance: barHeight });
+  const { bottomOffset, onFieldLayout } = useKeyboardAwareField({
+    clearance: barHeight,
+  });
   // Optionale Vorauswahl-Params aus dem Feed:
   //  - `date` ("YYYY-MM-DD", passend zum Chip-Fenster unten). Fehlt/passt er nicht ins
   //    7-Tage-Fenster, bleibt es bei Today.
@@ -209,8 +210,10 @@ export default function SessionCreate() {
         className="flex-1"
         contentContainerClassName="px-5 pt-2"
         contentContainerStyle={{ paddingBottom: 32 }}
+        // Nur so viel Puffer wie die sticky Submit-Leiste hoch ist — genug, damit die
+        // Notiz über die Leiste scrollen kann, ohne unnötigen Leerraum darunter.
         bottomOffset={bottomOffset}
-        extraKeyboardSpace={extraKeyboardSpace}
+        extraKeyboardSpace={barHeight}
         keyboardShouldPersistTaps="handled"
       >
         {/* Stadt — erstes Feld, filtert die Hallenliste darunter */}
