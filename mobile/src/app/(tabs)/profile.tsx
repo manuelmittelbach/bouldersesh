@@ -15,6 +15,7 @@ import {
   avatarTone,
   cn,
   formatSessionTime,
+  gradeBand,
   SKILL_LABEL,
   SKILL_LEVELS,
 } from "@/lib/utils";
@@ -250,6 +251,7 @@ export default function Profile() {
                 <Chip
                   key={lvl}
                   active={skill === lvl}
+                  band={gradeBand(lvl)}
                   onPress={() => setSkill(lvl)}
                 >
                   {SKILL_LABEL[lvl]}
