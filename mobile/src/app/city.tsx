@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CityOptionList } from '@/components/CityOptionList';
 import { IconButton } from '@/components/ui';
 import { useActiveCity } from '@/hooks/useActiveCity';
-import { useCities, useOpenSessionCountsByCity } from '@/queries/cities';
+import { useCities } from '@/queries/cities';
 import { colors } from '@/theme/colors';
 
 // Der Stadt-Screen hat zwei Leben: beim ersten Start nach dem Login ist er das
@@ -17,7 +17,6 @@ import { colors } from '@/theme/colors';
 export default function CityPicker() {
   const { cityId, setActiveCity } = useActiveCity();
   const { data: cities, isLoading, error } = useCities();
-  const { data: counts } = useOpenSessionCountsByCity();
 
   // Ob Gate oder Wechsler entscheidet die History beim Mount, NICHT `cityId`: als Gate
   // ist `city` die einzige Route, es gibt nichts, wohin zurück. Würde man `!!cityId`
@@ -70,7 +69,7 @@ export default function CityPicker() {
         ) : !cities || cities.length === 0 ? (
           <Text className="py-2 font-sans text-sm text-rock-500">No cities available yet.</Text>
         ) : (
-          <CityOptionList cities={cities} counts={counts} activeId={cityId} onPick={pick} />
+          <CityOptionList cities={cities} activeId={cityId} onPick={pick} />
         )}
       </ScrollView>
     </SafeAreaView>

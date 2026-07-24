@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CityOptionList } from '@/components/CityOptionList';
 import { IconButton } from '@/components/ui';
-import { useCities, useOpenSessionCountsByCity } from '@/queries/cities';
+import { useCities } from '@/queries/cities';
 import { colors } from '@/theme/colors';
 
 // Der Stadt-Wechsler im Alltag: ein Bottom-Sheet, das der „Climbing in …"-Dropdown im
@@ -22,7 +22,6 @@ export function CitySwitcherSheet({
   onClose: () => void;
 }) {
   const { data: cities } = useCities();
-  const { data: counts } = useOpenSessionCountsByCity();
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -39,7 +38,6 @@ export function CitySwitcherSheet({
             <View className="px-5 pb-4 pt-2">
               <CityOptionList
                 cities={cities ?? []}
-                counts={counts}
                 activeId={activeId}
                 onPick={(id) => {
                   onSelect(id);
