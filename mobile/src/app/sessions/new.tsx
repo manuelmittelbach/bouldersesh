@@ -344,6 +344,7 @@ export default function SessionCreate() {
           onFieldLayout={onFieldLayout}
           multiline
           maxLength={120}
+          showCount
           placeholder="e.g. “trying to crack some reds”"
         />
 
