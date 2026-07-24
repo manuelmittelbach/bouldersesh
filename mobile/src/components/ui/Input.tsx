@@ -14,6 +14,9 @@ export type InputProps = TextInputProps & {
   hint?: string;
   error?: string;
   multiline?: boolean;
+  // Zeigt rechts in der Fußzeile einen Zeichenzähler „N/max" — nur zusammen mit
+  // `maxLength` sinnvoll. Bei Erreichen des Limits färbt er sich danger.
+  showCount?: boolean;
   containerClassName?: string;
   // Meldet die Höhe der (umrandeten) Feld-Box — nicht des Labels. Ein
   // KeyboardAwareScrollView leitet daraus ab, wie weit es scrollen muss, damit das
@@ -28,6 +31,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
     hint,
     error,
     multiline,
+    showCount,
     containerClassName,
     className,
     onFocus,
@@ -43,6 +47,12 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
     : focused
       ? "border-brand-500"
       : "border-rock-200";
+
+  // Zähler nur, wenn angefordert UND ein Limit existiert. `value`/`maxLength` bleiben
+  // in `rest` (sie fließen unverändert ins TextInput) — hier nur mitgelesen.
+  const counted = showCount && typeof rest.maxLength === "number";
+  const count = String(rest.value ?? "").length;
+  const atLimit = counted && count >= (rest.maxLength as number);
 
   return (
     <View className={cn("gap-1.5", containerClassName)}>
@@ -102,10 +112,26 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
           {...rest}
         />
       </View>
-      {error ? (
-        <Text className="font-sans text-xs text-danger">{error}</Text>
-      ) : hint ? (
-        <Text className="font-sans text-xs text-rock-400">{hint}</Text>
+      {error || hint || counted ? (
+        <View className="flex-row items-center justify-between gap-2">
+          {error ? (
+            <Text className="flex-1 font-sans text-xs text-danger">{error}</Text>
+          ) : hint ? (
+            <Text className="flex-1 font-sans text-xs text-rock-400">{hint}</Text>
+          ) : (
+            <View className="flex-1" />
+          )}
+          {counted ? (
+            <Text
+              className={cn(
+                "font-sans text-xs",
+                atLimit ? "text-danger" : "text-rock-400",
+              )}
+            >
+              {count}/{rest.maxLength}
+            </Text>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );
