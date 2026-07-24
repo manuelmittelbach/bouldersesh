@@ -28,6 +28,10 @@ import { colors } from "@/theme/colors";
 // Hallen-Startzeiten ab, ohne minutengenaue Übergenauigkeit.
 const TIME_MINUTE_INTERVAL = 15;
 
+// Party-Größe inkl. Ersteller:in (ADR-0007). Untergrenze 2 (eine Solo-Session ergibt
+// keinen Sinn), Obergrenze 4. Default 2 = die frühere Ein-Buddy-Verabredung.
+const PARTY_SIZES = [2, 3, 4] as const;
+
 function Eyebrow({ children }: { children: string }) {
   return (
     <Text className="mb-2 font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
@@ -105,6 +109,7 @@ export default function SessionCreate() {
   // Meetup/Google Calendar. Hier steht nur, ob es offen ist; die Bestätigung setzt `time`.
   const [timeSheetOpen, setTimeSheetOpen] = useState(false);
   const [note, setNote] = useState("");
+  const [capacity, setCapacity] = useState<number>(2);
   const [error, setError] = useState<string | null>(null);
 
   const clockLabel = `${time.getHours().toString().padStart(2, "0")}:${time
@@ -170,6 +175,7 @@ export default function SessionCreate() {
         gym_id: gymId,
         starts_at: dt.toISOString(),
         note: note.trim(),
+        capacity,
       });
       leaveAfterCreate();
     } catch (e) {
@@ -303,6 +309,26 @@ export default function SessionCreate() {
               strokeWidth={2}
             />
           </Pressable>
+        </View>
+
+        {/* Gruppengröße — Party-Größe inkl. Ersteller:in (ADR-0007). Chip-Reihe wie bei
+              der Stadt; 2/3/4, Default 2. Der Zusatz erklärt „mit dir zusammen". */}
+        <View className="mb-6">
+          <Eyebrow>Group size</Eyebrow>
+          <View className="flex-row gap-2">
+            {PARTY_SIZES.map((size) => (
+              <Chip
+                key={size}
+                active={capacity === size}
+                onPress={() => setCapacity(size)}
+              >
+                {String(size)}
+              </Chip>
+            ))}
+          </View>
+          <Text className="mt-2 font-sans text-xs text-rock-400">
+            Total climbers, including you.
+          </Text>
         </View>
 
         {/* Notiz — trägt jetzt „was ich klettern will" und ist Pflicht: hallen-relativ

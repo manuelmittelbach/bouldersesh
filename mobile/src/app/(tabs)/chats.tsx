@@ -28,8 +28,10 @@ function DeleteAction({ onPress }: { onPress: () => void }) {
 }
 
 function ChatRow({ chat }: { chat: ChatListItem }) {
+  // Gruppe → „Anna, Ben +1", 1:1 → der eine Name (identisch zu vorher). Leerer Titel
+  // (kein anderes Mitglied mehr) fällt auf „Deleted user" zurück (ADR-0004/0007).
   const name =
-    chat.other?.display_name ?? (chat.counterpartDeleted ? 'Deleted user' : 'Anonymous');
+    chat.title || (chat.counterpartDeleted ? 'Deleted user' : 'Anonymous');
   // Fallback bewusst OHNE Emoji (DS: kein Emoji).
   const preview = chat.lastMessage?.body ?? 'No messages yet';
   const stamp = chat.lastMessage?.sent_at ?? chat.createdAt;

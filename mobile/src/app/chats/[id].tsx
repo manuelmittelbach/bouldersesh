@@ -18,7 +18,7 @@ import { Avatar, IconButton } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, formatClock } from '@/lib/utils';
-import { useChatMembers, useMessages, useSendMessage } from '@/queries/chat';
+import { buildChatTitle, useChatMembers, useMessages, useSendMessage } from '@/queries/chat';
 import type { Message } from '@/types/database';
 import { colors } from '@/theme/colors';
 
@@ -31,11 +31,17 @@ export default function Chat() {
   const send = useSendMessage(id);
 
   const memberById = new Map((members ?? []).map((m) => [m.id, m]));
-  // Der Titel kommt aus den *anderen* Mitgliedern. Hat sich das Gegenüber
-  // gelöscht, ist seine chat_members-Zeile weg und der Chat hat nur noch ein
-  // Mitglied — dann bleibt es beim generischen „Chat“ (ADR-0004).
-  const other = (members ?? []).find((m) => m.id !== user?.id) ?? null;
-  const title = other?.display_name ?? 'Chat';
+  // Der Titel kommt aus den *anderen* Mitgliedern (ADR-0007): eine Zweier-Runde zeigt
+  // den einen Namen, eine Gruppe „Anna, Ben +1". Hat sich das einzige Gegenüber gelöscht,
+  // ist der Chat nur noch ich → generisches „Chat“ (ADR-0004).
+  const others = (members ?? []).filter((m) => m.id !== user?.id);
+  const isGroup = others.length > 1;
+  const title = others.length
+    ? buildChatTitle(others.map((m) => m.display_name ?? 'Anonymous'))
+    : 'Chat';
+  // Nur bei genau einem Gegenüber führt der Kopf zum Profil — eine Gruppe hat kein
+  // einzelnes Ziel.
+  const soloOther = others.length === 1 ? others[0] : null;
   const [body, setBody] = useState('');
   const listRef = useRef<FlatList<Message>>(null);
 
@@ -57,13 +63,35 @@ export default function Chat() {
         <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
           <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
         </IconButton>
-        {/* Der Name führt zum read-only Profil. Hat sich das Gegenüber gelöscht
-            (other === null), bleibt es beim untippbaren „Chat“. */}
-        {other?.id ? (
+        {/* Gruppe: gestapelte Avatare + untippbarer Titel. 1:1: der Name führt zum
+            read-only Profil. Gelöschtes Gegenüber (soloOther === null, kein Gruppe) →
+            untippbares „Chat“. */}
+        {isGroup ? (
+          <View className="flex-1 flex-row items-center gap-2">
+            <View className="flex-row">
+              {others.slice(0, 3).map((m, i) => (
+                <View
+                  key={m.id}
+                  style={{ marginLeft: i === 0 ? 0 : -8 }}
+                  className="rounded-full border-2 border-rock-25">
+                  <Avatar
+                    name={m.display_name ?? 'Anonymous'}
+                    tone={avatarTone(m.id)}
+                    size="xs"
+                    src={publicImageUrl(m.avatar_path)}
+                  />
+                </View>
+              ))}
+            </View>
+            <Text numberOfLines={1} className="flex-1 font-display text-base text-rock-900">
+              {title}
+            </Text>
+          </View>
+        ) : soloOther?.id ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`View ${title}’s profile`}
-            onPress={() => router.push(`/profile/${other.id}`)}
+            onPress={() => router.push(`/profile/${soloOther.id}`)}
             className="flex-1 active:opacity-70">
             <Text numberOfLines={1} className="font-display text-base text-rock-900">
               {title}
@@ -94,6 +122,15 @@ export default function Chat() {
             contentContainerClassName="px-4 py-4 gap-1"
             onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
             renderItem={({ item, index }) => {
+              // System-Zeile („Ben joined", ADR-0007): zentrierte Meta-Zeile, keine
+              // Blase, kein Avatar — abgesetzt vom Gespräch.
+              if (item.kind === 'system') {
+                return (
+                  <View className="items-center py-1.5">
+                    <Text className="font-sans text-xs text-rock-400">{item.body}</Text>
+                  </View>
+                );
+              }
               const mine = !!item.sender_id && item.sender_id === user?.id;
               const list = messages ?? [];
               // Zeitstempel nur an der letzten Blase einer Sender-Gruppe — sonst zu laut.

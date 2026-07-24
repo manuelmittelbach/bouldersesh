@@ -130,16 +130,33 @@ export function useChatMembers(chatId: string | undefined) {
 // Chat list — every chat the current user is a member of.
 // ------------------------------------------------------------------
 
+export type ChatCounterpart = {
+  id: string;
+  display_name: string | null;
+  avatar_path: string | null;
+  skill_level: string | null;
+};
+
+/**
+ * Personen-zentrierter Chat-Titel (ADR-0007). Eine Zweier-Runde zeigt den einen Namen
+ * (wie bisher), eine Gruppe „Anna, Ben +1". Leere Liste → "" (Aufrufer setzt den
+ * Fallback, z. B. „Deleted user"/„Chat").
+ */
+export function buildChatTitle(names: string[]): string {
+  if (names.length === 0) return "";
+  if (names.length <= 2) return names.join(", ");
+  return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+}
+
 export type ChatListItem = {
   id: string;
   createdAt: string;
-  /** The other person in this 1:1 chat (null if we can't resolve them). */
-  other: {
-    id: string;
-    display_name: string | null;
-    avatar_path: string | null;
-    skill_level: string | null;
-  } | null;
+  /** The other person in this chat — first counterpart (null if none resolvable). */
+  other: ChatCounterpart | null;
+  /** Alle anderen Mitglieder (für Gruppen-Titel/gestapelte Avatare). 1:1 → genau eins. */
+  others: ChatCounterpart[];
+  /** Personen-zentrierter Titel: 1:1 der eine Name, Gruppe „Anna, Ben +1". */
+  title: string;
   /**
    * Es gibt außer mir kein Mitglied mehr — das Gegenüber hat seinen Account
    * gelöscht, die `chat_members`-Zeile ist mitgegangen (ADR-0004). Zu
@@ -207,14 +224,18 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
     id: string;
     created_at: string;
     session: ChatListItem["session"];
-    members: Array<{ user_id: string; profile: ChatListItem["other"] }>;
+    members: { user_id: string; profile: ChatCounterpart | null }[];
   };
 
   const items: ChatListItem[] = (
     (chats ?? []) as unknown as ChatRowRaw[]
   ).map((c) => {
     const otherMembers = (c.members ?? []).filter((mem) => mem.user_id !== userId);
-    const other = otherMembers.map((mem) => mem.profile).find((p) => !!p) ?? null;
+    const others = otherMembers
+      .map((mem) => mem.profile)
+      .filter((p): p is ChatCounterpart => !!p);
+    const other = others[0] ?? null;
+    const title = buildChatTitle(others.map((p) => p.display_name ?? "Anonymous"));
     const lastMessage = lastByChat.get(c.id) ?? null;
     const lastRead = lastReadByChat.get(c.id) ?? null;
     const unread =
@@ -226,6 +247,8 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
       id: c.id,
       createdAt: c.created_at,
       other,
+      others,
+      title,
       counterpartDeleted: otherMembers.length === 0,
       session: c.session ?? null,
       lastMessage,

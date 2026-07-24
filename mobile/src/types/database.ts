@@ -23,6 +23,8 @@ export type SkillLevel = "beginner" | "intermediate" | "advanced" | "pro";
 export type SessionVisibility = "public" | "friends";
 export type SessionStatus = "open" | "matched" | "done" | "cancelled";
 export type MatchStatus = "pending" | "accepted" | "declined" | "cancelled";
+/** `system` = Meta-Zeile ohne menschliche Absender:in („Ben joined"), ADR-0007. */
+export type MessageKind = "text" | "system";
 /** Zugangsbeschränkung einer Halle; `null` heißt offen für alle. */
 export type GymAccess = "members_only" | "students_only";
 
@@ -104,7 +106,8 @@ export interface Database {
           ends_at: string | null;
           /** Pflicht (nicht-leer) — trägt „was ich klettern will", siehe ADR-0005. */
           note: string;
-          max_buddies: number;
+          /** Party-Größe inkl. Ersteller:in, 2–4 (ADR-0007). Löst max_buddies ab. */
+          capacity: number;
           visibility: SessionVisibility;
           status: SessionStatus;
           created_at: string;
@@ -116,7 +119,7 @@ export interface Database {
           starts_at: string;
           ends_at?: string | null;
           note: string;
-          max_buddies?: number;
+          capacity?: number;
           visibility?: SessionVisibility;
           status?: SessionStatus;
           created_at?: string;
@@ -181,6 +184,8 @@ export interface Database {
           /** NULL = Absender:in hat ihren Account gelöscht (ADR-0004). */
           sender_id: string | null;
           body: string;
+          /** `system`-Zeilen sind Meta-Ansagen („Ben joined"), ADR-0007. */
+          kind: MessageKind;
           sent_at: string;
         };
         Insert: {
@@ -189,6 +194,7 @@ export interface Database {
           // Beim Schreiben immer gesetzt — NULL entsteht erst durch das Löschen.
           sender_id: string;
           body: string;
+          kind?: MessageKind;
           sent_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["messages"]["Insert"]>;
