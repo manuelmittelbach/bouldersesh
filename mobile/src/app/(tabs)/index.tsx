@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { ChevronDown, Mountain, Plus } from 'lucide-react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,6 +22,7 @@ import {
 } from '@/lib/utils';
 import { useCities } from '@/queries/cities';
 import { useGyms, type GymWithCity } from '@/queries/gyms';
+import { useMyPendingRequests } from '@/queries/matches';
 import { useOpenSessions, type SessionWithMeta } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
@@ -197,6 +198,17 @@ export default function Dashboard() {
     to: range.to,
   });
 
+  // Session-IDs mit eigener offener Anfrage → „Requested"-Streifen an der Karte (ADR-0006).
+  // Bewusst kein Realtime (ADR-0006), aber Fetch-on-Focus: kehrt man vom Detail-Screen
+  // zum Feed zurück, wird neu geladen — so verschwindet der Streifen an einer Session,
+  // von der man zurückgetreten oder abgelehnt wurde (der Tab bleibt sonst gemountet).
+  const { data: requestedIds, refetch: refetchRequested } = useMyPendingRequests();
+  useFocusEffect(
+    useCallback(() => {
+      refetchRequested();
+    }, [refetchRequested]),
+  );
+
   // Eigener Pull-Zustand: der RefreshControl-Spinner soll NUR bei echtem Runterziehen
   // laufen, nicht bei jedem Hintergrund-Refetch (refetchOnMount).
   const [refreshing, setRefreshing] = useState(false);
@@ -276,6 +288,7 @@ export default function Dashboard() {
               // Nur der Hallenname: die Stadt steht bereits im Titel des Feeds.
               gym={item.gym?.name}
               note={item.note}
+              requested={requestedIds?.has(item.id) ?? false}
               onPress={() => router.push(`/sessions/${item.id}`)}
               onPressAuthor={
                 item.creator?.id

@@ -1,4 +1,4 @@
-import { Clock, MapPin } from 'lucide-react-native';
+import { Check, Clock, MapPin } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -32,6 +32,9 @@ export type SessionCardProps = {
   note?: string | null;
   /** Footer-Slot — z. B. ein Match-Badge. */
   footer?: ReactNode;
+  /** Ich habe diese Session schon angefragt → ruhiger „Requested"-Streifen unter
+   *  der Karte (ADR-0006). Nur der pending-Zustand ist im Feed je sichtbar. */
+  requested?: boolean;
   online?: boolean;
   onPress?: () => void;
   /** Tippen auf den Avatar öffnet das Profil der Ersteller:in. Fehlt es, ist nur
@@ -49,6 +52,7 @@ export function SessionCard({
   gym,
   note,
   footer,
+  requested = false,
   online = false,
   onPress,
   onPressAuthor,
@@ -91,6 +95,16 @@ export function SessionCard({
           {footer ? <View className="mt-3">{footer}</View> : null}
         </View>
       </View>
+
+      {/* „Requested"-Streifen: volle Kartenbreite unten (negative Ränder heben das
+          Card-Padding auf), ruhig getönt. Erinnerung, kein Alarm — deshalb rock-25
+          statt Brand/Success. Position UNTER dem Inhalt = eindeutig zu dieser Karte. */}
+      {requested ? (
+        <View className="-mx-4 -mb-4 mt-3 flex-row items-center justify-center gap-1.5 rounded-b-lg border-t border-rock-100 bg-rock-25 px-4 py-2">
+          <Check size={13} color={colors.rock[400]} strokeWidth={2.5} />
+          <Text className="font-sans-semibold text-[12px] text-rock-500">Requested</Text>
+        </View>
+      ) : null}
     </Card>
   );
 }
