@@ -1,17 +1,7 @@
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronDown, Clock, Send, X } from "lucide-react-native";
 import { useState } from "react";
-import {
-  Alert,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import {
   KeyboardAwareScrollView,
   KeyboardStickyView,
@@ -23,6 +13,7 @@ import {
 
 import { DateFilter } from "@/components/DateFilter";
 import { GymPickerSheet } from "@/components/GymPickerSheet";
+import { TimePickerSheet } from "@/components/TimePickerSheet";
 import { Button, Chip, IconButton, Input } from "@/components/ui";
 import { useActiveCity } from "@/hooks/useActiveCity";
 import { useKeyboardAwareField } from "@/hooks/useKeyboardAwareField";
@@ -110,18 +101,11 @@ export default function SessionCreate() {
     d.setHours(18, 0, 0, 0);
     return d;
   });
-  // Auf iOS ist der Spinner ein Inline-Element, das wir per Tap ein-/ausklappen; auf Android
-  // ist es ein Dialog, der nur bei true kurz erscheint und sich selbst wieder schließt.
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  // Die Uhrzeit wählt jetzt ein Bottom-Sheet mit Scroll-Rad (TimePickerSheet) — wie bei
+  // Meetup/Google Calendar. Hier steht nur, ob es offen ist; die Bestätigung setzt `time`.
+  const [timeSheetOpen, setTimeSheetOpen] = useState(false);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  function onChangeTime(event: DateTimePickerEvent, picked?: Date) {
-    // Android-Dialog schließt sich nach der Wahl selbst; iOS-Spinner bleibt offen.
-    if (Platform.OS !== "ios") setShowTimePicker(false);
-    if (event.type === "dismissed") return;
-    if (picked) setTime(picked);
-  }
 
   const clockLabel = `${time.getHours().toString().padStart(2, "0")}:${time
     .getMinutes()
@@ -291,15 +275,16 @@ export default function SessionCreate() {
           <DateFilter selected={selectedDate} onSelect={setSelectedDate} />
         </View>
 
-        {/* Wann — Uhrzeit (nativer Time-Picker). Zeile zeigt die gewählte Zeit und klappt
-              den nativen Picker auf: iOS-Spinner inline, Android-Uhr-Dialog. */}
+        {/* Wann — Uhrzeit. Eine Trigger-Zeile (wie das Hallen-Dropdown) zeigt die gewählte
+              Zeit; Tap öffnet das TimePickerSheet mit dem Scroll-Rad. Gleicher Look auf iOS
+              und Android. */}
         <View className="mb-6">
           <Eyebrow>Time</Eyebrow>
           <Pressable
-            onPress={() => setShowTimePicker((v) => !v)}
+            onPress={() => setTimeSheetOpen(true)}
             className={
               "h-12 flex-row items-center justify-between rounded-md border px-4 active:scale-[0.99] " +
-              (showTimePicker
+              (timeSheetOpen
                 ? "border-brand-500 bg-brand-50"
                 : "border-rock-200 bg-rock-0")
             }
@@ -307,27 +292,17 @@ export default function SessionCreate() {
             <Text
               className={
                 "font-sans-medium text-[15px] " +
-                (showTimePicker ? "text-brand-700" : "text-rock-900")
+                (timeSheetOpen ? "text-brand-700" : "text-rock-900")
               }
             >
               {clockLabel}
             </Text>
             <Clock
               size={18}
-              color={showTimePicker ? colors.brand[600] : colors.rock[400]}
+              color={timeSheetOpen ? colors.brand[600] : colors.rock[400]}
               strokeWidth={2}
             />
           </Pressable>
-          {showTimePicker ? (
-            <DateTimePicker
-              value={time}
-              mode="time"
-              is24Hour
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              minuteInterval={TIME_MINUTE_INTERVAL}
-              onChange={onChangeTime}
-            />
-          ) : null}
         </View>
 
         {/* Notiz — trägt jetzt „was ich klettern will" und ist Pflicht: hallen-relativ
@@ -376,6 +351,14 @@ export default function SessionCreate() {
         activeId={gymId}
         onSelect={setGymId}
         onClose={() => setGymSheetOpen(false)}
+      />
+
+      <TimePickerSheet
+        visible={timeSheetOpen}
+        value={time}
+        minuteInterval={TIME_MINUTE_INTERVAL}
+        onConfirm={setTime}
+        onClose={() => setTimeSheetOpen(false)}
       />
     </SafeAreaView>
   );
