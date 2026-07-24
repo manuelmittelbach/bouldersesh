@@ -210,19 +210,12 @@ export default function Account() {
         <View className="mt-9 border-t border-rock-100 pt-8">
           <SectionHeader>Password</SectionHeader>
           <View className="gap-3">
-            {/* Schreibgeschütztes E-Mail-Feld als AutoFill-Anker: iOS ordnet die
-                  Passwort-Rollen (aktuell vs. neu) nur zuverlässig zu, wenn ein
-                  username-Feld die Credential-Gruppe verankert. Zugleich weiß der
-                  Passwort-Manager dann, welchen gespeicherten Eintrag er nach dem
-                  Wechsel aktualisieren soll. Nicht editierbar, dient nur als Kontext. */}
-            <Input
-              value={user?.email ?? ""}
-              editable={false}
-              icon={<Mail size={18} color={colors.rock[400]} strokeWidth={2} />}
-              autoComplete="username"
-              textContentType="username"
-              className="text-rock-500"
-            />
+            {/* AutoFill/Strong-Password bewusst komplett abgeschaltet: iOS' „Use Strong
+                  Password"-Sheet landete unkontrollierbar am ersten Passwortfeld (Current)
+                  statt an den new-Feldern und ließ sich ohne erkanntes Username-Feld nicht
+                  gezielt steuern. Daher alle drei Felder auf textContentType="none" +
+                  autoComplete="off" — kein Sheet, kein Vorschlag; der Nutzer tippt selbst.
+                  Maskierung bleibt über secureTextEntry. */}
             <Input
               value={currentPassword}
               onChangeText={setCurrentPassword}
@@ -230,8 +223,8 @@ export default function Account() {
               icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
               secureTextEntry
               autoCapitalize="none"
-              autoComplete="current-password"
-              textContentType="password"
+              autoComplete="off"
+              textContentType="none"
               error={
                 pwWrongCurrent
                   ? (changePassword.error as Error).message
@@ -245,9 +238,8 @@ export default function Account() {
               icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
               secureTextEntry
               autoCapitalize="none"
-              autoComplete="new-password"
-              textContentType="newPassword"
-              passwordRules={`minlength: ${MIN_PASSWORD};`}
+              autoComplete="off"
+              textContentType="none"
               error={
                 pwTooShort
                   ? `Use at least ${MIN_PASSWORD} characters.`
@@ -261,9 +253,8 @@ export default function Account() {
               icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
               secureTextEntry
               autoCapitalize="none"
-              autoComplete="new-password"
-              textContentType="newPassword"
-              passwordRules={`minlength: ${MIN_PASSWORD};`}
+              autoComplete="off"
+              textContentType="none"
               error={pwMismatch ? "Passwords don’t match." : undefined}
             />
             <Button
