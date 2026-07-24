@@ -8,6 +8,7 @@ import {
   Hand,
   MapPin,
   MessageCircle,
+  Trash2,
   Users,
   X,
 } from 'lucide-react-native';
@@ -30,7 +31,7 @@ import {
   type MatchRequestWithRequester,
 } from '@/queries/matches';
 import { useHasReported, useReportProfile } from '@/queries/reports';
-import { useSession } from '@/queries/sessions';
+import { useDeleteSession, useSession } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
 function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
@@ -212,6 +213,7 @@ export default function SessionDetail() {
   const { user } = useAuth();
   const request = useCreateMatchRequest();
   const withdraw = useWithdrawRequest();
+  const del = useDeleteSession();
 
   // Ist die Session meine? Vor den frühen Returns berechnet (session evtl. noch
   // undefined → false), damit die folgenden Hooks unbedingt laufen (Hook-Regeln).
@@ -269,6 +271,30 @@ export default function SessionDetail() {
   const pending = status === 'pending';
   const accepted = status === 'accepted';
   const declined = status === 'declined';
+
+  // Löschen ist endgültig (Row weg, Chat via Cascade mit) → immer bestätigen. Die
+  // Copy passt sich der Zahl bereits Beigetretener an: sind Leute dabei, benennen wir
+  // den Preis (sie verlieren Session und Gruppenchat) statt ihn zu verschweigen.
+  function confirmDelete() {
+    const joined = session!.accepted_count;
+    const body =
+      joined > 0
+        ? `${joined} ${joined === 1 ? 'climber' : 'climbers'} already joined. They’ll lose the session and the group chat. This can’t be undone.`
+        : 'It’ll be removed from the feed. This can’t be undone.';
+    Alert.alert('Delete this session?', body, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () =>
+          del.mutate(session!.id, {
+            onSuccess: () => router.back(),
+            onError: () =>
+              Alert.alert('Couldn’t delete', 'Something went wrong. Please try again.'),
+          }),
+      },
+    ]);
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
@@ -356,6 +382,21 @@ export default function SessionDetail() {
 
         {/* Owner: eingehende Anfragen annehmen/ablehnen. */}
         {isMine ? <IncomingRequests sessionId={session.id} full={full} /> : null}
+
+        {/* Owner: Session löschen. Bewusst am Ende und dezent — die Absage ist der
+            Ausnahmefall, nicht die angebotene Handlung (wie „Report profile"). */}
+        {isMine ? (
+          <View className="mt-10 items-center">
+            <Button
+              variant="ghost"
+              size="md"
+              loading={del.isPending}
+              icon={<Trash2 size={16} color={colors.danger} strokeWidth={2} />}
+              onPress={confirmDelete}>
+              <Text className="font-sans-semibold text-[15px] text-danger">Delete session</Text>
+            </Button>
+          </View>
+        ) : null}
       </ScrollView>
 
       {/* Aktionsleiste — nur für fremde Sessions. Ein Platz, Inhalt je Zustand
