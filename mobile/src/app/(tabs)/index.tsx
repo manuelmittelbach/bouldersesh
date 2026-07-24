@@ -18,7 +18,6 @@ import {
   gradeBand,
   skillLabel,
   startOfDay,
-  toDateKey,
 } from '@/lib/utils';
 import { useCities } from '@/queries/cities';
 import { useGyms, type GymWithCity } from '@/queries/gyms';
@@ -107,19 +106,15 @@ function dayPhrase(selected: Date): string {
   return `on ${formatDayChip(selected)}`;
 }
 
-// Drei Leer-Zustände, weil sie Verschiedenes bedeuten: „nur dieser Hallen-Filter ist
-// leer" (dann zurück auf alle Hallen, nicht Anlegen), sonst „an diesem Tag ist in der
-// Stadt nichts los" — dann ist eine erste Session anlegen die richtige Einladung, mit
-// dem gewählten Tag vorausgewählt.
+// Leer-Zustand: „an diesem Tag ist in der Stadt (bzw. der gewählten Halle) nichts los".
+// Nur eine Aussage, kein CTA — wenn keine Session läuft, laden wir nicht zum Anlegen ein.
 function EmptyState({
   cityName,
   gymName,
-  gymId,
   selectedDate,
 }: {
   cityName: string | null;
   gymName: string | null;
-  gymId: string | null;
   selectedDate: Date;
 }) {
   const phrase = dayPhrase(selectedDate);
@@ -133,17 +128,6 @@ function EmptyState({
           ? `No sessions at ${gymName} ${phrase}`
           : `No sessions ${phrase}${cityName ? ` in ${cityName}` : ''} yet`}
       </Text>
-      <View className="mt-4" />
-      <Button
-        variant="primary"
-        icon={<Plus size={16} color={colors.rock[0]} strokeWidth={2.5} />}
-        onPress={() =>
-          router.push(
-            `/sessions/new?date=${toDateKey(selectedDate)}${gymId ? `&gym=${gymId}` : ''}`,
-          )
-        }>
-        Create the first session
-      </Button>
     </View>
   );
 }
@@ -266,7 +250,6 @@ export default function Dashboard() {
             <EmptyState
               cityName={cityName}
               gymName={gymName}
-              gymId={gymId}
               selectedDate={selectedDate}
             />
           )
