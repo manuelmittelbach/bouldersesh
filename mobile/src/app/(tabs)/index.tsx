@@ -277,6 +277,11 @@ export default function Dashboard() {
               gym={item.gym?.name}
               note={item.note}
               onPress={() => router.push(`/sessions/${item.id}`)}
+              onPressAuthor={
+                item.creator?.id
+                  ? () => router.push(`/profile/${item.creator!.id}`)
+                  : undefined
+              }
             />
           );
         }}
