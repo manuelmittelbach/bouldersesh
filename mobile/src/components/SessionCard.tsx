@@ -29,7 +29,7 @@ export type SessionCardProps = {
   band?: GradeBand;
   time?: string;
   gym?: string;
-  /** „N of M spots open" — freie Plätze für Mitkletternde, ohne die Ersteller:in (ADR-0007). */
+  /** „N of M spots left" — freie Plätze für Mitkletternde, ohne die Ersteller:in (ADR-0007). */
   spots?: string | null;
   note?: string | null;
   /** Footer-Slot — z. B. ein Match-Badge. */
