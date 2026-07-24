@@ -69,8 +69,8 @@ export default function Profile() {
   const name = profile?.display_name?.trim() || user?.email || "Profile";
 
   // Der Avatar wird sofort gespeichert, das Formular erst per Save-Button
-  // (ADR-0003). Damit das nicht wie ein Bug wirkt, sagt der Screen es an beiden
-  // Bild-Blöcken ausdrücklich.
+  // (ADR-0003). Die Kamera-Overlay-Geste am Avatar macht das „sofort" sichtbar
+  // genug — ein eigener Hinweistext dafür ist raus.
   const avatarBusy = setAvatar.isPending || removeAvatar.isPending;
   const avatarError = (setAvatar.error ?? removeAvatar.error) as Error | null;
 
@@ -154,8 +154,9 @@ export default function Profile() {
               )}
             </View>
           </Pressable>
-          <Text className="mt-2 font-sans text-[13px] text-rock-400">
-            Tap to change — saves right away
+          {/* Name nur anzeigen (read-only) — editiert wird er auf dem Account-Screen. */}
+          <Text className="mt-3 font-display-bold text-[22px] text-rock-900">
+            {name}
           </Text>
           {avatarError ? (
             <Text className="mt-1 text-center font-sans text-sm text-danger">
