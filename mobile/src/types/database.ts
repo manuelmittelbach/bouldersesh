@@ -40,7 +40,6 @@ export interface Database {
           bio: string | null;
           skill_level: SkillLevel | null;
           preferred_styles: string[] | null;
-          home_gym_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -51,7 +50,6 @@ export interface Database {
           bio?: string | null;
           skill_level?: SkillLevel | null;
           preferred_styles?: string[] | null;
-          home_gym_id?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
