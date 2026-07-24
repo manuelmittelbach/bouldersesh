@@ -51,9 +51,13 @@ function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value
 function RequestRow({
   request,
   sessionId,
+  full,
 }: {
   request: MatchRequestWithRequester;
   sessionId: string;
+  /** Session ist voll — keine Annahme mehr möglich (Gürtel-und-Hosenträger; volle
+   *  Sessions haben ohnehin keine pending Anfragen mehr, ADR-0007). */
+  full: boolean;
 }) {
   const respond = useRespondToMatchRequest();
   const chat = useChatForSession(sessionId, request.status === 'accepted');
@@ -63,6 +67,7 @@ function RequestRow({
   const pending = respond.isPending && respond.variables?.requestId === request.id;
 
   async function accept() {
+    if (full) return;
     const res = await respond.mutateAsync({ requestId: request.id, action: 'accept' });
     if (res.chatId) router.push(`/chats/${res.chatId}`);
   }
@@ -98,7 +103,7 @@ function RequestRow({
             variant="brand"
             size="md"
             label="Accept"
-            disabled={pending}
+            disabled={pending || full}
             onPress={accept}>
             <Check size={20} color={colors.rock[0]} strokeWidth={2.5} />
           </IconButton>
@@ -169,7 +174,7 @@ function ReportButton({ profileId, name }: { profileId: string; name: string }) 
   );
 }
 
-function IncomingRequests({ sessionId }: { sessionId: string }) {
+function IncomingRequests({ sessionId, full }: { sessionId: string; full: boolean }) {
   const { data: requests, isLoading } = useRequestsForSession(sessionId);
 
   return (
@@ -186,7 +191,7 @@ function IncomingRequests({ sessionId }: { sessionId: string }) {
       ) : requests && requests.length > 0 ? (
         <View className="gap-2.5">
           {requests.map((req) => (
-            <RequestRow key={req.id} request={req} sessionId={sessionId} />
+            <RequestRow key={req.id} request={req} sessionId={sessionId} full={full} />
           ))}
         </View>
       ) : (
@@ -244,7 +249,17 @@ export default function SessionDetail() {
   }
 
   const name = session.creator?.display_name ?? 'Anonymous';
-  const buddies = session.max_buddies ?? 1;
+
+  // Plätze (ADR-0007): die Ersteller:in hält den ersten, jede angenommene Anfrage einen
+  // weiteren. Voll, wenn keine Plätze frei sind — oder der Trigger die Session schon auf
+  // `matched` (= voll) gekippt hat.
+  const capacity = session.capacity;
+  const filled = 1 + session.accepted_count;
+  const spotsLeft = Math.max(0, capacity - filled);
+  const full = spotsLeft === 0 || session.status === 'matched';
+  const spotsLabel = full
+    ? 'Full'
+    : `${spotsLeft} of ${capacity} spots left`;
 
   // Der eine untere Aktions-Platz wechselt seinen Inhalt je nach eigenem Anfrage-
   // Zustand (ADR-0006). Der geladene Status GEWINNT immer — so schlägt ein
@@ -327,7 +342,7 @@ export default function SessionDetail() {
           <InfoRow
             icon={<Users size={16} color={colors.brand[700]} strokeWidth={2} />}
             label="Spots"
-            value={buddies > 1 ? `Looking for ${buddies} buddies` : 'Looking for 1 buddy'}
+            value={spotsLabel}
           />
         </Card>
 
@@ -341,7 +356,7 @@ export default function SessionDetail() {
         ) : null}
 
         {/* Owner: eingehende Anfragen annehmen/ablehnen. */}
-        {isMine ? <IncomingRequests sessionId={session.id} /> : null}
+        {isMine ? <IncomingRequests sessionId={session.id} full={full} /> : null}
       </ScrollView>
 
       {/* Aktionsleiste — nur für fremde Sessions. Ein Platz, Inhalt je Zustand

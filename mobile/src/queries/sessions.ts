@@ -41,16 +41,39 @@ export type SessionWithMeta = Session & {
     city_id: string;
     city: { id: string; name: string } | null;
   } | null;
+  /**
+   * Zahl der ANGENOMMENEN Anfragen. Belegte Plätze = 1 (Ersteller:in) + diese Zahl;
+   * freie Plätze = capacity − belegt (ADR-0007). Kommt als eingebetteter, auf
+   * `status='accepted'` gefilterter Count aus einem Query — kein N+1.
+   */
+  accepted_count: number;
 };
 
 // `!inner` rather than a left join: it's the only way to filter on the gym via
 // `.eq("gym.city_id", …)`. There are no sessions without a gym (gym_id is NOT NULL),
 // so the result set is unchanged.
+//
+// `accepted:match_requests ( count )` zählt eingebettet die angenommenen Anfragen. Der
+// Status-Filter steht am Query (`.eq("accepted.status","accepted")`), damit derselbe
+// SELECT für Feed und Detail gilt. To-many-Filter lassen Eltern mit 0 Treffern stehen —
+// teilbesetzte und leere Sessions bleiben im Feed (genau gewollt).
 const SESSION_SELECT = `
   *,
   creator:profiles!sessions_creator_id_fkey ( id, display_name, avatar_path, gallery_paths, skill_level ),
-  gym:gyms!inner ( id, name, city_id, city:cities ( id, name ) )
+  gym:gyms!inner ( id, name, city_id, city:cities ( id, name ) ),
+  accepted:match_requests ( count )
 `;
+
+/** Den eingebetteten `accepted`-Count zu einem flachen `accepted_count` normalisieren. */
+function withAcceptedCount(row: unknown): SessionWithMeta {
+  const { accepted, ...rest } = row as Record<string, unknown> & {
+    accepted?: { count: number }[];
+  };
+  return {
+    ...(rest as unknown as SessionWithMeta),
+    accepted_count: accepted?.[0]?.count ?? 0,
+  };
+}
 
 async function getOpenSessions(
   params: OpenSessionsParams,
@@ -59,6 +82,7 @@ async function getOpenSessions(
     .from("sessions")
     .select(SESSION_SELECT)
     .eq("status", "open")
+    .eq("accepted.status", "accepted")
     .order("starts_at", { ascending: true });
 
   if (params.city_id) query = query.eq("gym.city_id", params.city_id);
@@ -68,7 +92,7 @@ async function getOpenSessions(
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []) as unknown as SessionWithMeta[];
+  return (data ?? []).map(withAcceptedCount);
 }
 
 export function useOpenSessions(params: OpenSessionsParams = {}) {
@@ -89,9 +113,10 @@ async function getSession(id: string): Promise<SessionWithMeta | null> {
     .from("sessions")
     .select(SESSION_SELECT)
     .eq("id", id)
+    .eq("accepted.status", "accepted")
     .maybeSingle();
   if (error) throw error;
-  return data as unknown as SessionWithMeta | null;
+  return data ? withAcceptedCount(data) : null;
 }
 
 export function useSession(id: string | undefined) {
@@ -113,11 +138,12 @@ async function getMySessions(userId: string): Promise<SessionWithMeta[]> {
     .from("sessions")
     .select(SESSION_SELECT)
     .eq("creator_id", userId)
+    .eq("accepted.status", "accepted")
     .in("status", ["open", "matched"])
     .gte("starts_at", new Date().toISOString())
     .order("starts_at", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as unknown as SessionWithMeta[];
+  return (data ?? []).map(withAcceptedCount);
 }
 
 export function useMySessions() {
@@ -136,7 +162,8 @@ export type CreateSessionInput = {
   ends_at?: string | null;
   /** Pflicht (nicht-leer) — trägt „was ich klettern will", siehe ADR-0005. */
   note: string;
-  max_buddies?: number;
+  /** Party-Größe inkl. Ersteller:in, 2–4 (ADR-0007). Von der Ersteller:in gewählt. */
+  capacity: number;
   visibility?: "public" | "friends";
 };
 
