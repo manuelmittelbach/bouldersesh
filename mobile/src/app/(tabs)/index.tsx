@@ -260,7 +260,7 @@ export default function Dashboard() {
           // Gastgeber:in, kein Platz (ADR-0007). Also: capacity − 1 Plätze, minus die
           // schon angenommenen. Der Feed zeigt nur offene Sessions, also ≥ 1 frei.
           const spotsTotal = item.capacity - 1;
-          const spotsOpen = Math.max(0, spotsTotal - item.accepted_count);
+          const spotsLeft = Math.max(0, spotsTotal - item.accepted_count);
           return (
             <SessionCard
               name={name}
@@ -275,7 +275,7 @@ export default function Dashboard() {
               time={formatSessionTime(item.starts_at, { withDay: false })}
               // Nur der Hallenname: die Stadt steht bereits im Titel des Feeds.
               gym={item.gym?.name}
-              spots={`${spotsOpen} of ${spotsTotal} ${spotsTotal === 1 ? 'spot' : 'spots'} open`}
+              spots={`${spotsLeft} of ${spotsTotal} ${spotsTotal === 1 ? 'spot' : 'spots'} left`}
               note={item.note}
               requested={requestedIds?.has(item.id) ?? false}
               onPress={() => router.push(`/sessions/${item.id}`)}
