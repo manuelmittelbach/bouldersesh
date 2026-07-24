@@ -250,16 +250,15 @@ export default function SessionDetail() {
 
   const name = session.creator?.display_name ?? 'Anonymous';
 
-  // Plätze (ADR-0007): die Ersteller:in hält den ersten, jede angenommene Anfrage einen
-  // weiteren. Voll, wenn keine Plätze frei sind — oder der Trigger die Session schon auf
-  // `matched` (= voll) gekippt hat.
-  const capacity = session.capacity;
-  const filled = 1 + session.accepted_count;
-  const spotsLeft = Math.max(0, capacity - filled);
+  // Plätze (ADR-0007): die Ersteller:in ist Gastgeber:in, kein Platz — es gibt also
+  // capacity − 1 Plätze für Mitkletternde, jede angenommene Anfrage belegt einen. Voll,
+  // wenn keiner frei ist — oder der Trigger die Session schon auf `matched` (= voll) kippt.
+  const spotsTotal = session.capacity - 1;
+  const spotsLeft = Math.max(0, spotsTotal - session.accepted_count);
   const full = spotsLeft === 0 || session.status === 'matched';
   const spotsLabel = full
     ? 'Full'
-    : `${spotsLeft} of ${capacity} spots left`;
+    : `${spotsLeft} of ${spotsTotal} ${spotsTotal === 1 ? 'spot' : 'spots'} left`;
 
   // Der eine untere Aktions-Platz wechselt seinen Inhalt je nach eigenem Anfrage-
   // Zustand (ADR-0006). Der geladene Status GEWINNT immer — so schlägt ein

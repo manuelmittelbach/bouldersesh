@@ -28,9 +28,9 @@ import { colors } from "@/theme/colors";
 // Hallen-Startzeiten ab, ohne minutengenaue Übergenauigkeit.
 const TIME_MINUTE_INTERVAL = 15;
 
-// Party-Größe inkl. Ersteller:in (ADR-0007). Untergrenze 2 (eine Solo-Session ergibt
-// keinen Sinn), Obergrenze 4. Reihenfolge hoch→runter (4 links, vorausgewählt).
-const PARTY_SIZES = [4, 3, 2] as const;
+// Plätze für Mitkletternde (ADR-0007) — die Ersteller:in ist Gastgeber:in, kein Platz.
+// 1–3 Plätze (Party 2–4 inkl. Gastgeber:in). Reihenfolge hoch→runter (3 links, vorgewählt).
+const SPOT_OPTIONS = [3, 2, 1] as const;
 
 function Eyebrow({ children }: { children: string }) {
   return (
@@ -109,7 +109,8 @@ export default function SessionCreate() {
   // Meetup/Google Calendar. Hier steht nur, ob es offen ist; die Bestätigung setzt `time`.
   const [timeSheetOpen, setTimeSheetOpen] = useState(false);
   const [note, setNote] = useState("");
-  const [capacity, setCapacity] = useState<number>(4);
+  // Gewählt werden Plätze für andere; die DB speichert die Party-Größe (Plätze + Gastgeber:in).
+  const [spots, setSpots] = useState<number>(3);
   const [error, setError] = useState<string | null>(null);
 
   const clockLabel = `${time.getHours().toString().padStart(2, "0")}:${time
@@ -175,7 +176,8 @@ export default function SessionCreate() {
         gym_id: gymId,
         starts_at: dt.toISOString(),
         note: note.trim(),
-        capacity,
+        // DB-Kapazität = Plätze für andere + Gastgeber:in (ADR-0007).
+        capacity: spots + 1,
       });
       leaveAfterCreate();
     } catch (e) {
@@ -311,23 +313,24 @@ export default function SessionCreate() {
           </Pressable>
         </View>
 
-        {/* Gruppengröße — Party-Größe inkl. Ersteller:in (ADR-0007). Chip-Reihe wie bei
-              der Stadt; 2/3/4, Default 2. Der Zusatz erklärt „mit dir zusammen". */}
+        {/* Plätze — Sitze für Mitkletternde, ohne die Ersteller:in (ADR-0007). Chip-Reihe
+              wie bei der Stadt; 3/2/1, Default 3. Der Zusatz stellt klar: du bist nicht dabei
+              mitgezählt. */}
         <View className="mb-6">
-          <Eyebrow>Group size</Eyebrow>
+          <Eyebrow>Spots</Eyebrow>
           <View className="flex-row gap-2">
-            {PARTY_SIZES.map((size) => (
+            {SPOT_OPTIONS.map((count) => (
               <Chip
-                key={size}
-                active={capacity === size}
-                onPress={() => setCapacity(size)}
+                key={count}
+                active={spots === count}
+                onPress={() => setSpots(count)}
               >
-                {String(size)}
+                {String(count)}
               </Chip>
             ))}
           </View>
           <Text className="mt-2 font-sans text-xs text-rock-400">
-            Total climbers, including you.
+            Open spots for others to join.
           </Text>
         </View>
 
