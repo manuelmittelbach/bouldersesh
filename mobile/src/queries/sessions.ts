@@ -186,3 +186,23 @@ export function useCreateSession() {
     },
   });
 }
+
+// Löscht eine eigene Session. Der `session delete own`-RLS-Policy (0002) lässt nur die
+// Ersteller:in durch — der Client zeigt den Knopf ohnehin nur bei `isMine`. Der FK-Cascade
+// (0015) räumt match_requests und den Gruppenchat (Members + Nachrichten) gleich mit ab,
+// darum invalidieren wir neben `sessions` auch `chats`, damit die aufgelöste Runde aus der
+// Chat-Liste fällt.
+export function useDeleteSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("sessions").delete().eq("id", id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+    },
+  });
+}
