@@ -247,8 +247,16 @@ export default function SessionDetail() {
         className="flex-1"
         contentContainerClassName="px-5"
         contentContainerStyle={{ paddingBottom: isMine ? 32 : 120 }}>
-        {/* Creator */}
-        <View className="mt-2 items-center">
+        {/* Creator — tippbar zum read-only Profil (profile/[id]). Ist die
+            Ersteller:in gelöscht (kein creator), bleibt der Block untippbar. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`View ${name}’s profile`}
+          disabled={!session.creator?.id}
+          onPress={() =>
+            session.creator?.id && router.push(`/profile/${session.creator.id}`)
+          }
+          className="mt-2 items-center active:opacity-70">
           <Avatar
             name={name}
             tone={avatarTone(session.creator?.id ?? name)}
@@ -265,10 +273,10 @@ export default function SessionDetail() {
               />
             </View>
           ) : null}
-        </View>
+        </Pressable>
 
-        {/* Galeriefotos der Ersteller:in — der einzige Ort, an dem fremde Fotos
-            zu sehen sind. Einen eigenen Profil-Screen gibt es bewusst nicht. */}
+        {/* Galeriefotos der Ersteller:in. Der Creator-Block oben führt zum vollen
+            (read-only) Profil-Screen; die Galerie steht hier zusätzlich im Kontext. */}
         {session.creator?.gallery_paths?.length ? (
           <View className="mt-5">
             <ProfileGallery paths={session.creator.gallery_paths} />

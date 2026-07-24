@@ -6,6 +6,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   Text,
   TextInput,
   View,
@@ -56,9 +57,23 @@ export default function Chat() {
         <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
           <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
         </IconButton>
-        <Text numberOfLines={1} className="flex-1 font-display text-base text-rock-900">
-          {title}
-        </Text>
+        {/* Der Name führt zum read-only Profil. Hat sich das Gegenüber gelöscht
+            (other === null), bleibt es beim untippbaren „Chat“. */}
+        {other?.id ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`View ${title}’s profile`}
+            onPress={() => router.push(`/profile/${other.id}`)}
+            className="flex-1 active:opacity-70">
+            <Text numberOfLines={1} className="font-display text-base text-rock-900">
+              {title}
+            </Text>
+          </Pressable>
+        ) : (
+          <Text numberOfLines={1} className="flex-1 font-display text-base text-rock-900">
+            {title}
+          </Text>
+        )}
       </View>
 
       <KeyboardAvoidingView

@@ -58,6 +58,7 @@ function RootNavigator() {
           <Stack.Screen name="sessions/new" />
           <Stack.Screen name="sessions/[id]" />
           <Stack.Screen name="chats/[id]" />
+          <Stack.Screen name="profile/[id]" />
         </Stack.Protected>
         <Stack.Screen name="city" />
         {/* Aus dem Profil erreichbare Account-Screens. Bewusst nur im Session-
