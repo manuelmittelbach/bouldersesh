@@ -6,7 +6,7 @@ import { useCallback } from "react";
  * The active city — the context the discover feed shows sessions in.
  *
  * Deliberately a DEVICE preference, not a profile attribute: it is not synced with
- * the account and is independent of `profiles.home_gym_id`. See CONTEXT.md
+ * the account. The gym is chosen per session, not stored on the profile. See CONTEXT.md
  * ("Aktive Stadt") and docs/adr/0002-stadt-als-eigene-entitaet.md.
  *
  * Stored in AsyncStorage but mirrored through TanStack Query, following the useAuth
