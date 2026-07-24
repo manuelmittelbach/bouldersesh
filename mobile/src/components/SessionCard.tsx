@@ -1,4 +1,4 @@
-import { Check, Clock, MapPin } from 'lucide-react-native';
+import { Check, Clock, MapPin, Users } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -29,6 +29,8 @@ export type SessionCardProps = {
   band?: GradeBand;
   time?: string;
   gym?: string;
+  /** „N of M joined · K open" — belegte vs. freie Plätze (ADR-0007). */
+  spots?: string | null;
   note?: string | null;
   /** Footer-Slot — z. B. ein Match-Badge. */
   footer?: ReactNode;
@@ -50,6 +52,7 @@ export function SessionCard({
   band = 'neutral',
   time,
   gym,
+  spots,
   note,
   footer,
   requested = false,
@@ -86,6 +89,9 @@ export function SessionCard({
           ) : null}
           {gym ? (
             <MetaRow icon={<MapPin size={14} color={colors.rock[400]} strokeWidth={2} />}>{gym}</MetaRow>
+          ) : null}
+          {spots ? (
+            <MetaRow icon={<Users size={14} color={colors.rock[400]} strokeWidth={2} />}>{spots}</MetaRow>
           ) : null}
           {note ? (
             <Text numberOfLines={3} className="mt-2 font-sans text-[13px] leading-5 text-rock-700">

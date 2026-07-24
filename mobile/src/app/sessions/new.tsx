@@ -29,8 +29,8 @@ import { colors } from "@/theme/colors";
 const TIME_MINUTE_INTERVAL = 15;
 
 // Party-Größe inkl. Ersteller:in (ADR-0007). Untergrenze 2 (eine Solo-Session ergibt
-// keinen Sinn), Obergrenze 4. Default 2 = die frühere Ein-Buddy-Verabredung.
-const PARTY_SIZES = [2, 3, 4] as const;
+// keinen Sinn), Obergrenze 4. Reihenfolge hoch→runter (4 links, vorausgewählt).
+const PARTY_SIZES = [4, 3, 2] as const;
 
 function Eyebrow({ children }: { children: string }) {
   return (
@@ -109,7 +109,7 @@ export default function SessionCreate() {
   // Meetup/Google Calendar. Hier steht nur, ob es offen ist; die Bestätigung setzt `time`.
   const [timeSheetOpen, setTimeSheetOpen] = useState(false);
   const [note, setNote] = useState("");
-  const [capacity, setCapacity] = useState<number>(2);
+  const [capacity, setCapacity] = useState<number>(4);
   const [error, setError] = useState<string | null>(null);
 
   const clockLabel = `${time.getHours().toString().padStart(2, "0")}:${time

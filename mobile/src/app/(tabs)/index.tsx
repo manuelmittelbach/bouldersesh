@@ -256,6 +256,10 @@ export default function Dashboard() {
         }
         renderItem={({ item }) => {
           const name = item.creator?.display_name ?? 'Anonymous';
+          // Belegte Plätze = Ersteller:in + angenommene Anfragen; der Feed zeigt nur
+          // offene Sessions, also gibt es immer noch freie Plätze (ADR-0007).
+          const filledSpots = 1 + item.accepted_count;
+          const spotsLeft = Math.max(0, item.capacity - filledSpots);
           return (
             <SessionCard
               name={name}
@@ -270,6 +274,7 @@ export default function Dashboard() {
               time={formatSessionTime(item.starts_at, { withDay: false })}
               // Nur der Hallenname: die Stadt steht bereits im Titel des Feeds.
               gym={item.gym?.name}
+              spots={`${filledSpots} of ${item.capacity} joined · ${spotsLeft} open`}
               note={item.note}
               requested={requestedIds?.has(item.id) ?? false}
               onPress={() => router.push(`/sessions/${item.id}`)}
