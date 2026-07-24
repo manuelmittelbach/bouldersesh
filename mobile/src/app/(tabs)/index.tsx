@@ -256,10 +256,11 @@ export default function Dashboard() {
         }
         renderItem={({ item }) => {
           const name = item.creator?.display_name ?? 'Anonymous';
-          // Belegte Plätze = Ersteller:in + angenommene Anfragen; der Feed zeigt nur
-          // offene Sessions, also gibt es immer noch freie Plätze (ADR-0007).
-          const filledSpots = 1 + item.accepted_count;
-          const spotsLeft = Math.max(0, item.capacity - filledSpots);
+          // Plätze zählen NUR die Mitkletternden, nicht die Ersteller:in — die ist
+          // Gastgeber:in, kein Platz (ADR-0007). Also: capacity − 1 Plätze, minus die
+          // schon angenommenen. Der Feed zeigt nur offene Sessions, also ≥ 1 frei.
+          const spotsTotal = item.capacity - 1;
+          const spotsOpen = Math.max(0, spotsTotal - item.accepted_count);
           return (
             <SessionCard
               name={name}
@@ -274,7 +275,7 @@ export default function Dashboard() {
               time={formatSessionTime(item.starts_at, { withDay: false })}
               // Nur der Hallenname: die Stadt steht bereits im Titel des Feeds.
               gym={item.gym?.name}
-              spots={`${filledSpots} of ${item.capacity} joined · ${spotsLeft} open`}
+              spots={`${spotsOpen} of ${spotsTotal} ${spotsTotal === 1 ? 'spot' : 'spots'} open`}
               note={item.note}
               requested={requestedIds?.has(item.id) ?? false}
               onPress={() => router.push(`/sessions/${item.id}`)}
