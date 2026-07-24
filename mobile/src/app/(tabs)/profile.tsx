@@ -6,11 +6,11 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GalleryEditor } from "@/components/GalleryEditor";
-import { Avatar, Button, Chip, Input } from "@/components/ui";
+import { Avatar, Chip, Input } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 import { useKeyboardAwareField } from "@/hooks/useKeyboardAwareField";
 import { publicImageUrl } from "@/lib/images";
-import { avatarTone, SKILL_LABEL, SKILL_LEVELS } from "@/lib/utils";
+import { avatarTone, cn, SKILL_LABEL, SKILL_LEVELS } from "@/lib/utils";
 import {
   useRemoveAvatar,
   useSetAvatar,
@@ -93,11 +93,35 @@ export default function Profile() {
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={["top"]}>
-      {/* Titel klebt fest oben — scrollt nicht mit dem Formular weg. */}
-      <View className="px-5 pb-3 pt-2">
+      {/* Titel + Save kleben fest oben — scrollen nicht mit dem Formular weg.
+          Save sitzt oben rechts (Industriestandard für Edit-Profil: immer
+          sichtbar, kanonischer Ort), Brand-farben wenn dirty, sonst ausgegraut. */}
+      <View className="flex-row items-center justify-between px-5 pb-3 pt-2">
         <Text className="font-display-bold text-[30px] leading-none text-rock-900">
           Profile
         </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Save profile"
+          accessibilityState={{ disabled: !dirty || update.isPending }}
+          disabled={!dirty || update.isPending}
+          onPress={save}
+          hitSlop={10}
+          className="min-w-[56px] items-end justify-center py-1 active:opacity-60"
+        >
+          {update.isPending ? (
+            <ActivityIndicator size="small" color={colors.brand[500]} />
+          ) : (
+            <Text
+              className={cn(
+                "font-sans-semibold text-[17px]",
+                dirty ? "text-brand-500" : "text-rock-300",
+              )}
+            >
+              Save
+            </Text>
+          )}
+        </Pressable>
       </View>
 
       <KeyboardAwareScrollView
@@ -176,19 +200,8 @@ export default function Profile() {
             placeholder="A line or two about you and your climbing."
           />
 
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            disabled={!dirty}
-            loading={update.isPending}
-            onPress={save}
-          >
-            Save
-          </Button>
-
           {update.isError ? (
-            <Text className="-mt-3 text-center font-sans text-sm text-danger">
+            <Text className="text-center font-sans text-sm text-danger">
               {(update.error as Error).message}
             </Text>
           ) : null}

@@ -133,30 +133,35 @@ export default function Account() {
         bottomOffset={bottomOffset}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Name */}
+        {/* Name — eigener Button im gleichen Stil wie E-Mail/Passwort (outline,
+            grau), damit der Account-Screen in sich konsistent ist: drei gleich
+            aussehende Aktionen. Ausgegraut bis zur Änderung. (Der Profil-Tab hat
+            bewusst einen anderen, orangen Header-Save — dort sind Skill/Bio
+            zusammen eine Sache; hier ist jedes Feld für sich.) */}
         <View className="mt-6">
           <SectionHeader>Name</SectionHeader>
-          <Input
-            value={displayName}
-            onChangeText={setDisplayName}
-            placeholder="What should we call you?"
-          />
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            className="mt-3"
-            disabled={!nameDirty}
-            loading={updateProfile.isPending}
-            onPress={saveName}
-          >
-            Save name
-          </Button>
-          {updateProfile.isError ? (
-            <Text className="mt-2 text-center font-sans text-sm text-danger">
-              {(updateProfile.error as Error).message}
-            </Text>
-          ) : null}
+          <View className="gap-3">
+            <Input
+              value={displayName}
+              onChangeText={setDisplayName}
+              placeholder="What should we call you?"
+            />
+            <Button
+              variant="outline"
+              size="lg"
+              fullWidth
+              disabled={!nameDirty}
+              loading={updateProfile.isPending}
+              onPress={saveName}
+            >
+              Update name
+            </Button>
+            {updateProfile.isError ? (
+              <Text className="text-center font-sans text-sm text-danger">
+                {(updateProfile.error as Error).message}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
         {/* E-Mail */}
