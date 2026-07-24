@@ -37,8 +37,7 @@ export default function Profile() {
   const [bio, setBio] = useState("");
 
   // bottomOffset aus der gemessenen Bio-Höhe (mehrzeilig, wächst mit dem Text).
-  const { bottomOffset, extraKeyboardSpace, onFieldLayout } =
-    useKeyboardAwareField();
+  const { bottomOffset, onFieldLayout } = useKeyboardAwareField();
 
   // Formularfelder EINMAL pro Profil-Identität aus dem geladenen Profil seeden. Nicht bei
   // jeder Daten-Änderung neu setzen — sonst würde ein Hintergrund-Refetch laufende (noch
@@ -94,19 +93,19 @@ export default function Profile() {
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={["top"]}>
+      {/* Titel klebt fest oben — scrollt nicht mit dem Formular weg. */}
+      <View className="px-5 pb-3 pt-2">
+        <Text className="font-display-bold text-[30px] leading-none text-rock-900">
+          Profile
+        </Text>
+      </View>
+
       <KeyboardAwareScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-10"
         bottomOffset={bottomOffset}
-        extraKeyboardSpace={extraKeyboardSpace}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="pb-3 pt-2">
-          <Text className="font-display-bold text-[30px] leading-none text-rock-900">
-            Profile
-          </Text>
-        </View>
-
         {/* Kopf — nur noch der Avatar als visuelle Identität. Name, E-Mail und
               Skill-Badge sind raus; Name/E-Mail wohnen auf dem Account-Screen. */}
         <View className="mt-4 items-center">

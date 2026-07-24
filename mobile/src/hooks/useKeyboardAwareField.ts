@@ -33,10 +33,9 @@ export function useKeyboardAwareField({ clearance = 0 }: Options = {}) {
 
   const bottomOffset = fieldHeight + FIELD_GAP + clearance;
 
-  return {
-    bottomOffset,
-    // Genug Scroll-Raum, damit auch ein Feld zuunterst im Formular so weit hoch kann.
-    extraKeyboardSpace: bottomOffset,
-    onFieldLayout,
-  };
+  // Bewusst KEIN extraKeyboardSpace: bottomOffset steuert nur die Scroll-Distanz
+  // (begrenzt durch die Inhaltshöhe) und erzeugt selbst keinen Leerraum. Ein Puffer
+  // würde bei offener Tastatur unten sichtbar leeren Platz anhängen — unnötig, solange
+  // unter dem Feld noch Inhalt (Buttons o.ä.) steht, der als Scroll-Raum dient.
+  return { bottomOffset, onFieldLayout };
 }

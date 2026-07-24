@@ -52,8 +52,12 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
         </Text>
       ) : null}
       <View
+        // Nur mehrzeilige Felder melden ihre Höhe: dort kann der Cursor oben stehen,
+        // während die Box nach unten reicht — der Scroll muss die ganze Box freiräumen.
+        // Bei einzeiligen Feldern sitzt der Cursor faktisch an der Unterkante; die Lib
+        // scrollt sie ohnehin frei, ein Höhen-Aufschlag würde nur zu weit hochscrollen.
         onLayout={
-          onFieldLayout
+          onFieldLayout && multiline
             ? (e) => onFieldLayout(e.nativeEvent.layout.height)
             : undefined
         }

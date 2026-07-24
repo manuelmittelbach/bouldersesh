@@ -37,10 +37,9 @@ export default function Account() {
   const changeEmail = useChangeEmail();
   const changePassword = useChangePassword();
 
-  // Alle Felder hier sind einzeilig und gleich hoch — ein gemessenes Feld genügt, um
-  // den Scroll-Offset zu speisen (siehe onFieldLayout an der Name-Eingabe unten).
-  const { bottomOffset, extraKeyboardSpace, onFieldLayout } =
-    useKeyboardAwareField();
+  // Alle Felder hier sind einzeilig — die Lib scrollt sie schon voll frei, es reicht der
+  // reine Gap-Offset (kein Höhen-Aufschlag, sonst würde es zu weit hochscrollen).
+  const { bottomOffset } = useKeyboardAwareField();
 
   // Name — wie auf dem Profil einmal pro Identität seeden, damit ein
   // Hintergrund-Refetch keine laufende Eingabe überschreibt.
@@ -115,30 +114,31 @@ export default function Account() {
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={["top"]}>
+      {/* Zurück-Knopf und Titel kleben fest oben — der Titel scrollt nicht mit dem
+          Formular weg. */}
       <View className="px-4 py-2">
         <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
           <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
         </IconButton>
+      </View>
+      <View className="px-5 pb-2">
+        <Text className="font-display-bold text-[28px] leading-8 text-rock-900">
+          Account
+        </Text>
       </View>
 
       <KeyboardAwareScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-10"
         bottomOffset={bottomOffset}
-        extraKeyboardSpace={extraKeyboardSpace}
         keyboardShouldPersistTaps="handled"
       >
-        <Text className="mt-2 font-display-bold text-[28px] leading-8 text-rock-900">
-          Account
-        </Text>
-
         {/* Name */}
-        <View className="mt-8">
+        <View className="mt-6">
           <SectionHeader>Name</SectionHeader>
           <Input
             value={displayName}
             onChangeText={setDisplayName}
-            onFieldLayout={onFieldLayout}
             placeholder="What should we call you?"
           />
           <Button
