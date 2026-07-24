@@ -125,8 +125,6 @@ export function useCreateSession() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions", "open"] });
-      // The city picker shows "N open sessions" — otherwise the number would lag.
-      queryClient.invalidateQueries({ queryKey: ["cities", "openSessionCounts"] });
     },
   });
 }

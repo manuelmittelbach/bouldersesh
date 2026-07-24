@@ -9,12 +9,10 @@ import type { City } from '@/types/database';
 // Daten und „was passiert beim Tippen" kommen von außen.
 export function CityOptionList({
   cities,
-  counts,
   activeId,
   onPick,
 }: {
   cities: City[];
-  counts: Record<string, number> | undefined;
   activeId: string | null;
   onPick: (id: string) => void;
 }) {
@@ -22,7 +20,6 @@ export function CityOptionList({
     <View className="gap-2">
       {cities.map((city) => {
         const active = activeId === city.id;
-        const count = counts?.[city.id] ?? 0;
         return (
           <Pressable
             key={city.id}
@@ -44,13 +41,6 @@ export function CityOptionList({
                 }>
                 {city.name}
               </Text>
-              {/* Solange `counts` lädt, gar keine Zeile — lieber nichts sagen als
-                  „0 open sessions" behaupten. */}
-              {counts ? (
-                <Text className="mt-0.5 font-sans text-[13px] text-rock-500">
-                  {count === 1 ? '1 open session' : `${count} open sessions`}
-                </Text>
-              ) : null}
             </View>
             {active ? <Check size={18} color={colors.brand[600]} strokeWidth={2.5} /> : null}
           </Pressable>
