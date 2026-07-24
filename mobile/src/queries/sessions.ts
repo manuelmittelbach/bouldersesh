@@ -5,12 +5,15 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import type { Session } from "@/types/database";
 
 const OPEN_SESSIONS_KEY = (params: OpenSessionsParams) =>
   ["sessions", "open", params] as const;
 const SESSION_KEY = (id: string) => ["sessions", id] as const;
+const MY_SESSIONS_KEY = (userId: string) =>
+  ["sessions", "mine", userId] as const;
 
 export type OpenSessionsParams = {
   /** The feed's city context. Filters through the gym — sessions carry no city. */
@@ -96,6 +99,34 @@ export function useSession(id: string | undefined) {
     queryKey: SESSION_KEY(id ?? ""),
     queryFn: () => getSession(id!),
     enabled: !!id,
+  });
+}
+
+// Meine eigenen kommenden Sessions — der „Your sessions"-Abschnitt am Profil-Tab.
+// Bewusst `open` UND `matched`: sobald jemand annimmt, kippt die Session per Trigger
+// auf `matched` und fällt aus dem Feed (der filtert `open`) — dann ist diese Liste
+// der einzige Ort, an dem die Ersteller:in sie noch wiederfindet. `starts_at >= now`
+// wie der Feed, damit Vergangenes verschwindet. Das `now` lebt in der queryFn (nicht
+// im Key), der Key ist stabil → kein Refetch-Sturm; Aktualisierung per Focus-Refetch.
+async function getMySessions(userId: string): Promise<SessionWithMeta[]> {
+  const { data, error } = await supabase
+    .from("sessions")
+    .select(SESSION_SELECT)
+    .eq("creator_id", userId)
+    .in("status", ["open", "matched"])
+    .gte("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as unknown as SessionWithMeta[];
+}
+
+export function useMySessions() {
+  const { user } = useAuth();
+  const userId = user?.id;
+  return useQuery({
+    queryKey: MY_SESSIONS_KEY(userId ?? ""),
+    queryFn: () => getMySessions(userId!),
+    enabled: !!userId,
   });
 }
 

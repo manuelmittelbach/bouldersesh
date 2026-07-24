@@ -84,6 +84,40 @@ export function useRequestsForSession(sessionId: string | undefined) {
   return query;
 }
 
+async function getPendingCountsForSessions(
+  sessionIds: string[],
+): Promise<Record<string, number>> {
+  if (sessionIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from("match_requests")
+    .select("session_id")
+    .in("session_id", sessionIds)
+    .eq("status", "pending");
+  if (error) throw error;
+  const counts: Record<string, number> = {};
+  for (const r of data ?? []) {
+    counts[r.session_id] = (counts[r.session_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/**
+ * Wie viele offene (pending) Anfragen jede meiner Sessions hat — der „N requests"-
+ * Streifen an den eigenen Session-Karten (Profil-Tab). RLS lässt Ersteller:innen die
+ * Anfragen an ihren Sessions lesen (dieselbe Sicht wie useRequestsForSession). Der
+ * Key sortiert die IDs, damit er stabil bleibt, solange sich die Session-Menge nicht
+ * ändert. Kein Realtime (wie useMyPendingRequests) — der Profil-Tab refetcht on-focus.
+ */
+export function usePendingCountsForSessions(sessionIds: string[]) {
+  const sorted = [...sessionIds].sort();
+  return useQuery({
+    queryKey: ["matches", "incoming", "counts", sorted],
+    queryFn: () => getPendingCountsForSessions(sorted),
+    enabled: sorted.length > 0,
+    staleTime: 30_000,
+  });
+}
+
 export function useCreateMatchRequest() {
   const queryClient = useQueryClient();
   return useMutation({
