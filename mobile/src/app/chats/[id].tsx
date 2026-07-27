@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   View,
@@ -18,7 +19,7 @@ import { Avatar, IconButton } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, formatClock } from '@/lib/utils';
-import { buildChatTitle, useChatMembers, useMessages, useSendMessage } from '@/queries/chat';
+import { useChatMembers, useMessages, useSendMessage } from '@/queries/chat';
 import type { Message } from '@/types/database';
 import { colors } from '@/theme/colors';
 
@@ -31,17 +32,10 @@ export default function Chat() {
   const send = useSendMessage(id);
 
   const memberById = new Map((members ?? []).map((m) => [m.id, m]));
-  // Der Titel kommt aus den *anderen* Mitgliedern (ADR-0007): eine Zweier-Runde zeigt
-  // den einen Namen, eine Gruppe „Anna, Ben +1". Hat sich das einzige Gegenüber gelöscht,
-  // ist der Chat nur noch ich → generisches „Chat“ (ADR-0004).
+  // Der Kopf zeigt die *anderen* Mitglieder (ADR-0007) als Avatar+Name-Leiste — jede
+  // Person tippbar zu ihrem Profil. Hat sich das einzige Gegenüber gelöscht, ist der
+  // Chat nur noch ich → generisches „Chat“ (ADR-0004).
   const others = (members ?? []).filter((m) => m.id !== user?.id);
-  const isGroup = others.length > 1;
-  const title = others.length
-    ? buildChatTitle(others.map((m) => m.display_name ?? 'Anonymous'))
-    : 'Chat';
-  // Nur bei genau einem Gegenüber führt der Kopf zum Profil — eine Gruppe hat kein
-  // einzelnes Ziel.
-  const soloOther = others.length === 1 ? others[0] : null;
   const [body, setBody] = useState('');
   const listRef = useRef<FlatList<Message>>(null);
 
@@ -63,43 +57,42 @@ export default function Chat() {
         <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
           <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
         </IconButton>
-        {/* Gruppe: gestapelte Avatare + untippbarer Titel. 1:1: der Name führt zum
-            read-only Profil. Gelöschtes Gegenüber (soloOther === null, kein Gruppe) →
-            untippbares „Chat“. */}
-        {isGroup ? (
-          <View className="flex-1 flex-row items-center gap-2">
-            <View className="flex-row">
-              {others.slice(0, 3).map((m, i) => (
-                <View
+        {/* Mitglieder-Leiste: jede andere Person als Avatar + Name, tippbar zum
+            read-only Profil. Horizontal scrollbar, falls die Namen nicht in eine
+            Zeile passen. Gelöschtes Gegenüber (keine anderen) → untippbares „Chat“. */}
+        {others.length ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="flex-1"
+            contentContainerClassName="items-center gap-3 pr-2">
+            {others.map((m) => {
+              const memberName = m.display_name ?? 'Anonymous';
+              return (
+                <Pressable
                   key={m.id}
-                  style={{ marginLeft: i === 0 ? 0 : -8 }}
-                  className="rounded-full border-2 border-rock-25">
+                  accessibilityRole="button"
+                  accessibilityLabel={`View ${memberName}’s profile`}
+                  onPress={() => router.push(`/profile/${m.id}`)}
+                  className="flex-row items-center gap-1.5 active:opacity-70">
                   <Avatar
-                    name={m.display_name ?? 'Anonymous'}
+                    name={memberName}
                     tone={avatarTone(m.id)}
                     size="xs"
                     src={publicImageUrl(m.avatar_path)}
                   />
-                </View>
-              ))}
-            </View>
-            <Text numberOfLines={1} className="flex-1 font-display text-base text-rock-900">
-              {title}
-            </Text>
-          </View>
-        ) : soloOther?.id ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`View ${title}’s profile`}
-            onPress={() => router.push(`/profile/${soloOther.id}`)}
-            className="flex-1 active:opacity-70">
-            <Text numberOfLines={1} className="font-display text-base text-rock-900">
-              {title}
-            </Text>
-          </Pressable>
+                  <Text
+                    numberOfLines={1}
+                    className="max-w-[140px] font-display text-base text-rock-900">
+                    {memberName}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         ) : (
           <Text numberOfLines={1} className="flex-1 font-display text-base text-rock-900">
-            {title}
+            Chat
           </Text>
         )}
       </View>
