@@ -1,12 +1,11 @@
-import { router, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
 import { Camera, ChevronRight, UserCog } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GalleryEditor } from "@/components/GalleryEditor";
-import { MySessionCard } from "@/components/MySessionCard";
 import { Avatar, Chip, Input } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 import { useKeyboardAwareField } from "@/hooks/useKeyboardAwareField";
@@ -14,18 +13,15 @@ import { publicImageUrl } from "@/lib/images";
 import {
   avatarTone,
   cn,
-  formatSessionTime,
   gradeBand,
   SKILL_LABEL,
   SKILL_LEVELS,
 } from "@/lib/utils";
-import { usePendingCountsForSessions } from "@/queries/matches";
 import {
   useRemoveAvatar,
   useSetAvatar,
   useUpdateProfile,
 } from "@/queries/profiles";
-import { useMySessions } from "@/queries/sessions";
 import type { SkillLevel } from "@/types/database";
 import { colors } from "@/theme/colors";
 
@@ -45,29 +41,6 @@ export default function Profile() {
 
   const [skill, setSkill] = useState<SkillLevel | null>(null);
   const [bio, setBio] = useState("");
-
-  // „Your sessions" — meine eigenen kommenden Sessions plus die Zahl offener Anfragen
-  // je Session. Beide refetchen on-focus: der Profil-Tab bleibt in expo-router gemountet,
-  // ohne Focus-Refetch tauchte eine gerade erstellte Session (oder eine neue Anfrage)
-  // erst nach App-Neustart auf.
-  const {
-    data: mySessions,
-    isLoading: sessionsLoading,
-    error: sessionsError,
-    refetch: refetchMySessions,
-  } = useMySessions();
-  const sessionIds = useMemo(
-    () => (mySessions ?? []).map((s) => s.id),
-    [mySessions],
-  );
-  const { data: pendingCounts, refetch: refetchCounts } =
-    usePendingCountsForSessions(sessionIds);
-  useFocusEffect(
-    useCallback(() => {
-      refetchMySessions();
-      refetchCounts();
-    }, [refetchMySessions, refetchCounts]),
-  );
 
   // bottomOffset aus der gemessenen Bio-Höhe (mehrzeilig, wächst mit dem Text).
   const { bottomOffset, onFieldLayout } = useKeyboardAwareField();
@@ -196,41 +169,6 @@ export default function Profile() {
               {avatarError.message}
             </Text>
           ) : null}
-        </View>
-
-        {/* Deine Sessions — der Ort, an dem eigene Sessions und ihre eingehenden
-              Anfragen leben. Bewusst hoch oben (direkt unter der Identität), weil das
-              der Grund ist, warum man nach dem Erstellen hierher zurückkommt. Der
-              Abschnitt bleibt auch leer sichtbar, damit er auffindbar ist. */}
-        <View className="mt-8">
-          <Eyebrow>Your sessions</Eyebrow>
-          {sessionsLoading ? (
-            <View className="items-center py-6">
-              <ActivityIndicator color={colors.brand[500]} />
-            </View>
-          ) : sessionsError ? (
-            <Text className="font-sans text-[13px] text-danger">
-              Couldn’t load your sessions: {(sessionsError as Error).message}
-            </Text>
-          ) : mySessions && mySessions.length > 0 ? (
-            <View className="gap-3">
-              {mySessions.map((s) => (
-                <MySessionCard
-                  key={s.id}
-                  gym={s.gym?.name}
-                  time={formatSessionTime(s.starts_at, { withDay: true })}
-                  note={s.note}
-                  matched={s.status === "matched"}
-                  pendingCount={pendingCounts?.[s.id] ?? 0}
-                  onPress={() => router.push(`/sessions/${s.id}`)}
-                />
-              ))}
-            </View>
-          ) : (
-            <Text className="font-sans text-[13px] text-rock-400">
-              No upcoming sessions yet. Create one from the feed.
-            </Text>
-          )}
         </View>
 
         {/* Galerie — wie der Avatar sofort gespeichert, deshalb oberhalb des
