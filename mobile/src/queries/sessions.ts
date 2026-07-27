@@ -14,6 +14,8 @@ const OPEN_SESSIONS_KEY = (params: OpenSessionsParams) =>
 const SESSION_KEY = (id: string) => ["sessions", id] as const;
 const MY_SESSIONS_KEY = (userId: string) =>
   ["sessions", "mine", userId] as const;
+const MY_PARTICIPATIONS_KEY = (userId: string) =>
+  ["sessions", "participations", userId] as const;
 
 export type OpenSessionsParams = {
   /** The feed's city context. Filters through the gym — sessions carry no city. */
@@ -152,6 +154,62 @@ export function useMySessions() {
   return useQuery({
     queryKey: MY_SESSIONS_KEY(userId ?? ""),
     queryFn: () => getMySessions(userId!),
+    enabled: !!userId,
+  });
+}
+
+/** Meine Rolle an einer fremden Session: fix dabei (accepted) oder wartend (pending). */
+export type MyParticipation = {
+  session: SessionWithMeta;
+  myStatus: "accepted" | "pending";
+};
+
+// Sessions, an denen ich als ANFRAGENDE:R hänge (nicht als Ersteller:in) — die
+// Teilnehmer-Sicht für den „My Sessions"-Tab: accepted = fixer Termin (Confirmed),
+// pending = warte noch auf Zusage (Pending). Bewusst zwei Schritte statt eines
+// verschachtelten Embeds: erst meine match_requests-Zeilen (RLS gibt mir meine
+// eigenen, ADR-0006), dann die Sessions über dasselbe SESSION_SELECT wie der Feed —
+// so bleibt der accepted_count-Pfad identisch. `starts_at >= now` wie überall, damit
+// Vergangenes verschwindet; das `now` lebt in der queryFn (stabiler Key, kein Refetch-
+// Sturm). Session-Status bleibt UNgefiltert: beigetretene Sessions dürfen `open` wie
+// `matched` (voll) sein. Ersteller und Anfragende überschneiden sich nie — der Join-
+// Button erscheint nur an fremden Sessions —, darum ist keine Deduplizierung nötig.
+async function getMyParticipations(userId: string): Promise<MyParticipation[]> {
+  const { data: reqs, error: reqErr } = await supabase
+    .from("match_requests")
+    .select("session_id, status")
+    .eq("requester_id", userId)
+    .in("status", ["accepted", "pending"]);
+  if (reqErr) throw reqErr;
+
+  const statusBySession = new Map<string, "accepted" | "pending">();
+  for (const r of reqs ?? []) {
+    statusBySession.set(r.session_id, r.status as "accepted" | "pending");
+  }
+  const ids = [...statusBySession.keys()];
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("sessions")
+    .select(SESSION_SELECT)
+    .in("id", ids)
+    .eq("accepted.status", "accepted")
+    .gte("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true });
+  if (error) throw error;
+
+  return (data ?? []).map((row) => {
+    const session = withAcceptedCount(row);
+    return { session, myStatus: statusBySession.get(session.id)! };
+  });
+}
+
+export function useMyParticipations() {
+  const { user } = useAuth();
+  const userId = user?.id;
+  return useQuery({
+    queryKey: MY_PARTICIPATIONS_KEY(userId ?? ""),
+    queryFn: () => getMyParticipations(userId!),
     enabled: !!userId,
   });
 }

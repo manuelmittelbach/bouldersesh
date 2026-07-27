@@ -37,17 +37,33 @@ export function navBarStyle(bottomInset: number): ViewStyle {
 type NavItemProps = TabTriggerSlotProps & {
   icon: LucideIcon;
   label: string;
+  /** Ungelesen-Zähler oben am Icon (z. B. Chat-Nachrichten). 0/undefined → kein Badge. */
+  badge?: number;
 };
 
 export const NavItem = forwardRef<View, NavItemProps>(function NavItem(
-  { icon: Icon, label, isFocused, ...props },
+  { icon: Icon, label, badge, isFocused, ...props },
   ref,
 ) {
   const tint = isFocused ? colors.brand[500] : colors.rock[400];
   return (
     <Pressable ref={ref} {...props} className="min-w-16 items-center gap-1 py-1">
-      <Icon size={24} color={tint} strokeWidth={2} />
-      <Text className="font-sans-semibold text-[11px]" style={{ color: tint, letterSpacing: -0.1 }}>
+      <View>
+        <Icon size={24} color={tint} strokeWidth={2} />
+        {badge && badge > 0 ? (
+          // Brand-Punkt oben rechts am Icon — sitzt bewusst am Icon, nicht am Label,
+          // damit er auch bei „9+" nicht die Tab-Breite sprengt.
+          <View className="absolute -right-2.5 -top-1.5 h-4 min-w-4 items-center justify-center rounded-full border border-rock-0 bg-brand-500 px-1">
+            <Text className="font-sans-semibold text-[10px] text-rock-0" style={{ lineHeight: 12 }}>
+              {badge > 9 ? '9+' : badge}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+      <Text
+        numberOfLines={1}
+        className="font-sans-semibold text-[11px]"
+        style={{ color: tint, letterSpacing: -0.1 }}>
         {label}
       </Text>
     </Pressable>

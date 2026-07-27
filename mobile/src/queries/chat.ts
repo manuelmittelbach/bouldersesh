@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
@@ -277,6 +277,12 @@ export function useMyChats() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const userId = user?.id;
+  // Eindeutig PRO Hook-Instanz: useMyChats läuft an mehreren Stellen gleichzeitig
+  // (My-Sessions-Screen UND der Tab-Badge in _layout). Zwei Kanäle mit demselben
+  // Topic-Namen kollidieren in supabase-js („cannot add postgres_changes callbacks
+  // after subscribe()"). Der Topic-Name ist nur ein Client-Identifier — der Filter
+  // steckt in den `.on()`-Bindings —, also macht der Instanz-Suffix ihn kollisionsfrei.
+  const channelId = useId();
 
   const query = useQuery({
     queryKey: CHATS_LIST_KEY(userId ?? ""),
@@ -293,7 +299,7 @@ export function useMyChats() {
       queryClient.invalidateQueries({ queryKey: CHATS_LIST_KEY(userId) });
 
     const channel = supabase
-      .channel(`my-chats:${userId}`)
+      .channel(`my-chats:${userId}:${channelId}`)
       .on(
         "postgres_changes",
         {
@@ -314,7 +320,7 @@ export function useMyChats() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, queryClient]);
+  }, [userId, queryClient, channelId]);
 
   return query;
 }
@@ -357,6 +363,16 @@ export function useHideChat() {
       if (userId) queryClient.invalidateQueries({ queryKey: CHATS_LIST_KEY(userId) });
     },
   });
+}
+
+/**
+ * Anzahl Chats mit ungelesenen Nachrichten — der Badge am „My Sessions"-Tab, der
+ * den weggefallenen Chats-Tab ersetzt. Leitet sich aus derselben Chat-Liste ab
+ * (gemeinsamer Query-Key, ein Realtime-Kanal), kostet also keinen zweiten Request.
+ */
+export function useUnreadChatCount(): number {
+  const { data } = useMyChats();
+  return (data ?? []).reduce((n, c) => (c.unread ? n + 1 : n), 0);
 }
 
 /** The chat that belongs to a session (created when a request was accepted). */
