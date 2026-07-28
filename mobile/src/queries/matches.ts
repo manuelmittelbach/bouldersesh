@@ -47,6 +47,12 @@ async function getRequestsForSession(
 
 export function useRequestsForSession(sessionId: string | undefined) {
   const queryClient = useQueryClient();
+  // Eindeutig pro Hook-Instanz: derselbe Hook läuft im Session-Detail UND im
+  // angehefteten Anfragen-Block des Chats. Beim Annehmen aus dem Detail wird der Chat
+  // OBEN AUF den Stack gelegt — dann sind beide gleichzeitig gemountet. Zwei Kanäle mit
+  // demselben Topic kollidieren in supabase-js („postgres_changes after subscribe"),
+  // der useId-Suffix hält sie auseinander (siehe queries/chat.ts).
+  const channelId = useId();
 
   const query = useQuery({
     queryKey: REQUESTS_FOR_SESSION_KEY(sessionId ?? ""),
@@ -59,7 +65,7 @@ export function useRequestsForSession(sessionId: string | undefined) {
   useEffect(() => {
     if (!sessionId) return;
     const channel = supabase
-      .channel(`session-requests:${sessionId}`)
+      .channel(`session-requests:${sessionId}:${channelId}`)
       .on(
         "postgres_changes",
         {
@@ -79,7 +85,7 @@ export function useRequestsForSession(sessionId: string | undefined) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [sessionId, queryClient]);
+  }, [sessionId, channelId, queryClient]);
 
   return query;
 }
