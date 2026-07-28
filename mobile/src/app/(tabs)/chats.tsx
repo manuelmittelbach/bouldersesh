@@ -158,7 +158,7 @@ function SwipeRow({ action, children }: { action: React.ReactNode; children: Rea
 // (die Ersteller:in muss neu zusagen) → Rückfrage. Zurückziehen dagegen ist trivial
 // umkehrbar und braucht keine.
 function confirmLeave(onConfirm: () => void) {
-  Alert.alert('Leave session?', "You'll leave the group chat. You can ask to rejoin later.", [
+  Alert.alert('Leave session?', "You'll leave this session and its chat.", [
     { text: 'Stay', style: 'cancel' },
     { text: 'Leave', style: 'destructive', onPress: onConfirm },
   ]);
@@ -464,8 +464,8 @@ export default function Chats() {
       />
     ) : (
       <SwipeAction
-        label="Leave"
-        tone="neutral"
+        label="Leave session"
+        tone="danger"
         icon={<LogOut size={22} color={colors.rock[0]} strokeWidth={2} />}
         onPress={() => confirmLeave(() => leave.mutate(session.id))}
       />
