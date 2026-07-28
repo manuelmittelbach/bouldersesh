@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
@@ -106,16 +106,50 @@ async function getPendingCountsForSessions(
  * Streifen an den eigenen Session-Karten (Profil-Tab). RLS lässt Ersteller:innen die
  * Anfragen an ihren Sessions lesen (dieselbe Sicht wie useRequestsForSession). Der
  * Key sortiert die IDs, damit er stabil bleibt, solange sich die Session-Menge nicht
- * ändert. Kein Realtime (wie useMyPendingRequests) — der Profil-Tab refetcht on-focus.
+ * ändert. Realtime hält den Zähler live — er speist den Chats-Tab-Badge, der auf
+ * jedem Tab stimmen soll (nicht erst beim nächsten Focus-Refetch).
  */
 export function usePendingCountsForSessions(sessionIds: string[]) {
+  const queryClient = useQueryClient();
+  const channelId = useId();
   const sorted = [...sessionIds].sort();
-  return useQuery({
+  const enabled = sorted.length > 0;
+
+  const query = useQuery({
     queryKey: ["matches", "incoming", "counts", sorted],
     queryFn: () => getPendingCountsForSessions(sorted),
-    enabled: sorted.length > 0,
+    enabled,
     staleTime: 30_000,
   });
+
+  // Eine neue/geänderte Anfrage an einer meiner Sessions aktualisiert die Zähler
+  // live — sonst bewegte sich der Chats-Badge erst beim nächsten Tab-Focus. KEIN
+  // session_id-Filter nötig: Realtime erzwingt RLS, stellt mir also ohnehin nur
+  // Zeilen zu, die ich sehen darf (Anfragen an meine Sessions). channelId (useId)
+  // hält den Topic pro Hook-Instanz eindeutig — derselbe Hook läuft im Tab-Badge
+  // UND im Chats-Screen; zwei Kanäle mit gleichem Topic würden in supabase-js
+  // kollidieren (siehe queries/chat.ts).
+  useEffect(() => {
+    if (!enabled) return;
+    const channel = supabase
+      .channel(`incoming-counts:${channelId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "match_requests" },
+        () => {
+          queryClient.invalidateQueries({
+            queryKey: ["matches", "incoming", "counts"],
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [enabled, channelId, queryClient]);
+
+  return query;
 }
 
 export function useCreateMatchRequest() {
