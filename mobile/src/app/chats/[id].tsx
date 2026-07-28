@@ -71,11 +71,16 @@ export default function Chat() {
   // Person tippbar zu ihrem Profil. Hat sich das einzige Gegenüber gelöscht, ist der
   // Chat nur noch ich → generisches „Chat“ (ADR-0004).
   const others = (members ?? []).filter((m) => m.id !== user?.id);
-  // Solo-Kopf: bin ich (noch) allein im Chat, trägt der Kopf statt des generischen
-  // „Chat" die Session-Kennung „Halle · Zeit", damit die leere eigene Session sofort
-  // verortet ist. Sobald wer beitritt, übernimmt die Avatar-Namen-Leiste oben.
-  const soloTitle =
-    session?.gym?.name ? `${session.gym.name} · ${formatSessionTime(session.starts_at)}` : 'Chat';
+  // Solo-Kopf: bin ich (noch) allein im Chat. Als Gastgeber:in der eigenen, noch
+  // leeren Runde sagt der Kopf schlicht „No climbers yet" (Halle/Zeit stehen ohnehin
+  // einen Tap weiter über den Info-Knopf). Sonst — etwa wenn sich das einzige
+  // Gegenüber gelöscht hat — die Session-Kennung „Halle · Zeit" bzw. generisch „Chat".
+  // Sobald wer beitritt, übernimmt die Avatar-Namen-Leiste oben.
+  const soloTitle = isHost
+    ? 'No climbers yet'
+    : session?.gym?.name
+      ? `${session.gym.name} · ${formatSessionTime(session.starts_at)}`
+      : 'Chat';
   const [body, setBody] = useState('');
   const listRef = useRef<FlatList<Message>>(null);
 
