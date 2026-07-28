@@ -14,6 +14,8 @@ const MY_REQUEST_KEY = (sessionId: string) =>
   [...MY_OUTGOING_KEY, "session", sessionId] as const;
 const MY_PENDING_KEY = (userId: string) =>
   [...MY_OUTGOING_KEY, "all", userId] as const;
+const MY_DECLINED_KEY = (userId: string) =>
+  [...MY_OUTGOING_KEY, "declined", userId] as const;
 
 /** A match request with the requester's profile joined in. */
 export type MatchRequestWithRequester = MatchRequest & {
@@ -365,6 +367,36 @@ export function useMyPendingRequests() {
   return useQuery({
     queryKey: MY_PENDING_KEY(userId ?? ""),
     queryFn: () => getMyPendingSessionIds(userId!),
+    enabled: !!userId,
+    staleTime: 30_000,
+  });
+}
+
+async function getMyDeclinedSessionIds(userId: string): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("match_requests")
+    .select("session_id")
+    .eq("requester_id", userId)
+    .eq("status", "declined");
+  if (error) throw error;
+  return new Set((data ?? []).map((r) => r.session_id));
+}
+
+/**
+ * Die Session-IDs, aus denen mich die Ersteller:in abgelehnt hat (declined) — der
+ * Feed blendet diese Sessions für mich aus, damit eine Absage nicht als offener
+ * Platz wieder auftaucht (ADR-0006). Wie useMyPendingRequests bewusst OHNE Realtime:
+ * die Ablehnung erfährt man beim Öffnen der Session bzw. im Chats-Tab, der Feed lädt
+ * beim Zurückkehren per Focus-Refetch neu (siehe (tabs)/index.tsx). Aktualisierung
+ * sonst über den MY_OUTGOING_KEY-Prefix plus staleTime.
+ */
+export function useMyDeclinedRequests() {
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  return useQuery({
+    queryKey: MY_DECLINED_KEY(userId ?? ""),
+    queryFn: () => getMyDeclinedSessionIds(userId!),
     enabled: !!userId,
     staleTime: 30_000,
   });
