@@ -221,7 +221,17 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      /**
+       * Austritt aus einer Gruppen-Session (Migration 0016): entfernt die eigene
+       * Mitgliedschaft, gibt den Platz frei und sagt „X left" im Chat an. Nur für
+       * Aufgenommene — die Ersteller:in löst stattdessen auf (useDeleteSession).
+       */
+      leave_session: {
+        Args: { p_session_id: string };
+        Returns: undefined;
+      };
+    };
     Enums: {
       skill_level: SkillLevel;
       session_visibility: SessionVisibility;

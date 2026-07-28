@@ -31,7 +31,7 @@ import {
   type MatchRequestWithRequester,
 } from '@/queries/matches';
 import { useHasReported, useReportProfile } from '@/queries/reports';
-import { useDeleteSession, useSession } from '@/queries/sessions';
+import { useDeleteSession, useLeaveSession, useSession } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
 function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
@@ -222,6 +222,7 @@ export default function SessionDetail() {
   const { user } = useAuth();
   const request = useCreateMatchRequest();
   const withdraw = useWithdrawRequest();
+  const leave = useLeaveSession();
   const del = useDeleteSession();
 
   // Ist die Session meine? Vor den frühen Returns berechnet (session evtl. noch
@@ -450,20 +451,48 @@ export default function SessionDetail() {
               </Button>
             </View>
           ) : accepted ? (
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              // Nur solange der Chat wirklich noch lädt spinnen. Löst er (selten)
-              // auf null auf, bleibt der Button tippbar und versucht es erneut,
-              // statt ewig zu drehen.
-              loading={chat.isLoading}
-              icon={<MessageCircle size={18} color={colors.rock[0]} strokeWidth={2} />}
-              onPress={() =>
-                chat.data ? router.push(`/chats/${chat.data}`) : chat.refetch()
-              }>
-              Open chat
-            </Button>
+            // Aufgenommen: Chat öffnen + austreten. Verlassen setzt die eigene Anfrage
+            // auf `cancelled` (Realtime kippt diesen Block danach auf „Climb together?"
+            // zurück) und gibt den Platz frei — Wiedereintritt bleibt möglich.
+            <View className="gap-2">
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                // Nur solange der Chat wirklich noch lädt spinnen. Löst er (selten)
+                // auf null auf, bleibt der Button tippbar und versucht es erneut,
+                // statt ewig zu drehen.
+                loading={chat.isLoading}
+                icon={<MessageCircle size={18} color={colors.rock[0]} strokeWidth={2} />}
+                onPress={() =>
+                  chat.data ? router.push(`/chats/${chat.data}`) : chat.refetch()
+                }>
+                Open chat
+              </Button>
+              <Button
+                variant="ghost"
+                size="md"
+                fullWidth
+                loading={leave.isPending}
+                onPress={() =>
+                  Alert.alert(
+                    'Leave session?',
+                    "You'll leave the group chat. You can ask to rejoin later.",
+                    [
+                      { text: 'Stay', style: 'cancel' },
+                      {
+                        text: 'Leave',
+                        style: 'destructive',
+                        onPress: () => leave.mutate(session.id),
+                      },
+                    ],
+                  )
+                }>
+                <Text className="font-sans-semibold text-[15px] text-rock-500">
+                  Leave session
+                </Text>
+              </Button>
+            </View>
           ) : declined ? (
             <View className="h-[52px] items-center justify-center">
               <Text className="font-sans text-sm text-rock-400">Not this time</Text>

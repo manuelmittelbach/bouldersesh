@@ -1,8 +1,9 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Clock, Hand, MessageCircle, Trash2, Users } from 'lucide-react-native';
+import { Clock, Hand, LogOut, MessageCircle, Trash2, Undo2, Users } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,9 +16,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/ui';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, cn, formatChatTime, formatSessionTime } from '@/lib/utils';
-import { useHideChat, useMyChats, type ChatListItem } from '@/queries/chat';
-import { usePendingCountsForSessions } from '@/queries/matches';
+import { useMyChats, type ChatListItem } from '@/queries/chat';
+import { usePendingCountsForSessions, useWithdrawRequest } from '@/queries/matches';
 import {
+  useDeleteSession,
+  useLeaveSession,
   useMyParticipations,
   useMySessions,
   type SessionWithMeta,
@@ -68,18 +71,72 @@ function RequestsPill({ count }: { count: number }) {
   );
 }
 
-// Rote Wisch-Aktion — blendet den Chat aus MEINER Liste aus (nicht für die anderen),
-// siehe useHideChat. Nur an Zeilen mit echtem Chat.
-function DeleteAction({ onPress }: { onPress: () => void }) {
+// Rollen-abhängige Wisch-Aktion. `danger` (rot) NUR fürs Auflösen, das die Session
+// samt Chat für ALLE zerstört; Verlassen/Zurückziehen betreffen nur mich und sind
+// umkehrbar → neutraler Ton (rock-500), damit die eine echt gefährliche Aktion
+// visuell heraussticht statt in einem Meer aus Rot zu verschwinden.
+function SwipeAction({
+  label,
+  icon,
+  tone,
+  onPress,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  tone: 'danger' | 'neutral';
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="Delete chat"
-      className="w-24 items-center justify-center bg-danger active:opacity-90">
-      <Trash2 size={22} color={colors.rock[0]} strokeWidth={2} />
-      <Text className="mt-1 font-sans-medium text-xs text-rock-0">Delete</Text>
+      accessibilityLabel={label}
+      className={cn(
+        'w-24 items-center justify-center active:opacity-90',
+        tone === 'danger' ? 'bg-danger' : 'bg-rock-500',
+      )}>
+      {icon}
+      <Text className="mt-1 font-sans-medium text-xs text-rock-0">{label}</Text>
     </Pressable>
+  );
+}
+
+// Wisch-Wrapper mit rechter Aktion. Die Zeilen darunter (StatusRow/ConversationRow)
+// haben eine deckende Fläche, sonst schimmerte die Aktion beim Wischen durch.
+function SwipeRow({ action, children }: { action: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <ReanimatedSwipeable
+      friction={2}
+      rightThreshold={40}
+      overshootRight={false}
+      renderRightActions={() => action}>
+      {children}
+    </ReanimatedSwipeable>
+  );
+}
+
+// Verlassen kostet den Zugang zum Gruppenchat und ist nicht mit einem Tipp umkehrbar
+// (die Ersteller:in muss neu zusagen) → Rückfrage. Zurückziehen dagegen ist trivial
+// umkehrbar und braucht keine.
+function confirmLeave(onConfirm: () => void) {
+  Alert.alert('Leave session?', "You'll leave the group chat. You can ask to rejoin later.", [
+    { text: 'Stay', style: 'cancel' },
+    { text: 'Leave', style: 'destructive', onPress: onConfirm },
+  ]);
+}
+
+// Auflösen ist unwiderruflich und trifft alle — Rückfrage mit Kontext, ob schon
+// jemand dabei ist (dann geht auch der Gruppenchat verloren).
+function confirmDissolve(hasGroup: boolean, onConfirm: () => void) {
+  Alert.alert(
+    'Dissolve session?',
+    hasGroup
+      ? 'This removes the session and the group chat for everyone.'
+      : 'This removes the session for good.',
+    [
+      { text: 'Keep', style: 'cancel' },
+      { text: 'Dissolve', style: 'destructive', onPress: onConfirm },
+    ],
   );
 }
 
@@ -232,7 +289,9 @@ export default function Chats() {
   const created = useMySessions();
   const participations = useMyParticipations();
   const chats = useMyChats();
-  const hide = useHideChat();
+  const withdraw = useWithdrawRequest();
+  const dissolve = useDeleteSession();
+  const leave = useLeaveSession();
   const [refreshing, setRefreshing] = useState(false);
 
   // Alle drei on-focus refetchen: der Tab bleibt in expo-router gemountet, ohne das
@@ -301,48 +360,53 @@ export default function Chats() {
   const error = (created.error ?? participations.error) as Error | null;
   const isEmpty = mySessions.length === 0 && requested.length === 0 && joined.length === 0;
 
-  // Eine Konversations- oder Statuszeile für eine eigene/beigetretene Session. Zeilen
-  // mit Chat sind wischbar (ausblenden), Statuszeilen nicht.
-  function renderEntry({ session, chat }: Entry, hosting: boolean): Row {
+  // Eine Konversations- oder Statuszeile für eine eigene/beigetretene Session. Jede
+  // Zeile ist wischbar — rollen-abhängig: als Gastgeber:in auflösen (rot), als
+  // Beigetretene:r verlassen (neutral). Auch die chat-losen Statuszeilen (leere eigene
+  // Session, seltener Beitritts-Race) sind wischbar, sonst gäbe es keinen Ausweg.
+  function renderEntry({ session, chat }: Entry, role: 'host' | 'joined'): Row {
+    const hosting = role === 'host';
     const pendingCount = pendingCounts.data?.[session.id] ?? 0;
-    if (chat) {
-      return {
-        key: chat.id,
-        node: (
-          <ReanimatedSwipeable
-            friction={2}
-            rightThreshold={40}
-            overshootRight={false}
-            renderRightActions={() => <DeleteAction onPress={() => hide.mutate(chat.id)} />}>
-            <ConversationRow chat={chat} hosting={hosting} pendingCount={pendingCount} />
-          </ReanimatedSwipeable>
-        ),
-      };
-    }
-    if (hosting) {
-      return {
-        key: session.id,
-        node: (
-          <StatusRow
-            session={session}
-            icon={<Hand size={22} color={colors.brand[600]} strokeWidth={2} />}
-            subtitle={pendingCount > 0 ? '' : 'No climbers yet'}
-            pill={pendingCount > 0 ? <RequestsPill count={pendingCount} /> : undefined}
-          />
-        ),
-      };
-    }
-    // Beigetreten, aber (noch) kein Chat — seltener Race, trotzdem sichtbar halten.
-    return {
-      key: session.id,
-      node: (
-        <StatusRow
-          session={session}
-          icon={<Users size={22} color={colors.brand[600]} strokeWidth={2} />}
-          subtitle={`with ${session.creator?.display_name ?? 'Anonymous'}`}
-        />
-      ),
-    };
+
+    const inner = chat ? (
+      <ConversationRow chat={chat} hosting={hosting} pendingCount={pendingCount} />
+    ) : hosting ? (
+      <StatusRow
+        session={session}
+        icon={<Hand size={22} color={colors.brand[600]} strokeWidth={2} />}
+        subtitle={pendingCount > 0 ? '' : 'No climbers yet'}
+        pill={pendingCount > 0 ? <RequestsPill count={pendingCount} /> : undefined}
+      />
+    ) : (
+      // Beigetreten, aber (noch) kein Chat — seltener Race, trotzdem sichtbar halten.
+      <StatusRow
+        session={session}
+        icon={<Users size={22} color={colors.brand[600]} strokeWidth={2} />}
+        subtitle={`with ${session.creator?.display_name ?? 'Anonymous'}`}
+      />
+    );
+
+    const action = hosting ? (
+      <SwipeAction
+        label="Dissolve"
+        tone="danger"
+        icon={<Trash2 size={22} color={colors.rock[0]} strokeWidth={2} />}
+        onPress={() =>
+          confirmDissolve(!!chat || session.accepted_count > 0, () =>
+            dissolve.mutate(session.id),
+          )
+        }
+      />
+    ) : (
+      <SwipeAction
+        label="Leave"
+        tone="neutral"
+        icon={<LogOut size={22} color={colors.rock[0]} strokeWidth={2} />}
+        onPress={() => confirmLeave(() => leave.mutate(session.id))}
+      />
+    );
+
+    return { key: chat?.id ?? session.id, node: <SwipeRow action={action}>{inner}</SwipeRow> };
   }
 
   return (
@@ -395,22 +459,32 @@ export default function Chats() {
               rows={requested.map((session) => ({
                 key: session.id,
                 node: (
-                  <StatusRow
-                    session={session}
-                    icon={<Clock size={22} color={colors.brand[600]} strokeWidth={2} />}
-                    subtitle={`with ${session.creator?.display_name ?? 'Anonymous'} · Waiting for reply`}
-                  />
+                  <SwipeRow
+                    action={
+                      <SwipeAction
+                        label="Withdraw"
+                        tone="neutral"
+                        icon={<Undo2 size={22} color={colors.rock[0]} strokeWidth={2} />}
+                        onPress={() => withdraw.mutate(session.id)}
+                      />
+                    }>
+                    <StatusRow
+                      session={session}
+                      icon={<Clock size={22} color={colors.brand[600]} strokeWidth={2} />}
+                      subtitle={`with ${session.creator?.display_name ?? 'Anonymous'} · Waiting for reply`}
+                    />
+                  </SwipeRow>
                 ),
               }))}
             />
           ) : null}
 
           {mySessions.length > 0 ? (
-            <Section title="My Sessions" rows={mySessions.map((e) => renderEntry(e, true))} />
+            <Section title="My Sessions" rows={mySessions.map((e) => renderEntry(e, 'host'))} />
           ) : null}
 
           {joined.length > 0 ? (
-            <Section title="Joined Sessions" rows={joined.map((e) => renderEntry(e, false))} />
+            <Section title="Joined Sessions" rows={joined.map((e) => renderEntry(e, 'joined'))} />
           ) : null}
         </ScrollView>
       )}
