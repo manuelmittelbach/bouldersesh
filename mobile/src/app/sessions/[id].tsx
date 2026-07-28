@@ -21,6 +21,7 @@ import { avatarTone, formatSessionTime, gradeBand, skillLabel } from '@/lib/util
 import {
   useCreateMatchRequest,
   useMyRequestForSession,
+  useSessionClimbers,
   useWithdrawRequest,
 } from '@/queries/matches';
 import { useHasReported, useReportProfile } from '@/queries/reports';
@@ -38,6 +39,44 @@ function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value
         <Text className="font-display text-sm text-rock-900">{value}</Text>
       </View>
     </View>
+  );
+}
+
+/** Eine Zeile der „Climbers"-Liste: tippbar zum read-only Profil (profile/[id]),
+ *  wie der Ersteller-Block oben und die Feed-Avatare. Kein Profil (gelöscht) →
+ *  untippbar, aber die Zeile bleibt stehen. */
+function ClimberRow({
+  profileId,
+  name,
+  avatarPath,
+  skill,
+}: {
+  profileId: string | null;
+  name: string;
+  avatarPath: string | null;
+  skill: string | null;
+}) {
+  const grade = skillLabel(skill);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`View ${name}’s profile`}
+      disabled={!profileId}
+      onPress={() => profileId && router.push(`/profile/${profileId}`)}
+      className="flex-row items-center gap-3 active:opacity-70">
+      <Avatar
+        name={name}
+        tone={avatarTone(profileId ?? name)}
+        size="md"
+        src={publicImageUrl(avatarPath)}
+      />
+      <View className="min-w-0 flex-1">
+        <Text className="font-display text-[15px] text-rock-900" numberOfLines={1}>
+          {name}
+        </Text>
+      </View>
+      {grade ? <GradePill grade={grade} band={gradeBand(skill)} /> : null}
+    </Pressable>
   );
 }
 
@@ -102,6 +141,10 @@ export default function SessionDetail() {
   // lässt „Request sent" live zu „Leave session" umschlagen, wenn angenommen wird.
   const myRequest = useMyRequestForSession(id, !!session && !isMine);
   const myStatus = myRequest.data?.status;
+
+  // Der bestätigte Kader (accepted) — die „Climbers"-Liste weiter unten. Realtime
+  // hält sie live und konsistent mit „Spots left" (siehe useSessionClimbers).
+  const { data: climbers } = useSessionClimbers(id);
 
   if (isLoading) {
     return (
@@ -248,6 +291,26 @@ export default function SessionDetail() {
             value={spotsLabel}
           />
         </Card>
+
+        {/* Climbers — der bestätigte Kader (accepted), leer ausgeblendet: „Spots left"
+            oben sagt bei 0 Beigetretenen schon alles, eine leere Sektion wäre Rauschen.
+            Erscheint, sobald die erste Person angenommen ist; wächst per Realtime live. */}
+        {climbers && climbers.length > 0 ? (
+          <Card className="mt-4 gap-3.5">
+            <Text className="font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
+              {climbers.length === 1 ? 'Climber' : 'Climbers'}
+            </Text>
+            {climbers.map((c) => (
+              <ClimberRow
+                key={c.id}
+                profileId={c.requester?.id ?? null}
+                name={c.requester?.display_name ?? 'Anonymous'}
+                avatarPath={c.requester?.avatar_path ?? null}
+                skill={c.requester?.skill_level ?? null}
+              />
+            ))}
+          </Card>
+        ) : null}
 
         {session.note ? (
           <View className="mt-4 rounded-lg bg-rock-50 p-4">
