@@ -8,6 +8,7 @@ import {
   MapPin,
   Trash2,
   Users,
+  UsersRound,
 } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
@@ -42,41 +43,42 @@ function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value
   );
 }
 
-/** Eine Zeile der „Climbers"-Liste: tippbar zum read-only Profil (profile/[id]),
- *  wie der Ersteller-Block oben und die Feed-Avatare. Kein Profil (gelöscht) →
- *  untippbar, aber die Zeile bleibt stehen. */
-function ClimberRow({
-  profileId,
-  name,
-  avatarPath,
-  skill,
-}: {
-  profileId: string | null;
-  name: string;
-  avatarPath: string | null;
-  skill: string | null;
-}) {
-  const grade = skillLabel(skill);
+/** Eine Person in der „Climbers"-Zeile: nur der/die Ersteller:in ist immer dabei,
+ *  danach folgen die angenommenen Mitkletternden. `id === null` = gelöschtes Profil
+ *  (untippbar). */
+type Climber = { id: string | null; name: string; avatarPath: string | null };
+
+/** „Climbers"-Zeile im selben Stil wie When/Where/Spots (InfoRow), nur dass der
+ *  Wert eine kleine Avatar-Reihe ist statt Text: Host zuerst, dann die Beigetretenen.
+ *  Jeder Avatar ist tippbar zum read-only Profil (profile/[id]), wie die Feed-Avatare. */
+function ClimbersRow({ people }: { people: Climber[] }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`View ${name}’s profile`}
-      disabled={!profileId}
-      onPress={() => profileId && router.push(`/profile/${profileId}`)}
-      className="flex-row items-center gap-3 active:opacity-70">
-      <Avatar
-        name={name}
-        tone={avatarTone(profileId ?? name)}
-        size="md"
-        src={publicImageUrl(avatarPath)}
-      />
-      <View className="min-w-0 flex-1">
-        <Text className="font-display text-[15px] text-rock-900" numberOfLines={1}>
-          {name}
-        </Text>
+    <View className="flex-row items-center gap-3">
+      <View className="h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50">
+        <UsersRound size={16} color={colors.brand[700]} strokeWidth={2} />
       </View>
-      {grade ? <GradePill grade={grade} band={gradeBand(skill)} /> : null}
-    </Pressable>
+      <View className="min-w-0 flex-1">
+        <Text className="font-sans text-xs text-rock-500">Climbers</Text>
+        <View className="mt-1.5 flex-row flex-wrap items-center gap-1.5">
+          {people.map((p) => (
+            <Pressable
+              key={p.id ?? p.name}
+              accessibilityRole="button"
+              accessibilityLabel={`View ${p.name}’s profile`}
+              disabled={!p.id}
+              onPress={() => p.id && router.push(`/profile/${p.id}`)}
+              className="active:opacity-70">
+              <Avatar
+                name={p.name}
+                tone={avatarTone(p.id ?? p.name)}
+                size="sm"
+                src={publicImageUrl(p.avatarPath)}
+              />
+            </Pressable>
+          ))}
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -172,6 +174,26 @@ export default function SessionDetail() {
   }
 
   const name = session.creator?.display_name ?? 'Anonymous';
+
+  // Wer dabei ist — Host zuerst (immer, er:sie zählt zur Runde), dann die angenommenen
+  // Mitkletternden. Speist die kompakte Avatar-Reihe in der „Climbers"-Zeile. Gelöschte
+  // Profile (kein creator / kein requester) bleiben als untippbarer Avatar drin.
+  const roster: Climber[] = [
+    ...(session.creator
+      ? [
+          {
+            id: session.creator.id,
+            name,
+            avatarPath: session.creator.avatar_path,
+          },
+        ]
+      : []),
+    ...(climbers ?? []).map((c) => ({
+      id: c.requester?.id ?? null,
+      name: c.requester?.display_name ?? 'Anonymous',
+      avatarPath: c.requester?.avatar_path ?? null,
+    })),
+  ];
 
   // Plätze (ADR-0007): die Ersteller:in ist Gastgeber:in, kein Platz — es gibt also
   // capacity − 1 Plätze für Mitkletternde, jede angenommene Anfrage belegt einen. Voll,
@@ -290,27 +312,11 @@ export default function SessionDetail() {
             label="Spots"
             value={spotsLabel}
           />
+          {/* Climbers — kleine Avatare im selben Info-Block-Stil, Host zuerst. Wächst
+              per Realtime live (useSessionClimbers); Host ist immer dabei, also steht
+              die Zeile immer. */}
+          {roster.length > 0 ? <ClimbersRow people={roster} /> : null}
         </Card>
-
-        {/* Climbers — der bestätigte Kader (accepted), leer ausgeblendet: „Spots left"
-            oben sagt bei 0 Beigetretenen schon alles, eine leere Sektion wäre Rauschen.
-            Erscheint, sobald die erste Person angenommen ist; wächst per Realtime live. */}
-        {climbers && climbers.length > 0 ? (
-          <Card className="mt-4 gap-3.5">
-            <Text className="font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
-              {climbers.length === 1 ? 'Climber' : 'Climbers'}
-            </Text>
-            {climbers.map((c) => (
-              <ClimberRow
-                key={c.id}
-                profileId={c.requester?.id ?? null}
-                name={c.requester?.display_name ?? 'Anonymous'}
-                avatarPath={c.requester?.avatar_path ?? null}
-                skill={c.requester?.skill_level ?? null}
-              />
-            ))}
-          </Card>
-        ) : null}
 
         {session.note ? (
           <View className="mt-4 rounded-lg bg-rock-50 p-4">

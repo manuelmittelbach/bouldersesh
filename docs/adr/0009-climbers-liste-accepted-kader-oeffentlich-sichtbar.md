@@ -16,14 +16,16 @@ Anfrage-Zeilen nur die **Anfragende:n** (eigene Zeile) und die **Ersteller:in**
 
 **Entscheidung:**
 
-- **Die Detailseite zeigt eine „Climbers"-Liste des bestätigten Kaders.** Tippbare
-  Zeilen (Avatar · Name · optionales Niveau-Pill) unter dem Info-Block, jede führt
-  zum read-only Profil (`profile/[id]`, wie Ersteller-Block und Feed-Avatare). Leer →
-  ausgeblendet: „Spots left" oben trägt den Nullfall schon.
-- **„Climbers" = nur die angenommenen Mitkletternden (`status='accepted'`), OHNE die
-  Ersteller:in.** Die Ersteller:in hat oben ihren eigenen Hero-Block; sie doppelt in
-  der Liste zu führen wäre redundant. (Zur Kapazität zählt sie weiter mit — ADR-0007 —,
-  die Liste ist eine reine Anzeige der Beigetretenen, kein Kapazitäts-Zähler.)
+- **Die Detailseite zeigt eine „Climbers"-Zeile im Info-Block** (gleicher Stil wie
+  When/Where/Spots): Label „Climbers", daneben eine kompakte Reihe **kleiner Avatare**
+  statt Text. Jeder Avatar ist tippbar zum read-only Profil (`profile/[id]`, wie die
+  Feed-Avatare). Namen/Niveau-Pills bewusst weggelassen — die Zeile ist ein Überblick
+  „wer ist dabei", die Details holt man sich per Tap im Profil.
+- **Host zuerst, dann die angenommenen Mitkletternden (`status='accepted'`).** Der:die
+  Ersteller:in zählt zur Runde (ADR-0007) und steht darum als erster Avatar — trotz
+  des eigenen Hero-Blocks oben: als *ein* Gesicht in der Reihe ist die Doppelung
+  minimal und macht „wer ist dabei" auf einen Blick vollständig. Die Zeile steht darum
+  immer (der Host ist immer dabei).
 - **RLS öffnet den bestätigten Kader öffentlicher Sessions für alle Authentifizierten**
   (Migration `0018`): dritte OR-Klausel `status='accepted' and session ∈ public`.
   Pending/declined/cancelled bleiben privat wie zuvor. Offen liegt allein die Tatsache,
@@ -48,4 +50,9 @@ Anfrage-Zeilen nur die **Anfragende:n** (eigene Zeile) und die **Ersteller:in**
 - **Kader in `SESSION_SELECT` einbetten** — verworfen: der Feed (`useOpenSessions`)
   teilt dieses SELECT und braucht nur den Count; volle Profile pro Feed-Karte wären
   Verschwendung. Eigener Hook `useSessionClimbers`, nur auf der Detailseite aktiv.
-- **Ersteller:in als „Host" in die Liste** — verworfen: doppelt den Hero-Block.
+- **Eigene „Climbers"-Card mit Namens-Zeilen + Niveau-Pills** (erster Entwurf) —
+  verworfen: zu schwer für die Info. Die kompakte Avatar-Reihe im bestehenden
+  Info-Block fügt sich ruhiger ein; Namen/Niveau holt man per Tap.
+- **Host aus der Reihe lassen (nur Beigetretene)** — verworfen: „wer ist dabei" soll
+  vollständig sein; der Host als erster Avatar ist die kleinere Irritation als eine
+  Reihe, in der die Gastgeber:in fehlt.
