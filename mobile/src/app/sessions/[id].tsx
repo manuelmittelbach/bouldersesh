@@ -7,7 +7,6 @@ import {
   Hand,
   MapPin,
   Trash2,
-  Users,
   UsersRound,
 } from 'lucide-react-native';
 import type { ReactNode } from 'react';
@@ -48,10 +47,12 @@ function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value
  *  (untippbar). */
 type Climber = { id: string | null; name: string; avatarPath: string | null };
 
-/** „Climbers"-Zeile im selben Stil wie When/Where/Spots (InfoRow), nur dass der
+/** „Climbers"-Zeile im selben Info-Block-Stil wie When/Where (InfoRow), nur dass der
  *  Wert eine kleine Avatar-Reihe ist statt Text: Host zuerst, dann die Beigetretenen.
- *  Jeder Avatar ist tippbar zum read-only Profil (profile/[id]), wie die Feed-Avatare. */
-function ClimbersRow({ people }: { people: Climber[] }) {
+ *  Jeder Avatar ist tippbar zum read-only Profil (profile/[id]), wie die Feed-Avatare.
+ *  Hinter den Avataren steht dezent, wie viele Plätze noch frei sind (`spotsLabel`) —
+ *  die frühere eigene „Spots"-Zeile ist darin aufgegangen. */
+function ClimbersRow({ people, spotsLabel }: { people: Climber[]; spotsLabel: string }) {
   return (
     <View className="flex-row items-center gap-3">
       <View className="h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50">
@@ -76,6 +77,7 @@ function ClimbersRow({ people }: { people: Climber[] }) {
               />
             </Pressable>
           ))}
+          <Text className="ml-1 font-sans text-[13px] text-rock-500">{spotsLabel}</Text>
         </View>
       </View>
     </View>
@@ -201,9 +203,11 @@ export default function SessionDetail() {
   const spotsTotal = session.capacity - 1;
   const spotsLeft = Math.max(0, spotsTotal - session.accepted_count);
   const full = spotsLeft === 0 || session.status === 'matched';
+  // Kompakt, weil er:sie jetzt hinter den Climbers-Avataren steht (keine eigene Zeile
+  // mehr): nur „N spots left" bzw. „Full" — die belegten Plätze zeigen ja die Avatare.
   const spotsLabel = full
     ? 'Full'
-    : `${spotsLeft} of ${spotsTotal} ${spotsTotal === 1 ? 'spot' : 'spots'} left`;
+    : `${spotsLeft} ${spotsLeft === 1 ? 'spot' : 'spots'} left`;
 
   // Der eine untere Aktions-Platz wechselt seinen Inhalt je nach eigenem Anfrage-
   // Zustand (ADR-0006). Der geladene Status GEWINNT immer — so schlägt ein
@@ -307,15 +311,12 @@ export default function SessionDetail() {
             label="Where"
             value={session.gym?.name ?? '—'}
           />
-          <InfoRow
-            icon={<Users size={16} color={colors.brand[700]} strokeWidth={2} />}
-            label="Spots"
-            value={spotsLabel}
-          />
-          {/* Climbers — kleine Avatare im selben Info-Block-Stil, Host zuerst. Wächst
-              per Realtime live (useSessionClimbers); Host ist immer dabei, also steht
-              die Zeile immer. */}
-          {roster.length > 0 ? <ClimbersRow people={roster} /> : null}
+          {/* Climbers — kleine Avatare im selben Info-Block-Stil, Host zuerst, dahinter
+              die freien Plätze (spotsLabel). Wächst per Realtime live
+              (useSessionClimbers); Host ist immer dabei, also steht die Zeile immer. */}
+          {roster.length > 0 ? (
+            <ClimbersRow people={roster} spotsLabel={spotsLabel} />
+          ) : null}
         </Card>
 
         {session.note ? (

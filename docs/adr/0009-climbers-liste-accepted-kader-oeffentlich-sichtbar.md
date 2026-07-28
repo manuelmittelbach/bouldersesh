@@ -17,10 +17,13 @@ Anfrage-Zeilen nur die **Anfragende:n** (eigene Zeile) und die **Ersteller:in**
 **Entscheidung:**
 
 - **Die Detailseite zeigt eine „Climbers"-Zeile im Info-Block** (gleicher Stil wie
-  When/Where/Spots): Label „Climbers", daneben eine kompakte Reihe **kleiner Avatare**
-  statt Text. Jeder Avatar ist tippbar zum read-only Profil (`profile/[id]`, wie die
+  When/Where): Label „Climbers", daneben eine kompakte Reihe **kleiner Avatare** statt
+  Text. Jeder Avatar ist tippbar zum read-only Profil (`profile/[id]`, wie die
   Feed-Avatare). Namen/Niveau-Pills bewusst weggelassen — die Zeile ist ein Überblick
   „wer ist dabei", die Details holt man sich per Tap im Profil.
+- **Die freien Plätze stehen dezent hinter den Avataren** („N spots left" / „Full"),
+  keine eigene „Spots"-Zeile mehr: die belegten Plätze zeigen ja die Avatare selbst,
+  die Zahl daneben ergänzt nur den Rest. Spart eine Info-Zeile, ohne etwas zu verlieren.
 - **Host zuerst, dann die angenommenen Mitkletternden (`status='accepted'`).** Der:die
   Ersteller:in zählt zur Runde (ADR-0007) und steht darum als erster Avatar — trotz
   des eigenen Hero-Blocks oben: als *ein* Gesicht in der Reihe ist die Doppelung
