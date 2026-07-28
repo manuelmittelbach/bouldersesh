@@ -320,6 +320,41 @@ export function useMyChats() {
 }
 
 /**
+ * „Chat gelesen" markieren: setzt `chat_members.last_read_at` meiner Mitgliedschaft auf
+ * jetzt. Ohne diesen Schreibvorgang bliebe `unread` (getMyChats) für immer wahr — der
+ * Aufmerksamkeits-Punkt an der Zeile UND der Chats-Tab-Badge setzten sich nie zurück.
+ * RLS erlaubt genau das eigene Row-Update („chat_members update own", 0002).
+ */
+export function useMarkChatRead() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id;
+  return useMutation({
+    mutationFn: async (chatId: string) => {
+      if (!userId) return;
+      const { error } = await supabase
+        .from("chat_members")
+        .update({ last_read_at: new Date().toISOString() })
+        .eq("chat_id", chatId)
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    // Punkt/Badge sofort fallen lassen, statt auf den Refetch zu warten — der Tab-Badge
+    // lebt auf einem anderen Screen und soll ohne sichtbare Verzögerung stimmen.
+    onMutate: (chatId) => {
+      if (!userId) return;
+      queryClient.setQueryData<ChatListItem[]>(CHATS_LIST_KEY(userId), (prev) =>
+        prev?.map((c) => (c.id === chatId ? { ...c, unread: false } : c)),
+      );
+    },
+    // Danach mit der DB-Wahrheit (gesetztes last_read_at) abgleichen.
+    onSettled: () => {
+      if (userId) queryClient.invalidateQueries({ queryKey: CHATS_LIST_KEY(userId) });
+    },
+  });
+}
+
+/**
  * Der Zähler am Chats-Tab-Badge = Anzahl ZEILEN in der Chats-Pipeline, die einen
  * Aufmerksamkeits-Punkt tragen („dotted rows"), NICHT Anzahl ungelesener Nachrichten.
  * Eine Zeile ist gepunktet, wenn sie mich braucht:

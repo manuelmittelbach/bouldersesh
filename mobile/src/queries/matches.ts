@@ -265,6 +265,10 @@ export function useRespondToMatchRequest() {
       // The session flips to "matched" and a new chat exists — refresh both.
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       queryClient.invalidateQueries({ queryKey: ["chats", "list"] });
+      // Die angenommene/abgelehnte Anfrage ist nicht mehr „pending" — den Zähler neu
+      // laden, sonst bliebe der Chats-Tab-Badge (und der orange Punkt an der Zeile)
+      // bis zum staleTime/Realtime-Zufall auf dem alten Stand stehen.
+      queryClient.invalidateQueries({ queryKey: ["matches", "incoming", "counts"] });
     },
   });
 }

@@ -6,7 +6,6 @@ import {
   Flag,
   Hand,
   MapPin,
-  MessageCircle,
   Trash2,
   Users,
 } from 'lucide-react-native';
@@ -19,7 +18,6 @@ import { Avatar, Button, Card, GradePill, IconButton } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, formatSessionTime, gradeBand, skillLabel } from '@/lib/utils';
-import { useChatForSession } from '@/queries/chat';
 import {
   useCreateMatchRequest,
   useMyRequestForSession,
@@ -101,10 +99,9 @@ export default function SessionDetail() {
   const isMine = !!session && user?.id === session.creator_id;
 
   // Mein eigener Anfrage-Status an dieser fremden Session (ADR-0006). Realtime
-  // lässt „Request sent" live zu „Open chat" umschlagen, wenn angenommen wird.
+  // lässt „Request sent" live zu „Leave session" umschlagen, wenn angenommen wird.
   const myRequest = useMyRequestForSession(id, !!session && !isMine);
   const myStatus = myRequest.data?.status;
-  const chat = useChatForSession(id, myStatus === 'accepted');
 
   if (isLoading) {
     return (
@@ -313,7 +310,9 @@ export default function SessionDetail() {
                     {
                       text: 'Withdraw',
                       style: 'destructive',
-                      onPress: () => withdraw.mutate(session.id),
+                      // Zurück zum Ausgangs-Tab (Sessions oder Chats) — die Detailseite
+                      // liegt über den Tabs, back enthüllt also den richtigen.
+                      onPress: () => withdraw.mutate(session.id, { onSuccess: () => router.back() }),
                     },
                   ])
                 }>
@@ -323,24 +322,11 @@ export default function SessionDetail() {
               </Button>
             </View>
           ) : accepted ? (
-            // Aufgenommen: Chat öffnen + austreten. Verlassen setzt die eigene Anfrage
-            // auf `cancelled` (Realtime kippt diesen Block danach auf „Climb together?"
-            // zurück) und gibt den Platz frei — Wiedereintritt bleibt möglich.
+            // Aufgenommen: nur austreten (den Chat erreicht man über den Chats-Tab).
+            // Verlassen setzt die eigene Anfrage auf `cancelled` (Realtime kippt diesen
+            // Block danach auf „Climb together?" zurück) und gibt den Platz frei —
+            // Wiedereintritt bleibt möglich.
             <View className="gap-2">
-              <Button
-                variant="primary"
-                size="lg"
-                fullWidth
-                // Nur solange der Chat wirklich noch lädt spinnen. Löst er (selten)
-                // auf null auf, bleibt der Button tippbar und versucht es erneut,
-                // statt ewig zu drehen.
-                loading={chat.isLoading}
-                icon={<MessageCircle size={18} color={colors.rock[0]} strokeWidth={2} />}
-                onPress={() =>
-                  chat.data ? router.push(`/chats/${chat.data}`) : chat.refetch()
-                }>
-                Open chat
-              </Button>
               <Button
                 variant="ghost"
                 size="md"
@@ -355,7 +341,8 @@ export default function SessionDetail() {
                       {
                         text: 'Leave',
                         style: 'destructive',
-                        onPress: () => leave.mutate(session.id),
+                        // Zurück zum Ausgangs-Tab (Sessions oder Chats) — s. o.
+                        onPress: () => leave.mutate(session.id, { onSuccess: () => router.back() }),
                       },
                     ],
                   )
