@@ -57,17 +57,28 @@ function IconTile({ icon }: { icon: React.ReactNode }) {
   );
 }
 
+// Orange „Aufmerksamkeit"-Punkt: ungelesene Nachricht ODER offene Beitritts-Anfragen.
+// Ein Punkt pro Zeile — der Chats-Tab-Badge zählt genau die Zeilen mit diesem Punkt.
+function AttentionDot() {
+  return <View className="h-2.5 w-2.5 shrink-0 rounded-full bg-brand-500" />;
+}
+
 // Kleine Pill für die Gastgeber-Sicht: „N wollen mit". Sitzt auf der Session-Zeile,
 // weil eine Gruppensession gleichzeitig einen laufenden Chat UND offene Requests
-// haben kann — sonst stünde sie doppelt.
-function RequestsPill({ count }: { count: number }) {
+// haben kann — sonst stünde sie doppelt. Tippbar: führt in die Session-Detailseite
+// zum Annehmen/Ablehnen. Nötig, weil eine Session MIT Chat beim Tipp auf die Zeile
+// den Chat öffnet — ohne die Pill gäbe es von hier keinen Weg zu den Anfragen.
+function RequestsPill({ count, sessionId }: { count: number; sessionId: string }) {
+  const label = count === 1 ? '1 wants to join' : `${count} want to join`;
   return (
-    <View className="flex-row items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5">
+    <Pressable
+      onPress={() => router.push(`/sessions/${sessionId}`)}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      className="flex-row items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 active:opacity-80">
       <Users size={11} color={colors.brand[600]} strokeWidth={2.5} />
-      <Text className="font-sans-semibold text-[11px] text-brand-700">
-        {count === 1 ? '1 wants to join' : `${count} want to join`}
-      </Text>
-    </View>
+      <Text className="font-sans-semibold text-[11px] text-brand-700">{label}</Text>
+    </Pressable>
   );
 }
 
@@ -149,11 +160,13 @@ function StatusRow({
   icon,
   subtitle,
   pill,
+  dot,
 }: {
   session: SessionWithMeta;
   icon: React.ReactNode;
   subtitle: string;
   pill?: React.ReactNode;
+  dot?: boolean;
 }) {
   const gym = session.gym?.name ?? 'Session';
   return (
@@ -162,13 +175,16 @@ function StatusRow({
       className="flex-row items-center gap-3 bg-rock-25 px-5 py-3 active:bg-rock-50">
       <IconTile icon={icon} />
       <View className="min-w-0 flex-1">
-        <Text numberOfLines={1} className="font-display text-[15px] text-rock-900">
-          {gym}
-          <Text className="font-sans text-[13px] text-rock-400">
-            {'  ·  '}
-            {formatSessionTime(session.starts_at, { withDay: true })}
+        <View className="flex-row items-center gap-2">
+          <Text numberOfLines={1} className="flex-1 font-display text-[15px] text-rock-900">
+            {gym}
+            <Text className="font-sans text-[13px] text-rock-400">
+              {'  ·  '}
+              {formatSessionTime(session.starts_at, { withDay: true })}
+            </Text>
           </Text>
-        </Text>
+          {dot ? <AttentionDot /> : null}
+        </View>
         <View className="mt-0.5 flex-row items-center justify-between gap-2">
           <Text numberOfLines={1} className="flex-1 font-sans text-[13px] text-rock-500">
             {subtitle}
@@ -185,10 +201,12 @@ function StatusRow({
 // Tippen öffnet den Gruppenchat.
 function ConversationRow({
   chat,
+  sessionId,
   hosting,
   pendingCount,
 }: {
   chat: ChatListItem;
+  sessionId: string;
   hosting: boolean;
   pendingCount: number;
 }) {
@@ -196,6 +214,9 @@ function ConversationRow({
   const preview = chat.lastMessage?.body ?? 'No messages yet';
   const stamp = chat.lastMessage?.sent_at ?? chat.createdAt;
   const showRequests = hosting && pendingCount > 0;
+  // Zeile braucht Aufmerksamkeit: ungelesene Nachricht ODER offene Anfragen. Genau
+  // dieselbe Bedingung zählt der Chats-Tab-Badge (eine Zeile = ein Punkt = +1).
+  const dotted = chat.unread || showRequests;
 
   return (
     <Pressable
@@ -231,9 +252,7 @@ function ConversationRow({
             )}>
             {preview}
           </Text>
-          {chat.unread ? (
-            <View className="h-2.5 w-2.5 shrink-0 rounded-full bg-brand-500" />
-          ) : null}
+          {dotted ? <AttentionDot /> : null}
         </View>
         <View className="mt-0.5 flex-row items-center justify-between gap-2">
           {chat.session?.gym ? (
@@ -243,7 +262,7 @@ function ConversationRow({
           ) : (
             <View className="flex-1" />
           )}
-          {showRequests ? <RequestsPill count={pendingCount} /> : null}
+          {showRequests ? <RequestsPill count={pendingCount} sessionId={sessionId} /> : null}
         </View>
       </View>
     </Pressable>
@@ -369,13 +388,19 @@ export default function Chats() {
     const pendingCount = pendingCounts.data?.[session.id] ?? 0;
 
     const inner = chat ? (
-      <ConversationRow chat={chat} hosting={hosting} pendingCount={pendingCount} />
+      <ConversationRow
+        chat={chat}
+        sessionId={session.id}
+        hosting={hosting}
+        pendingCount={pendingCount}
+      />
     ) : hosting ? (
       <StatusRow
         session={session}
         icon={<Hand size={22} color={colors.brand[600]} strokeWidth={2} />}
         subtitle={pendingCount > 0 ? '' : 'No climbers yet'}
-        pill={pendingCount > 0 ? <RequestsPill count={pendingCount} /> : undefined}
+        pill={pendingCount > 0 ? <RequestsPill count={pendingCount} sessionId={session.id} /> : undefined}
+        dot={pendingCount > 0}
       />
     ) : (
       // Beigetreten, aber (noch) kein Chat — seltener Race, trotzdem sichtbar halten.

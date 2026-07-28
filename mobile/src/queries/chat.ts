@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
+import { usePendingCountsForSessions } from "@/queries/matches";
+import { useMyParticipations, useMySessions } from "@/queries/sessions";
 import type { Message } from "@/types/database";
 
 const MESSAGES_KEY = (chatId: string) => ["chat", chatId, "messages"] as const;
@@ -318,13 +320,46 @@ export function useMyChats() {
 }
 
 /**
- * Anzahl Chats mit ungelesenen Nachrichten — der Badge am „My Sessions"-Tab, der
- * den weggefallenen Chats-Tab ersetzt. Leitet sich aus derselben Chat-Liste ab
- * (gemeinsamer Query-Key, ein Realtime-Kanal), kostet also keinen zweiten Request.
+ * Der Zähler am Chats-Tab-Badge = Anzahl ZEILEN in der Chats-Pipeline, die einen
+ * Aufmerksamkeits-Punkt tragen („dotted rows"), NICHT Anzahl ungelesener Nachrichten.
+ * Eine Zeile ist gepunktet, wenn sie mich braucht:
+ *
+ *   • My Sessions (Gastgeber): ungelesener Chat ODER offene Beitritts-Anfragen (>0)
+ *   • Joined (beigetreten):    ungelesener Chat
+ *   • Requested (ausgehend):   nie — wartet auf jemand anderen
+ *
+ * Pro Zeile genau +1: eine eigene Session mit ungelesenem Chat UND offenen Anfragen
+ * bleibt eine Zeile, ein Punkt, +1. So stimmt die Zahl exakt mit den sichtbaren
+ * Punkten überein, wenn man den Tab öffnet. Realtime kommt aus useMyChats (Nachrichten)
+ * und usePendingCountsForSessions (Anfragen) — der Badge stimmt auf jedem Tab.
  */
-export function useUnreadChatCount(): number {
-  const { data } = useMyChats();
-  return (data ?? []).reduce((n, c) => (c.unread ? n + 1 : n), 0);
+export function useChatsBadgeCount(): number {
+  const { data: chats } = useMyChats();
+  const { data: created } = useMySessions();
+  const { data: participations } = useMyParticipations();
+
+  const hostedIds = (created ?? []).map((s) => s.id);
+  const { data: pendingCounts } = usePendingCountsForSessions(hostedIds);
+
+  // Ungelesen-Flag je Session (ein Chat gehört zu genau einer Session).
+  const unreadBySession = new Map<string, boolean>();
+  for (const c of chats ?? []) {
+    if (c.session?.id && c.unread) unreadBySession.set(c.session.id, true);
+  }
+
+  let count = 0;
+  // My Sessions: ungelesener Chat ODER offene Anfragen.
+  for (const s of created ?? []) {
+    const unread = unreadBySession.get(s.id) ?? false;
+    const pending = (pendingCounts?.[s.id] ?? 0) > 0;
+    if (unread || pending) count++;
+  }
+  // Joined: nur ungelesener Chat. (Ersteller:in und Anfragende überschneiden sich nie,
+  // also zählt keine Session doppelt.)
+  for (const p of participations ?? []) {
+    if (p.myStatus === "accepted" && unreadBySession.get(p.session.id)) count++;
+  }
+  return count;
 }
 
 /** The chat that belongs to a session (created when a request was accepted). */
