@@ -147,27 +147,30 @@ function confirmDissolve(hasGroup: boolean, onConfirm: () => void) {
   );
 }
 
-// Zeile für eine Session OHNE (noch) Chat: offene eigene Session, angefragte Session
-// oder — als seltener Rand-/Race-Fall — eine aufgenommene ohne Chat. Statuszeile mit
-// Icon-Kachel, Halle+Zeit oben, Statustext (+ optionale Pill) darunter. Tippt in die
-// Session-Detailseite, den Chat gibt es hier noch nicht.
+// Status-Optik (Icon-Kachel, Halle+Zeit, Statustext + optionale Pill) für Zeilen ohne
+// menschliches Gegenüber: die angefragte Session, der seltene aufgenommene-ohne-Chat-Race
+// und — neu — die noch leere eigene Session. Das Tap-Ziel ist überschreibbar: die leere
+// eigene Session hat längst einen (leeren) Chat und springt dorthin (`onPress`), alle
+// anderen fallen auf die Session-Detailseite zurück.
 function StatusRow({
   session,
   icon,
   subtitle,
   pill,
   dot,
+  onPress,
 }: {
   session: SessionWithMeta;
   icon: React.ReactNode;
   subtitle: string;
   pill?: React.ReactNode;
   dot?: boolean;
+  onPress?: () => void;
 }) {
   const gym = session.gym?.name ?? 'Session';
   return (
     <Pressable
-      onPress={() => router.push(`/sessions/${session.id}`)}
+      onPress={onPress ?? (() => router.push(`/sessions/${session.id}`))}
       className="flex-row items-center gap-3 bg-rock-25 px-5 py-3 active:bg-rock-50">
       <IconTile icon={icon} />
       <View className="min-w-0 flex-1">
@@ -381,16 +384,28 @@ export default function Chats() {
     const hosting = role === 'host';
     const pendingCount = pendingCounts.data?.[session.id] ?? 0;
 
-    const inner = chat ? (
+    // Gastgeber-Sicht: seit 0017 hat JEDE eigene Session von Anfang an einen Chat, also
+    // taugt die Chat-Existenz nicht mehr als Verzweigung. Maßgeblich ist, ob schon wer
+    // dabei ist. Niemand aufgenommen → Status-Optik („No climbers yet"/Anfragen-Pill),
+    // die aber in den (leeren) Chat tippt statt auf die Detailseite. Sobald jemand
+    // beitritt, wird daraus die normale Konversationszeile. Das fängt zugleich den
+    // ADR-0004-Fall ab (accepted_count>0, aber kein anderes Mitglied mehr → „Deleted
+    // user" in der ConversationRow statt fälschlich „No climbers yet").
+    const inner = hosting ? (
+      session.accepted_count > 0 && chat ? (
+        <ConversationRow chat={chat} hosting={hosting} pendingCount={pendingCount} />
+      ) : (
+        <StatusRow
+          session={session}
+          icon={<Hand size={22} color={colors.brand[600]} strokeWidth={2} />}
+          subtitle={pendingCount > 0 ? '' : 'No climbers yet'}
+          pill={pendingCount > 0 ? <RequestsPill count={pendingCount} /> : undefined}
+          dot={pendingCount > 0}
+          onPress={chat ? () => router.push(`/chats/${chat.id}`) : undefined}
+        />
+      )
+    ) : chat ? (
       <ConversationRow chat={chat} hosting={hosting} pendingCount={pendingCount} />
-    ) : hosting ? (
-      <StatusRow
-        session={session}
-        icon={<Hand size={22} color={colors.brand[600]} strokeWidth={2} />}
-        subtitle={pendingCount > 0 ? '' : 'No climbers yet'}
-        pill={pendingCount > 0 ? <RequestsPill count={pendingCount} /> : undefined}
-        dot={pendingCount > 0}
-      />
     ) : (
       // Beigetreten, aber (noch) kein Chat — seltener Race, trotzdem sichtbar halten.
       <StatusRow

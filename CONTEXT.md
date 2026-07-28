@@ -128,19 +128,23 @@ Die angenommenen Kletternden teilen sich **einen** [Session-Chat](#session-chat)
 
 Der **eine** Chat, der zu einer Session gehört. Mitglieder sind die Ersteller:in
 und alle angenommenen Kletternden — bei einer Zweier-Session also zwei, bei einer
-Vierer-Session bis zu vier. Entsteht mit der **ersten** Annahme und wächst mit
-jeder weiteren.
+Vierer-Session bis zu vier. Entsteht **mit der Session** (ADR-0008): die
+Ersteller:in ist von Anfang an alleiniges Mitglied, der Chat wächst mit jeder
+Annahme. Solange sie allein ist, trägt der Kopf statt eines Namens die
+**Session-Kennung „Halle · Zeit"** und die Nachrichtenliste einen weichen
+Leerzustand.
 
-Er bleibt **personen-zentriert**: eine Zweier-Session zeigt in Liste und Kopf die
-eine Gegenperson (wie bisher), eine Gruppe die Mitglieder („Anna, Ben +1") mit
-gestapelten Avataren — nicht die Halle. Nachrichten tragen ihre Absender:in, weil
-mehr als zwei Leute schreiben können.
+Er bleibt sonst **personen-zentriert**: sobald wer dabei ist, zeigt eine
+Zweier-Session in Liste und Kopf die eine Gegenperson (wie bisher), eine Gruppe die
+Mitglieder („Anna, Ben +1") mit gestapelten Avataren — nicht die Halle. Nachrichten
+tragen ihre Absender:in, weil mehr als zwei Leute schreiben können.
 
-Der Chat öffnet mit der **ersten** Annahme (nicht erst wenn voll). Tritt später
-jemand bei, erscheint eine **System-Zeile** („Ben joined") — eine Meta-Nachricht
-ohne menschliche Absender:in, zu unterscheiden von einer Zeile einer gelöschten
-Person (dort ist `sender_id` null, ADR-0004; die System-Zeile braucht ein eigenes
-Kennzeichen).
+Die **Beitritts-Anfragen leben allein im Chat** (ADR-0008), oben angeheftet und dort
+angenommen/abgelehnt — die Session-Detailseite zeigt sie nicht mehr. Jeder Chat trägt
+einen **Info-Knopf** zurück zur Session-Detailseite. Tritt jemand bei, erscheint eine
+**System-Zeile** („Ben joined") — eine Meta-Nachricht ohne menschliche Absender:in, zu
+unterscheiden von einer Zeile einer gelöschten Person (dort ist `sender_id` null,
+ADR-0004; die System-Zeile braucht ein eigenes Kennzeichen).
 
 ## Entdecken-Feed (Feed)
 

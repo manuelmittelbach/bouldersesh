@@ -15,7 +15,6 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'rea
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProfileGallery } from '@/components/ProfileGallery';
-import { RequestRow } from '@/components/RequestRow';
 import { Avatar, Button, Card, GradePill, IconButton } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
@@ -24,7 +23,6 @@ import { useChatForSession } from '@/queries/chat';
 import {
   useCreateMatchRequest,
   useMyRequestForSession,
-  useRequestsForSession,
   useWithdrawRequest,
 } from '@/queries/matches';
 import { useHasReported, useReportProfile } from '@/queries/reports';
@@ -85,37 +83,6 @@ function ReportButton({ profileId, name }: { profileId: string; name: string }) 
       <Flag size={13} color={colors.rock[400]} strokeWidth={2} />
       <Text className="font-sans text-[13px] text-rock-400">Report profile</Text>
     </Pressable>
-  );
-}
-
-function IncomingRequests({ sessionId, full }: { sessionId: string; full: boolean }) {
-  const { data: requests, isLoading } = useRequestsForSession(sessionId);
-
-  return (
-    <View className="mt-8">
-      <View className="mb-2 flex-row items-center gap-1.5">
-        <Users size={14} color={colors.rock[500]} strokeWidth={2} />
-        <Text className="font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
-          Requests
-        </Text>
-      </View>
-
-      {isLoading ? (
-        <Text className="py-4 font-sans text-sm text-rock-400">Loading…</Text>
-      ) : requests && requests.length > 0 ? (
-        <View className="gap-2.5">
-          {requests.map((req) => (
-            <RequestRow key={req.id} request={req} sessionId={sessionId} full={full} />
-          ))}
-        </View>
-      ) : (
-        <View className="rounded-lg bg-rock-50 p-4">
-          <Text className="font-sans text-sm leading-5 text-rock-500">
-            No requests yet. As soon as someone wants to join, it shows up here.
-          </Text>
-        </View>
-      )}
-    </View>
   );
 }
 
@@ -294,8 +261,9 @@ export default function SessionDetail() {
           </View>
         ) : null}
 
-        {/* Owner: eingehende Anfragen annehmen/ablehnen. */}
-        {isMine ? <IncomingRequests sessionId={session.id} full={full} /> : null}
+        {/* Beitritts-Anfragen leben seit 0017 allein im Chat (oben angeheftet), nicht
+            mehr hier — jede eigene Session hat von Anfang an einen Chat. Von hier
+            führt der Chat-Einstieg über die Chats-Zeile bzw. den Info-Button im Chat. */}
 
         {/* Owner: Session löschen. Bewusst am Ende und dezent — die Absage ist der
             Ausnahmefall, nicht die angebotene Handlung (wie „Report profile"). */}
