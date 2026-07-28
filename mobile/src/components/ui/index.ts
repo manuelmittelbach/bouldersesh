@@ -1,5 +1,5 @@
 // Barrel für die DS-Primitive — kürzere Screen-Imports (`@/components/ui`).
-export { Avatar, type AvatarProps } from './Avatar';
+export { Avatar, AvatarStack, type AvatarProps, type AvatarStackMember } from './Avatar';
 export { Badge, type BadgeProps } from './Badge';
 export { Button, type ButtonProps } from './Button';
 export { Card, type CardProps } from './Card';
