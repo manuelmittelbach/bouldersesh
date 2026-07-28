@@ -13,7 +13,7 @@ import {
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Avatar } from '@/components/ui';
+import { Avatar, AvatarStack } from '@/components/ui';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, cn, formatChatTime, formatSessionTime } from '@/lib/utils';
 import { useMyChats, type ChatListItem } from '@/queries/chat';
@@ -257,12 +257,25 @@ function ConversationRow({
       // Deckende Fläche (= Seitenhintergrund), sonst schimmert beim Wischen die rote
       // Delete-Aktion durch.
       className="flex-row items-center gap-3 bg-rock-25 px-5 py-3 active:bg-rock-50">
-      <Avatar
-        name={name}
-        tone={avatarTone(chat.other?.id ?? name)}
-        size="lg"
-        src={publicImageUrl(chat.other?.avatar_path)}
-      />
+      {chat.others.length > 1 ? (
+        // Gruppen-Runde: gestapelte Gesichter statt nur des ersten Mitglieds (ADR-0007).
+        <AvatarStack
+          size="lg"
+          members={chat.others.map((m) => ({
+            id: m.id,
+            name: m.display_name ?? 'Anonymous',
+            tone: avatarTone(m.id),
+            src: publicImageUrl(m.avatar_path),
+          }))}
+        />
+      ) : (
+        <Avatar
+          name={name}
+          tone={avatarTone(chat.other?.id ?? name)}
+          size="lg"
+          src={publicImageUrl(chat.other?.avatar_path)}
+        />
+      )}
       <View className="min-w-0 flex-1">
         <View className="flex-row items-center justify-between gap-2">
           <Text numberOfLines={1} className="flex-1 font-display text-[15px] text-rock-900">
