@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Send, Users } from 'lucide-react-native';
+import { ArrowLeft, Info, Send, Users } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -19,7 +19,7 @@ import { RequestRow } from '@/components/RequestRow';
 import { Avatar, IconButton } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
-import { avatarTone, formatClock } from '@/lib/utils';
+import { avatarTone, formatClock, formatSessionTime } from '@/lib/utils';
 import {
   useChatMembers,
   useMessages,
@@ -58,6 +58,11 @@ export default function Chat() {
   // Person tippbar zu ihrem Profil. Hat sich das einzige Gegenüber gelöscht, ist der
   // Chat nur noch ich → generisches „Chat“ (ADR-0004).
   const others = (members ?? []).filter((m) => m.id !== user?.id);
+  // Solo-Kopf: bin ich (noch) allein im Chat, trägt der Kopf statt des generischen
+  // „Chat" die Session-Kennung „Halle · Zeit", damit die leere eigene Session sofort
+  // verortet ist. Sobald wer beitritt, übernimmt die Avatar-Namen-Leiste oben.
+  const soloTitle =
+    session?.gym?.name ? `${session.gym.name} · ${formatSessionTime(session.starts_at)}` : 'Chat';
   const [body, setBody] = useState('');
   const listRef = useRef<FlatList<Message>>(null);
 
@@ -114,9 +119,19 @@ export default function Chat() {
           </ScrollView>
         ) : (
           <Text numberOfLines={1} className="flex-1 font-display text-base text-rock-900">
-            Chat
+            {soloTitle}
           </Text>
         )}
+        {/* Info → Session-Detail. In JEDEM Chat (Gastgeber:in wie Beigetretene): seit die
+            Chats-Zeile direkt in den Chat springt, ist das der Weg zurück zur Detailseite. */}
+        {sessionId ? (
+          <IconButton
+            variant="ghost"
+            label="Session details"
+            onPress={() => router.push(`/sessions/${sessionId}`)}>
+            <Info size={22} color={colors.rock[700]} strokeWidth={2} />
+          </IconButton>
+        ) : null}
       </View>
 
       {/* Angeheftete Beitritts-Anfragen (nur Gastgeber:in, nur wenn offene da sind).
@@ -161,8 +176,21 @@ export default function Chat() {
             data={messages ?? []}
             keyExtractor={(m) => m.id}
             className="flex-1"
-            contentContainerClassName="px-4 py-4 gap-1"
+            contentContainerClassName="grow px-4 py-4 gap-1"
             onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+            ListEmptyComponent={
+              // Leerer Chat = ich bin (noch) allein: die eben erst erstellte eigene
+              // Session. Weiche Zeile, kein Fehlerton. NUR ohne offene Anfragen — liegen
+              // welche an, trägt der angeheftete Block oben schon den Hinweis, und ein
+              // gleichzeitiges „noch niemand da" wäre widersprüchlich.
+              pendingRequests.length === 0 ? (
+                <View className="flex-1 items-center justify-center px-8">
+                  <Text className="text-center font-sans text-sm leading-6 text-rock-400">
+                    No climbers yet. When someone asks to join, they’ll show up at the top.
+                  </Text>
+                </View>
+              ) : null
+            }
             renderItem={({ item, index }) => {
               // System-Zeile („Ben joined", ADR-0007): zentrierte Meta-Zeile, keine
               // Blase, kein Avatar — abgesetzt vom Gespräch.
