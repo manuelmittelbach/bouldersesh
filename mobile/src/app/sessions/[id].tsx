@@ -281,7 +281,7 @@ export default function SessionDetail() {
       {/* Aktionsleiste — nur für fremde Sessions. Ein Platz, Inhalt je Zustand
           (ADR-0006): laden → still, pending → „Request sent", accepted → „Open
           chat", declined → dezent, sonst der „Climb together?"-Button. */}
-      {!isMine ? (
+      {!isMine && !declined ? (
         <View
           className="absolute inset-x-0 bottom-0 border-t border-rock-100 bg-rock-0 px-5 pt-3"
           style={{ paddingBottom: insets.bottom + 12 }}>
@@ -351,10 +351,6 @@ export default function SessionDetail() {
                   Leave session
                 </Text>
               </Button>
-            </View>
-          ) : declined ? (
-            <View className="h-[52px] items-center justify-center">
-              <Text className="font-sans text-sm text-rock-400">Not this time</Text>
             </View>
           ) : (
             <>

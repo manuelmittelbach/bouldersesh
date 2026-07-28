@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Clock, Hand, LogOut, MessageCircle, Trash2, Undo2, Users } from 'lucide-react-native';
+import { Clock, LogOut, MessageCircle, Trash2, Undo2, Users } from 'lucide-react-native';
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -433,7 +433,7 @@ export default function Chats() {
       ) : (
         <StatusRow
           session={session}
-          icon={<Hand size={22} color={colors.brand[600]} strokeWidth={2} />}
+          icon={<Clock size={22} color={colors.brand[600]} strokeWidth={2} />}
           subtitle={pendingCount > 0 ? '' : 'No climbers yet'}
           pill={pendingCount > 0 ? <RequestsPill count={pendingCount} /> : undefined}
           dot={pendingCount > 0}
@@ -500,12 +500,6 @@ export default function Chats() {
             Join a session from the feed or create your own — your requests and chats show up
             here.
           </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/sessions/new')}
-            className="mt-5 rounded-md bg-brand-500 px-4 py-2.5 active:opacity-90">
-            <Text className="font-sans-semibold text-[14px] text-rock-0">Create a session</Text>
-          </Pressable>
         </View>
       ) : (
         <ScrollView

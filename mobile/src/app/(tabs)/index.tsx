@@ -21,7 +21,7 @@ import {
 } from '@/lib/utils';
 import { useCities } from '@/queries/cities';
 import { useGyms, type GymWithCity } from '@/queries/gyms';
-import { useMyPendingRequests } from '@/queries/matches';
+import { useMyDeclinedRequests, useMyPendingRequests } from '@/queries/matches';
 import { useOpenSessions, type SessionWithMeta } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
@@ -187,10 +187,22 @@ export default function Dashboard() {
   // zum Feed zurück, wird neu geladen — so verschwindet der Streifen an einer Session,
   // von der man zurückgetreten oder abgelehnt wurde (der Tab bleibt sonst gemountet).
   const { data: requestedIds, refetch: refetchRequested } = useMyPendingRequests();
+  // Sessions, aus denen mich die Ersteller:in abgelehnt hat — die blende ich unten aus,
+  // damit eine Absage nicht als freier Platz zurück in den Feed rutscht. Gleicher
+  // Focus-Refetch wie „requested": kehrt man vom Detail zurück (wo man die Absage sieht),
+  // fällt die Session raus, ohne dass der noch gemountete Tab hängen bliebe.
+  const { data: declinedIds, refetch: refetchDeclined } = useMyDeclinedRequests();
   useFocusEffect(
     useCallback(() => {
       refetchRequested();
-    }, [refetchRequested]),
+      refetchDeclined();
+    }, [refetchRequested, refetchDeclined]),
+  );
+
+  // Abgelehnte Sessions raus, bevor die Liste sie rendert (ADR-0006).
+  const visibleSessions = useMemo(
+    () => (sessions ?? []).filter((s) => !declinedIds?.has(s.id)),
+    [sessions, declinedIds],
   );
 
   // Eigener Pull-Zustand: der RefreshControl-Spinner soll NUR bei echtem Runterziehen
@@ -230,7 +242,7 @@ export default function Dashboard() {
           Fehlerzustand leben deshalb im Listen-Body (ListEmptyComponent), nicht als
           Voll-Screen-Ersatz. */}
       <FlatList<SessionWithMeta>
-        data={sessions ?? []}
+        data={visibleSessions}
         keyExtractor={(s) => s.id}
         onRefresh={onRefresh}
         refreshing={refreshing}
