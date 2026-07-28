@@ -63,22 +63,18 @@ function AttentionDot() {
   return <View className="h-2.5 w-2.5 shrink-0 rounded-full bg-brand-500" />;
 }
 
-// Kleine Pill für die Gastgeber-Sicht: „N wollen mit". Sitzt auf der Session-Zeile,
-// weil eine Gruppensession gleichzeitig einen laufenden Chat UND offene Requests
-// haben kann — sonst stünde sie doppelt. Tippbar: führt in die Session-Detailseite
-// zum Annehmen/Ablehnen. Nötig, weil eine Session MIT Chat beim Tipp auf die Zeile
-// den Chat öffnet — ohne die Pill gäbe es von hier keinen Weg zu den Anfragen.
-function RequestsPill({ count, sessionId }: { count: number; sessionId: string }) {
-  const label = count === 1 ? '1 wants to join' : `${count} want to join`;
+// Kleine Info-Pill für die Gastgeber-Sicht: „N wollen mit". Sitzt auf der Session-
+// Zeile, weil eine Gruppensession gleichzeitig einen laufenden Chat UND offene Requests
+// haben kann. Rein anzeigend — das Annehmen/Ablehnen passiert dort, wohin die Zeile
+// ohnehin tippt: in den Chat (Anfragen oben angeheftet) bzw. die Session-Detailseite.
+function RequestsPill({ count }: { count: number }) {
   return (
-    <Pressable
-      onPress={() => router.push(`/sessions/${sessionId}`)}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      className="flex-row items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 active:opacity-80">
+    <View className="flex-row items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5">
       <Users size={11} color={colors.brand[600]} strokeWidth={2.5} />
-      <Text className="font-sans-semibold text-[11px] text-brand-700">{label}</Text>
-    </Pressable>
+      <Text className="font-sans-semibold text-[11px] text-brand-700">
+        {count === 1 ? '1 wants to join' : `${count} want to join`}
+      </Text>
+    </View>
   );
 }
 
@@ -201,12 +197,10 @@ function StatusRow({
 // Tippen öffnet den Gruppenchat.
 function ConversationRow({
   chat,
-  sessionId,
   hosting,
   pendingCount,
 }: {
   chat: ChatListItem;
-  sessionId: string;
   hosting: boolean;
   pendingCount: number;
 }) {
@@ -262,7 +256,7 @@ function ConversationRow({
           ) : (
             <View className="flex-1" />
           )}
-          {showRequests ? <RequestsPill count={pendingCount} sessionId={sessionId} /> : null}
+          {showRequests ? <RequestsPill count={pendingCount} /> : null}
         </View>
       </View>
     </Pressable>
@@ -388,18 +382,13 @@ export default function Chats() {
     const pendingCount = pendingCounts.data?.[session.id] ?? 0;
 
     const inner = chat ? (
-      <ConversationRow
-        chat={chat}
-        sessionId={session.id}
-        hosting={hosting}
-        pendingCount={pendingCount}
-      />
+      <ConversationRow chat={chat} hosting={hosting} pendingCount={pendingCount} />
     ) : hosting ? (
       <StatusRow
         session={session}
         icon={<Hand size={22} color={colors.brand[600]} strokeWidth={2} />}
         subtitle={pendingCount > 0 ? '' : 'No climbers yet'}
-        pill={pendingCount > 0 ? <RequestsPill count={pendingCount} sessionId={session.id} /> : undefined}
+        pill={pendingCount > 0 ? <RequestsPill count={pendingCount} /> : undefined}
         dot={pendingCount > 0}
       />
     ) : (

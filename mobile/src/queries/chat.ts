@@ -382,3 +382,25 @@ export function useChatForSession(sessionId: string | undefined, enabled = true)
     enabled: !!sessionId && enabled,
   });
 }
+
+/** Umgekehrter Weg: zu welcher Session gehört dieser Chat. Der Chat-Screen kennt nur
+ *  seine Chat-ID — mit der Session-ID lädt er (falls er Gastgeber ist) die offenen
+ *  Beitritts-Anfragen und pinnt sie oben an. */
+async function getSessionIdForChat(chatId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("chats")
+    .select("session_id")
+    .eq("id", chatId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.session_id ?? null;
+}
+
+export function useSessionIdForChat(chatId: string | undefined) {
+  return useQuery({
+    queryKey: ["chats", "session-id", chatId ?? ""],
+    queryFn: () => getSessionIdForChat(chatId!),
+    enabled: !!chatId,
+    staleTime: 5 * 60 * 1000,
+  });
+}

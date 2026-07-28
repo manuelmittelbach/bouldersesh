@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Send } from 'lucide-react-native';
+import { ArrowLeft, Send, Users } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,11 +15,19 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MessageBubble } from '@/components/MessageBubble';
+import { RequestRow } from '@/components/RequestRow';
 import { Avatar, IconButton } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, formatClock } from '@/lib/utils';
-import { useChatMembers, useMessages, useSendMessage } from '@/queries/chat';
+import {
+  useChatMembers,
+  useMessages,
+  useSendMessage,
+  useSessionIdForChat,
+} from '@/queries/chat';
+import { useRequestsForSession } from '@/queries/matches';
+import { useSession } from '@/queries/sessions';
 import type { Message } from '@/types/database';
 import { colors } from '@/theme/colors';
 
@@ -30,6 +38,20 @@ export default function Chat() {
   const { data: messages, isLoading } = useMessages(id);
   const { data: members } = useChatMembers(id);
   const send = useSendMessage(id);
+
+  // Zu welcher Session gehört dieser Chat — und bin ich die Gastgeber:in? Dann werden
+  // die offenen Beitritts-Anfragen oben angeheftet (Annehmen/Ablehnen direkt hier),
+  // statt in die Session-Detailseite abzuspringen.
+  const { data: sessionId } = useSessionIdForChat(id);
+  const { data: session } = useSession(sessionId ?? undefined);
+  const isHost = !!session && !!user?.id && session.creator_id === user.id;
+  const { data: requests } = useRequestsForSession(isHost && sessionId ? sessionId : undefined);
+  const pendingRequests = (requests ?? []).filter((r) => r.status === 'pending');
+  // Voll: keine freien Plätze mehr (capacity − 1 Mitkletternde) oder Trigger hat auf
+  // „matched" gekippt — dann ist Annehmen gesperrt (ADR-0007).
+  const spotsTotal = session ? session.capacity - 1 : 0;
+  const full =
+    !!session && (session.status === 'matched' || session.accepted_count >= spotsTotal);
 
   const memberById = new Map((members ?? []).map((m) => [m.id, m]));
   // Der Kopf zeigt die *anderen* Mitglieder (ADR-0007) als Avatar+Name-Leiste — jede
@@ -96,6 +118,33 @@ export default function Chat() {
           </Text>
         )}
       </View>
+
+      {/* Angeheftete Beitritts-Anfragen (nur Gastgeber:in, nur wenn offene da sind).
+          Sitzt fix unter dem Kopf über den Nachrichten — bei vielen Anfragen scrollt
+          der Block in sich, statt die Nachrichten aus dem Bild zu schieben. */}
+      {isHost && pendingRequests.length > 0 ? (
+        <View className="border-b border-rock-100 bg-rock-25">
+          <View className="flex-row items-center gap-1.5 px-4 pb-2 pt-3">
+            <Users size={14} color={colors.rock[500]} strokeWidth={2} />
+            <Text className="font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
+              {pendingRequests.length === 1
+                ? '1 wants to join'
+                : `${pendingRequests.length} want to join`}
+            </Text>
+          </View>
+          <ScrollView className="max-h-64" contentContainerClassName="gap-2.5 px-4 pb-3">
+            {pendingRequests.map((req) => (
+              <RequestRow
+                key={req.id}
+                request={req}
+                sessionId={sessionId!}
+                full={full}
+                openChatOnAccept={false}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
 
       <KeyboardAvoidingView
         className="flex-1"
