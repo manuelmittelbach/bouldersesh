@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { Clock, Hand, LogOut, MessageCircle, Trash2, Undo2, Users } from 'lucide-react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -103,22 +103,54 @@ function SwipeAction({
         tone === 'danger' ? 'bg-danger' : 'bg-rock-500',
       )}>
       {icon}
-      <Text className="mt-1 font-sans-medium text-xs text-rock-0">{label}</Text>
+      <Text className="mt-1 text-center font-sans-medium text-xs text-rock-0">{label}</Text>
     </Pressable>
   );
+}
+
+// Ein Wisch macht in RNGH aus dem Loslassen einen Tap auf die darunterliegende
+// Pressable — sonst öffnete jedes Aufwischen sofort den Chat. Der Kontext liefert den
+// Zeilen einen Wächter: `blocked()` ist wahr, sobald gezogen/geöffnet wird, und die
+// Zeilen-onPress fällt dann aus.
+const SwipeGuardContext = createContext<{ blocked: () => boolean }>({ blocked: () => false });
+
+// Zeilen-Navigations-onPress durch den Wächter schleusen: während eines Wischs (oder bei
+// offener Zeile) unterdrückt, sonst normal.
+function useSwipeGuardedPress(onPress?: () => void) {
+  const guard = useContext(SwipeGuardContext);
+  return useCallback(() => {
+    if (guard.blocked() || !onPress) return;
+    onPress();
+  }, [guard, onPress]);
 }
 
 // Wisch-Wrapper mit rechter Aktion. Die Zeilen darunter (StatusRow/ConversationRow)
 // haben eine deckende Fläche, sonst schimmerte die Aktion beim Wischen durch.
 function SwipeRow({ action, children }: { action: React.ReactNode; children: React.ReactNode }) {
+  // Ref statt State: der Wert wird nur im onPress-Moment gelesen, ein Re-Render wäre
+  // Verschwendung. `true` ab Zieh-Beginn und solange offen; erst beim Schließen wieder frei.
+  const activeRef = useRef(false);
+  const guard = useMemo(() => ({ blocked: () => activeRef.current }), []);
+
   return (
-    <ReanimatedSwipeable
-      friction={2}
-      rightThreshold={40}
-      overshootRight={false}
-      renderRightActions={() => action}>
-      {children}
-    </ReanimatedSwipeable>
+    <SwipeGuardContext.Provider value={guard}>
+      <ReanimatedSwipeable
+        friction={2}
+        rightThreshold={40}
+        overshootRight={false}
+        onSwipeableOpenStartDrag={() => {
+          activeRef.current = true;
+        }}
+        onSwipeableWillOpen={() => {
+          activeRef.current = true;
+        }}
+        onSwipeableWillClose={() => {
+          activeRef.current = false;
+        }}
+        renderRightActions={() => action}>
+        {children}
+      </ReanimatedSwipeable>
+    </SwipeGuardContext.Provider>
   );
 }
 
@@ -132,17 +164,17 @@ function confirmLeave(onConfirm: () => void) {
   ]);
 }
 
-// Auflösen ist unwiderruflich und trifft alle — Rückfrage mit Kontext, ob schon
+// Löschen ist unwiderruflich und trifft alle — Rückfrage mit Kontext, ob schon
 // jemand dabei ist (dann geht auch der Gruppenchat verloren).
 function confirmDissolve(hasGroup: boolean, onConfirm: () => void) {
   Alert.alert(
-    'Dissolve session?',
+    'Delete session?',
     hasGroup
       ? 'This removes the session and the group chat for everyone.'
       : 'This removes the session for good.',
     [
       { text: 'Keep', style: 'cancel' },
-      { text: 'Dissolve', style: 'destructive', onPress: onConfirm },
+      { text: 'Delete', style: 'destructive', onPress: onConfirm },
     ],
   );
 }
@@ -168,9 +200,12 @@ function StatusRow({
   onPress?: () => void;
 }) {
   const gym = session.gym?.name ?? 'Session';
+  const handlePress = useSwipeGuardedPress(
+    onPress ?? (() => router.push(`/sessions/${session.id}`)),
+  );
   return (
     <Pressable
-      onPress={onPress ?? (() => router.push(`/sessions/${session.id}`))}
+      onPress={handlePress}
       className="flex-row items-center gap-3 bg-rock-25 px-5 py-3 active:bg-rock-50">
       <IconTile icon={icon} />
       <View className="min-w-0 flex-1">
@@ -214,10 +249,11 @@ function ConversationRow({
   // Zeile braucht Aufmerksamkeit: ungelesene Nachricht ODER offene Anfragen. Genau
   // dieselbe Bedingung zählt der Chats-Tab-Badge (eine Zeile = ein Punkt = +1).
   const dotted = chat.unread || showRequests;
+  const handlePress = useSwipeGuardedPress(() => router.push(`/chats/${chat.id}`));
 
   return (
     <Pressable
-      onPress={() => router.push(`/chats/${chat.id}`)}
+      onPress={handlePress}
       // Deckende Fläche (= Seitenhintergrund), sonst schimmert beim Wischen die rote
       // Delete-Aktion durch.
       className="flex-row items-center gap-3 bg-rock-25 px-5 py-3 active:bg-rock-50">
@@ -417,7 +453,7 @@ export default function Chats() {
 
     const action = hosting ? (
       <SwipeAction
-        label="Dissolve"
+        label="Delete session"
         tone="danger"
         icon={<Trash2 size={22} color={colors.rock[0]} strokeWidth={2} />}
         onPress={() =>
@@ -491,7 +527,7 @@ export default function Chats() {
                   <SwipeRow
                     action={
                       <SwipeAction
-                        label="Withdraw"
+                        label="Withdraw request"
                         tone="neutral"
                         icon={<Undo2 size={22} color={colors.rock[0]} strokeWidth={2} />}
                         onPress={() => withdraw.mutate(session.id)}

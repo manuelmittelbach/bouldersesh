@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Info, Send, Users } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -22,6 +22,7 @@ import { publicImageUrl } from '@/lib/images';
 import { avatarTone, formatClock, formatSessionTime } from '@/lib/utils';
 import {
   useChatMembers,
+  useMarkChatRead,
   useMessages,
   useSendMessage,
   useSessionIdForChat,
@@ -38,6 +39,18 @@ export default function Chat() {
   const { data: messages, isLoading } = useMessages(id);
   const { data: members } = useChatMembers(id);
   const send = useSendMessage(id);
+
+  // Chat offen = gelesen. Beim Öffnen und bei jeder neuen Nachricht, solange der Screen
+  // sichtbar ist, `last_read_at` fortschreiben — sonst bliebe der Aufmerksamkeits-Punkt
+  // an der Chats-Zeile und der Tab-Badge stehen. Geht man zurück, ist der Screen
+  // unmounted, spätere Nachrichten markieren also wieder als ungelesen.
+  const markRead = useMarkChatRead();
+  const newestMessageId = messages?.length ? messages[messages.length - 1].id : null;
+  useEffect(() => {
+    if (id && newestMessageId) markRead.mutate(id);
+    // markRead ist über Renders stabil (react-query); newestMessageId ist der Auslöser.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, newestMessageId]);
 
   // Zu welcher Session gehört dieser Chat — und bin ich die Gastgeber:in? Dann werden
   // die offenen Beitritts-Anfragen oben angeheftet (Annehmen/Ablehnen direkt hier),
