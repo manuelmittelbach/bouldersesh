@@ -160,6 +160,88 @@ export function usePendingCountsForSessions(sessionIds: string[]) {
   return query;
 }
 
+const CLIMBERS_FOR_SESSION_KEY = (sessionId: string) =>
+  ["matches", "climbers", sessionId] as const;
+
+async function getClimbersForSession(
+  sessionId: string,
+): Promise<MatchRequestWithRequester[]> {
+  const { data, error } = await supabase
+    .from("match_requests")
+    .select(
+      `
+        *,
+        requester:profiles!match_requests_requester_id_fkey ( id, display_name, avatar_path, skill_level )
+      `,
+    )
+    .eq("session_id", sessionId)
+    // Nur der bestätigte Kader: die „Climbers"-Liste zeigt, wer dabei IST, nicht wer
+    // fragt. Seit 0018 lässt RLS diese Zeilen auch Außenstehende lesen (öffentliche
+    // Session, status='accepted') — genau der Blick, für den die Liste gedacht ist.
+    .eq("status", "accepted")
+    // Aufsteigend: frühe Zusagen zuerst — die Liste liest sich wie eine Beitrittsreihe.
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as unknown as MatchRequestWithRequester[];
+}
+
+/**
+ * Wer einer Session bereits beigetreten ist (accepted) — die „Climbers"-Liste auf
+ * dem Session-Detail (ADR-0009). Anders als useRequestsForSession (Ersteller-Sicht,
+ * alle Status) ist das die öffentliche Kader-Sicht: nur accepted, für jede:n lesbar
+ * (0018). Realtime hält sie live: Das WACHSEN (jemand wird angenommen) sieht jede:r,
+ * die neue Zeile ist `accepted` und damit sichtbar. Das SCHRUMPFEN (jemand verlässt
+ * → `cancelled`, 0016) sieht nur Ersteller:in/Mitglieder live — für Außenstehende ist
+ * die neue `cancelled`-Zeile unsichtbar (0018), und Realtime prüft RLS auf der neuen
+ * Zeile, stellt das Event also nicht zu; sie ziehen beim nächsten Refetch (Focus/
+ * Remount) nach. Bewusst in Kauf genommen (ADR-0009): geringe, selbstheilende
+ * Staleness. Der useId-Suffix hält den Kanal-Topic pro Hook-Instanz eindeutig (sonst
+ * Kollision in supabase-js, siehe queries/chat.ts).
+ */
+export function useSessionClimbers(sessionId: string | undefined) {
+  const queryClient = useQueryClient();
+  const channelId = useId();
+
+  const query = useQuery({
+    queryKey: CLIMBERS_FOR_SESSION_KEY(sessionId ?? ""),
+    queryFn: () => getClimbersForSession(sessionId!),
+    enabled: !!sessionId,
+  });
+
+  useEffect(() => {
+    if (!sessionId) return;
+    const channel = supabase
+      .channel(`session-climbers:${sessionId}:${channelId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "match_requests",
+          filter: `session_id=eq.${sessionId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({
+            queryKey: CLIMBERS_FOR_SESSION_KEY(sessionId),
+          });
+          // Roster und „Spots left" sind zwei Sichten auf dieselben accepted-Zeilen —
+          // die Sessions mit-invalidieren, damit beide zusammen wandern statt sich zu
+          // widersprechen. Breiter `["sessions"]`-Prefix wie die Mutations-Hooks
+          // (useRespondToMatchRequest): trifft neben dem Detail (SESSION_KEY) auch den
+          // Feed-Count (["sessions","open"]), der denselben belegten Platz zeigt.
+          queryClient.invalidateQueries({ queryKey: ["sessions"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId, channelId, queryClient]);
+
+  return query;
+}
+
 export function useCreateMatchRequest() {
   const queryClient = useQueryClient();
   return useMutation({
