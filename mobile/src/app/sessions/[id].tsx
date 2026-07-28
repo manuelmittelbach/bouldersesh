@@ -75,12 +75,21 @@ function RequestRow({
 
   return (
     <Card className="flex-row items-center gap-3 p-3">
-      <Avatar
-        name={name}
-        tone={avatarTone(request.requester?.id ?? name)}
-        size="md"
-        src={publicImageUrl(request.requester?.avatar_path)}
-      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`View ${name}’s profile`}
+        disabled={!request.requester?.id}
+        onPress={() =>
+          request.requester?.id && router.push(`/profile/${request.requester.id}`)
+        }
+        className="active:opacity-70">
+        <Avatar
+          name={name}
+          tone={avatarTone(request.requester?.id ?? name)}
+          size="md"
+          src={publicImageUrl(request.requester?.avatar_path)}
+        />
+      </Pressable>
       <View className="min-w-0 flex-1">
         <Text numberOfLines={1} className="font-display text-[15px] text-rock-900">
           {name}
