@@ -264,3 +264,31 @@ export function useDeleteSession() {
     },
   });
 }
+
+// Aus einer fremden (aufgenommenen) Session austreten — das Gegenstück zum Auflösen.
+// Die ganze Räumung (Mitgliedschaft weg, Anfrage auf `cancelled`, „X left"-System-
+// zeile, Platz frei → Session ggf. zurück auf `open`) passiert atomar in der
+// SECURITY-DEFINER-Funktion `leave_session` (0016); der Client stößt sie nur an. Wir
+// invalidieren `sessions` (die Session fällt aus „Joined", der Feed zeigt den freien
+// Platz wieder) und `chats` (der Gruppenchat verschwindet aus meiner Liste).
+export function useLeaveSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (sessionId: string) => {
+      const { error } = await supabase.rpc("leave_session", {
+        p_session_id: sessionId,
+      });
+      if (error) throw error;
+      return sessionId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+      // Der Austritt setzt die eigene Anfrage auf `cancelled`. Ohne dies hinge der
+      // Session-Detail-Screen (useMyRequestForSession) noch auf `accepted` und zeigte
+      // „Open chat / Leave session", bis zufällig ein Realtime-Event kommt — genau der
+      // stale Zustand, den useWithdrawRequest per MY_OUTGOING_KEY vermeidet.
+      queryClient.invalidateQueries({ queryKey: ["matches"] });
+    },
+  });
+}

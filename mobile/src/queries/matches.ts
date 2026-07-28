@@ -176,6 +176,9 @@ export function useWithdrawRequest() {
         queryKey: REQUESTS_FOR_SESSION_KEY(sessionId),
       });
       queryClient.invalidateQueries({ queryKey: MY_OUTGOING_KEY });
+      // Der Chats-Tab baut „Requested Sessions" aus useMyParticipations — ohne dies
+      // bliebe die zurückgezogene Zeile bis zum nächsten Focus-Refetch stehen.
+      queryClient.invalidateQueries({ queryKey: ["sessions", "participations"] });
     },
   });
 }
