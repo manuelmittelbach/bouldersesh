@@ -119,9 +119,12 @@ async function getChatMembers(chatId: string): Promise<ChatMember[]> {
     .filter((p): p is ChatMember => !!p);
 }
 
+export const CHAT_MEMBERS_KEY = (chatId: string) =>
+  ["chat", chatId, "members"] as const;
+
 export function useChatMembers(chatId: string | undefined) {
   return useQuery({
-    queryKey: ["chat", chatId ?? "", "members"] as const,
+    queryKey: CHAT_MEMBERS_KEY(chatId ?? ""),
     queryFn: () => getChatMembers(chatId!),
     enabled: !!chatId,
     staleTime: 5 * 60 * 1000,
@@ -181,6 +184,12 @@ export type ChatListItem = {
   other: ChatCounterpart | null;
   /** Alle anderen Mitglieder (für Gruppen-Titel/gestapelte Avatare). 1:1 → genau eins. */
   others: ChatCounterpart[];
+  /**
+   * ALLE Mitglieder inkl. mir — nur zum Vorwärmen des Chat-Screen-Mitglieder-Caches
+   * (`useChatMembers`) beim Antippen, damit dort weder die Kopf-Leiste noch die
+   * Absender-Avatare der Nachrichten (inkl. meiner eigenen) erst nachladen.
+   */
+  members: ChatMember[];
   /** Personen-zentrierter Titel: 1:1 der eine Name, Gruppe „Anna, Ben +1". */
   title: string;
   /**
@@ -270,6 +279,10 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
       .map((mem) => mem.profile)
       .filter((p): p is ChatCounterpart => !!p);
     const other = others[0] ?? null;
+    // Alle Profile inkl. meinem — deckungsgleich mit dem, was useChatMembers lädt.
+    const members = (c.members ?? [])
+      .map((mem) => mem.profile)
+      .filter((p): p is ChatCounterpart => !!p);
     const title = buildChatTitle(others.map((p) => p.display_name ?? "Anonymous"));
 
     // Absender der letzten Nachricht auf einen Namen mappen (für die Gruppen-Vorschau).
@@ -290,6 +303,7 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
       createdAt: c.created_at,
       other,
       others,
+      members,
       title,
       counterpartDeleted: otherMembers.length === 0,
       session: c.session ?? null,
