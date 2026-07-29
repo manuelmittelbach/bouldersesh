@@ -71,8 +71,9 @@ und damit implizit einer Stadt.
 Eine Session ist eine **Gruppe von 2 bis 4 Kletternden** — die Ersteller:in
 **zählt mit**. Sie füllt sich über die Zeit: die Ersteller:in ist von Anfang an
 der erste Platz, jede angenommene [Anfrage](#anfrage-match-request) besetzt einen
-weiteren. Solange Plätze offen sind, bleibt die Session im Feed und nimmt
-Anfragen; mit dem letzten Platz ist sie **voll** und verschwindet aus dem Feed.
+weiteren. Solange Plätze offen sind, nimmt die Session Anfragen; mit dem letzten
+Platz ist sie **voll** und nicht mehr anfragbar. Sie bleibt aber **gedimmt als
+„Full"-Beleg im Feed sichtbar** (ADR-0011) — nur offene Sessions sind anfragbar.
 
 Eine Session trägt **keinen** strukturierten Kletter-Grade. Was jemand vorhat,
 steht in der (verpflichtenden) Notiz. Das Niveau, das an einer Session erscheint,
@@ -153,8 +154,11 @@ alle Hallen dieser Stadt. Die Halle ist darin ein **optionaler Filter**, nicht
 eine zweite Pflicht-Auswahlstufe — Entdeckung über Hallengrenzen hinweg ist
 gewollt.
 
-Eine Session bleibt hier, **solange Plätze frei sind**; die Karte zeigt die
-verbleibenden Plätze („2 Plätze frei"). Volle Sessions fallen heraus.
+Solange Plätze frei sind, ist eine Session **anfragbar**; die Karte zeigt die
+verbleibenden Plätze („2 Plätze frei"). Volle Sessions **fallen nicht heraus**:
+sie bleiben **gedimmt** stehen und zeigen statt der Plätze **„Full"** (ADR-0011) —
+Beleg, dass in der Stadt etwas läuft. Tippen öffnet weiter das Detail (wer
+klettert), nur anfragen kann man sie nicht mehr.
 
 ## Meine Rolle an einer Session (Hosting / Joined / Requested)
 

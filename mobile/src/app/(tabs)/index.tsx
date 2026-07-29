@@ -27,13 +27,14 @@ import {
   useMyDeclinedRequests,
   useMyPendingRequests,
 } from '@/queries/matches';
-import { useOpenSessions, type SessionWithMeta } from '@/queries/sessions';
+import { useFeedSessions, type SessionWithMeta } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
-// Der Feed zeigt offene Sessions der aktiven Stadt für GENAU EINEN Tag (Default: heute).
-// Zwei Chip-Reihen filtern: der Tag ([Today] [Tomorrow] [📅]) und optional die Halle.
-// Beide kombinieren (Tag UND Halle). Die Halle ist ein OPTIONALER Filter, keine zweite
-// Pflichtstufe — Entdeckung über Hallengrenzen hinweg ist gewollt (CONTEXT.md).
+// Der Feed zeigt die Sessions der aktiven Stadt für GENAU EINEN Tag (Default: heute):
+// offene (joinbare) UND volle — letztere gedimmt als „Full"-Beleg, statt herauszufallen
+// (ADR-0011). Zwei Chip-Reihen filtern: der Tag ([Today] [Tomorrow] [📅]) und optional
+// die Halle. Beide kombinieren (Tag UND Halle). Die Halle ist ein OPTIONALER Filter,
+// keine zweite Pflichtstufe — Entdeckung über Hallengrenzen hinweg ist gewollt (CONTEXT.md).
 
 function Header({
   cityName,
@@ -182,7 +183,7 @@ export default function Dashboard() {
     isLoading,
     error,
     refetch,
-  } = useOpenSessions({
+  } = useFeedSessions({
     city_id: cityId ?? undefined,
     gym_id: gymId ?? undefined,
     from: range.from,
@@ -283,9 +284,13 @@ export default function Dashboard() {
           const name = item.creator?.display_name ?? 'Anonymous';
           // Plätze zählen NUR die Mitkletternden, nicht die Ersteller:in — die ist
           // Gastgeber:in, kein Platz (ADR-0007). Also: capacity − 1 Plätze, minus die
-          // schon angenommenen. Der Feed zeigt nur offene Sessions, also ≥ 1 frei.
+          // schon angenommenen.
           const spotsTotal = item.capacity - 1;
           const spotsLeft = Math.max(0, spotsTotal - item.accepted_count);
+          // Präzises Voll-Signal: eine `open`-Session hat konstruktiv immer ≥ 1 Platz
+          // frei; erst mit dem letzten Platz kippt sie auf `matched` (Trigger 0014). Volle
+          // Karten bleiben im Feed, nur gedimmt und mit „Full" statt Plätzen (ADR-0011).
+          const isFull = item.status === 'matched';
           // Meine Rolle an dieser Session → höchstens ein Streifen (ADR-0010). Priorität
           // ist zugleich Ausschluss: Ersteller:in kann nicht anfragen, und eine Anfrage
           // ist accepted ODER pending — die Zweige überschneiden sich also nie.
@@ -311,7 +316,12 @@ export default function Dashboard() {
               time={formatSessionTime(item.starts_at, { withDay: false })}
               // Nur der Hallenname: die Stadt steht bereits im Titel des Feeds.
               gym={item.gym?.name}
-              spots={`${spotsLeft} of ${spotsTotal} ${spotsTotal === 1 ? 'spot' : 'spots'} left`}
+              spots={
+                isFull
+                  ? 'Full'
+                  : `${spotsLeft} of ${spotsTotal} ${spotsTotal === 1 ? 'spot' : 'spots'} left`
+              }
+              full={isFull}
               note={item.note}
               label={label}
               onPress={() => router.push(`/sessions/${item.id}`)}
