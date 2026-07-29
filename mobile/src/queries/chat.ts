@@ -472,9 +472,12 @@ async function getSessionIdForChat(chatId: string): Promise<string | null> {
   return data?.session_id ?? null;
 }
 
+export const CHAT_SESSION_ID_KEY = (chatId: string) =>
+  ["chats", "session-id", chatId] as const;
+
 export function useSessionIdForChat(chatId: string | undefined) {
   return useQuery({
-    queryKey: ["chats", "session-id", chatId ?? ""],
+    queryKey: CHAT_SESSION_ID_KEY(chatId ?? ""),
     queryFn: () => getSessionIdForChat(chatId!),
     enabled: !!chatId,
     staleTime: 5 * 60 * 1000,
