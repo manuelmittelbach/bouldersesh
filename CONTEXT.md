@@ -157,8 +157,15 @@ gewollt.
 Solange Plätze frei sind, ist eine Session **anfragbar**; die Karte zeigt die
 verbleibenden Plätze („2 Plätze frei"). Volle Sessions **fallen nicht heraus**:
 sie bleiben **gedimmt** stehen und zeigen statt der Plätze **„Full"** (ADR-0011) —
-Beleg, dass in der Stadt etwas läuft. Tippen öffnet weiter das Detail (wer
-klettert), nur anfragen kann man sie nicht mehr.
+Beleg, dass in der Stadt etwas läuft.
+
+Ein **Tap auf die Karte** öffnet ein **Aktions-Sheet** mit genau der einen
+Handlung, die zu meiner Rolle passt (ADR-0013): eigene Session → löschen, dabei →
+verlassen, angefragt → zurückziehen, offen → anfragen. Eine **volle Fremd-Session**
+hat keine Handlung und ist darum **gar nicht tippbar** — sie bleibt nur der gedimmte
+„Full"-Beleg. Die **Detailseite** erreicht man nicht mehr von hier, sondern nur über
+den **Info-Knopf im Chat** — sie ist das Nachschlage-Panel für Leute, die schon dabei
+sind.
 
 ## Meine Rolle an einer Session (Hosting / Joined / Requested)
 
