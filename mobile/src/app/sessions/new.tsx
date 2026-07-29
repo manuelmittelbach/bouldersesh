@@ -372,6 +372,12 @@ export default function SessionCreate() {
           >
             Publish session
           </Button>
+          {/* Kurzer Hinweis unter dem Publish-Button: erklärt vorab, was Veröffentlichen
+              auslöst — es entsteht ein Gruppenchat, und Beitritts-Anfragen (0017) landen
+              dort, nicht hier. Bewusst knapp und dezent (rock-400). */}
+          <Text className="mt-2.5 text-center font-sans text-xs leading-5 text-rock-400">
+            Publishing creates a group chat where requests reach you.
+          </Text>
         </View>
       </KeyboardStickyView>
 
