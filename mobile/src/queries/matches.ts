@@ -16,6 +16,8 @@ const MY_PENDING_KEY = (userId: string) =>
   [...MY_OUTGOING_KEY, "all", userId] as const;
 const MY_DECLINED_KEY = (userId: string) =>
   [...MY_OUTGOING_KEY, "declined", userId] as const;
+const MY_ACCEPTED_KEY = (userId: string) =>
+  [...MY_OUTGOING_KEY, "accepted", userId] as const;
 
 /** A match request with the requester's profile joined in. */
 export type MatchRequestWithRequester = MatchRequest & {
@@ -449,6 +451,37 @@ export function useMyPendingRequests() {
   return useQuery({
     queryKey: MY_PENDING_KEY(userId ?? ""),
     queryFn: () => getMyPendingSessionIds(userId!),
+    enabled: !!userId,
+    staleTime: 30_000,
+  });
+}
+
+async function getMyAcceptedSessionIds(userId: string): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("match_requests")
+    .select("session_id")
+    .eq("requester_id", userId)
+    .eq("status", "accepted");
+  if (error) throw error;
+  return new Set((data ?? []).map((r) => r.session_id));
+}
+
+/**
+ * Die Session-IDs, in die ich als Anfragende:r aufgenommen wurde (accepted) — als Set
+ * für den „Joined"-Streifen im Feed (ADR-0010). Wie useMyPendingRequests bewusst OHNE Realtime:
+ * der Feed zeigt nur offene Sessions; eine Gruppen-Session bleibt nach meiner Aufnahme
+ * nur `open`, solange noch ein Platz frei ist (kippt sonst auf `matched` und fällt raus,
+ * Trigger handle_match_accepted/0014) — der einzige je sichtbare Fall. Aktualisierung
+ * über den MY_OUTGOING_KEY-Prefix plus staleTime plus Focus-Refetch im Feed; Respond/
+ * Leave invalidieren breiter (`["sessions"]`/`["matches"]`) und ziehen mit.
+ */
+export function useMyAcceptedRequests() {
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  return useQuery({
+    queryKey: MY_ACCEPTED_KEY(userId ?? ""),
+    queryFn: () => getMyAcceptedSessionIds(userId!),
     enabled: !!userId,
     staleTime: 30_000,
   });

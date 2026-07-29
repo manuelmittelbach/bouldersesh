@@ -1,10 +1,44 @@
-import { Check, Clock, MapPin, Users } from 'lucide-react-native';
+import { Check, Clock, Crown, MapPin, Users } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Avatar, Card, GradePill } from '@/components/ui';
-import type { AvatarTone, GradeBand } from '@/lib/utils';
+import { cn, type AvatarTone, type GradeBand } from '@/lib/utils';
 import { colors } from '@/theme/colors';
+
+// Meine Beziehung zu einer Session im Feed — höchstens eine je Karte (Ersteller:in ≠
+// Anfragende:r, und eine Anfrage ist pending ODER accepted, nie beides). Rendert als
+// ruhiger Streifen unter der Karte; dieselben drei Wörter gruppieren den Chats-Tab
+// (ADR-0010, verallgemeinert den `pending`-only-Streifen aus ADR-0006).
+export type SessionLabel = 'hosting' | 'joined' | 'requested';
+
+// Tönung + Icon + Text je Zustand. Der Trenn-Hairline bleibt für alle drei neutral
+// (rock-100) — die Unterscheidung trägt die Fläche, das Icon und die Textfarbe, das
+// hält den Diff frei von fehlenden Border-Tokens. Requested nutzt Clock (statt eines
+// zweiten Häkchens neben Joined) — „wartet" ist ohnehin die App-Sprache dafür (Chats).
+const LABEL_STYLE: Record<
+  SessionLabel,
+  { bg: string; text: string; label: string; icon: ReactNode }
+> = {
+  hosting: {
+    bg: 'bg-brand-50',
+    text: 'text-brand-700',
+    label: 'Hosting',
+    icon: <Crown size={13} color={colors.brand[600]} strokeWidth={2.5} />,
+  },
+  joined: {
+    bg: 'bg-success-surface',
+    text: 'text-success',
+    label: 'Joined',
+    icon: <Check size={13} color={colors.success} strokeWidth={2.5} />,
+  },
+  requested: {
+    bg: 'bg-rock-25',
+    text: 'text-rock-500',
+    label: 'Requested',
+    icon: <Clock size={13} color={colors.rock[400]} strokeWidth={2.5} />,
+  },
+};
 
 // Die Signatur-Feed-Einheit: wer klettert, wann, wo, auf welchem Niveau. Komponiert
 // Avatar + GradePill + Card. Das Pill zeigt das Niveau der Ersteller:in (ADR-0005) —
@@ -34,9 +68,9 @@ export type SessionCardProps = {
   note?: string | null;
   /** Footer-Slot — z. B. ein Match-Badge. */
   footer?: ReactNode;
-  /** Ich habe diese Session schon angefragt → ruhiger „Requested"-Streifen unter
-   *  der Karte (ADR-0006). Nur der pending-Zustand ist im Feed je sichtbar. */
-  requested?: boolean;
+  /** Meine Beziehung zu dieser Session → getönter Streifen unter der Karte
+   *  (Hosting/Joined/Requested). Fehlt sie, hat die Karte keinen Streifen. */
+  label?: SessionLabel | null;
   online?: boolean;
   onPress?: () => void;
   /** Tippen auf den Avatar öffnet das Profil der Ersteller:in. Fehlt es, ist nur
@@ -55,11 +89,12 @@ export function SessionCard({
   spots,
   note,
   footer,
-  requested = false,
+  label,
   online = false,
   onPress,
   onPressAuthor,
 }: SessionCardProps) {
+  const stripe = label ? LABEL_STYLE[label] : null;
   const avatar = <Avatar name={name} tone={avatarTone} size="md" online={online} src={avatarSrc} />;
   return (
     <Card interactive={!!onPress} onPress={onPress}>
@@ -102,13 +137,18 @@ export function SessionCard({
         </View>
       </View>
 
-      {/* „Requested"-Streifen: volle Kartenbreite unten (negative Ränder heben das
-          Card-Padding auf), ruhig getönt. Erinnerung, kein Alarm — deshalb rock-25
-          statt Brand/Success. Position UNTER dem Inhalt = eindeutig zu dieser Karte. */}
-      {requested ? (
-        <View className="-mx-4 -mb-4 mt-3 flex-row items-center justify-center gap-1.5 rounded-b-lg border-t border-rock-100 bg-rock-25 px-4 py-2">
-          <Check size={13} color={colors.rock[400]} strokeWidth={2.5} />
-          <Text className="font-sans-semibold text-[12px] text-rock-500">Requested</Text>
+      {/* Rollen-Streifen: volle Kartenbreite unten (negative Ränder heben das
+          Card-Padding auf), getönt je Zustand. Position UNTER dem Inhalt = eindeutig
+          zu dieser Karte. Hosting (brand) hebt „deine Session" hervor, Joined (success)
+          bestätigt, Requested (rock) bleibt ruhig — Erinnerung, kein Alarm. */}
+      {stripe ? (
+        <View
+          className={cn(
+            '-mx-4 -mb-4 mt-3 flex-row items-center justify-center gap-1.5 rounded-b-lg border-t border-rock-100 px-4 py-2',
+            stripe.bg,
+          )}>
+          {stripe.icon}
+          <Text className={cn('font-sans-semibold text-[12px]', stripe.text)}>{stripe.label}</Text>
         </View>
       ) : null}
     </Card>
