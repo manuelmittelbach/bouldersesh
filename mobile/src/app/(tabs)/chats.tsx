@@ -167,15 +167,19 @@ function useSwipeCoordinator() {
   );
 }
 
-// Zeilen-Navigations-onPress durch Wächter und Koordinator schleusen: ist irgendeine
-// Zeile offen, schließt der Tap zuerst nur sie (ohne zu navigieren); während eines Wischs
-// unterdrückt; sonst normal.
+// Zeilen-Navigations-onPress durch Wächter und Koordinator schleusen.
+// Reihenfolge ist wichtig: Zuerst der Wächter — der beim Loslassen entstehende
+// Phantom-Tap trifft die GERADE geöffnete Zeile (deren `blocked()` wahr ist) und muss
+// unterdrückt werden, OHNE sie gleich wieder zu schließen. Erst danach der Koordinator:
+// tippt man eine ANDERE Zeile an, während irgendwo eine offen ist, schließt der Tap nur
+// diese (ohne zu navigieren). Sonst normal navigieren.
 function useSwipeGuardedPress(onPress?: () => void) {
   const guard = useContext(SwipeGuardContext);
   const coordinator = useContext(SwipeCoordinatorContext);
   return useCallback(() => {
+    if (guard.blocked()) return;
     if (coordinator.closeOpen()) return;
-    if (guard.blocked() || !onPress) return;
+    if (!onPress) return;
     onPress();
   }, [guard, coordinator, onPress]);
 }
