@@ -8,7 +8,6 @@ import {
   LogOut,
   MapPin,
   Trash2,
-  Undo2,
   UsersRound,
 } from 'lucide-react-native';
 import type { ReactNode } from 'react';
@@ -379,7 +378,6 @@ export default function SessionDetail() {
                 size="md"
                 fullWidth
                 loading={withdraw.isPending}
-                icon={<Undo2 size={16} color={colors.rock[500]} strokeWidth={2} />}
                 onPress={() =>
                   Alert.alert('Withdraw request?', undefined, [
                     { text: 'Keep', style: 'cancel' },
