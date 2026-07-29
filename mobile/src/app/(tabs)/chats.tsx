@@ -10,7 +10,9 @@ import {
   Text,
   View,
 } from 'react-native';
-import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import ReanimatedSwipeable, {
+  type SwipeableMethods,
+} from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -128,14 +130,54 @@ function SwipeAction({
 // Zeilen-onPress fällt dann aus.
 const SwipeGuardContext = createContext<{ blocked: () => boolean }>({ blocked: () => false });
 
-// Zeilen-Navigations-onPress durch den Wächter schleusen: während eines Wischs (oder bei
-// offener Zeile) unterdrückt, sonst normal.
+// Koordiniert die offenen Wisch-Zeilen listenweit: es darf immer nur EINE offen sein,
+// und ein Tap oder Scroll woanders schließt sie wieder. So bleibt kein Wisch-Zustand
+// „hängen" (auch nicht über einen Tab-Wechsel hinweg — der Screen schließt beim Blur).
+type OpenRow = { close: () => void };
+const SwipeCoordinatorContext = createContext<{
+  onOpen: (row: OpenRow) => void;
+  onClose: (row: OpenRow) => void;
+  closeOpen: () => boolean;
+}>({ onOpen: () => {}, onClose: () => {}, closeOpen: () => false });
+
+// Hält ein Ref auf die eine gerade offene Zeile. Öffnet sich eine andere (oder tippt/
+// scrollt man woanders), wird die alte geschlossen. Stabil über useMemo, damit der
+// Provider-Wert nicht bei jedem Render neu ist.
+function useSwipeCoordinator() {
+  const openRef = useRef<OpenRow | null>(null);
+  return useMemo(
+    () => ({
+      onOpen: (row: OpenRow) => {
+        const prev = openRef.current;
+        if (prev && prev !== row) prev.close();
+        openRef.current = row;
+      },
+      onClose: (row: OpenRow) => {
+        if (openRef.current === row) openRef.current = null;
+      },
+      closeOpen: () => {
+        const cur = openRef.current;
+        if (!cur) return false;
+        cur.close();
+        openRef.current = null;
+        return true;
+      },
+    }),
+    [],
+  );
+}
+
+// Zeilen-Navigations-onPress durch Wächter und Koordinator schleusen: ist irgendeine
+// Zeile offen, schließt der Tap zuerst nur sie (ohne zu navigieren); während eines Wischs
+// unterdrückt; sonst normal.
 function useSwipeGuardedPress(onPress?: () => void) {
   const guard = useContext(SwipeGuardContext);
+  const coordinator = useContext(SwipeCoordinatorContext);
   return useCallback(() => {
+    if (coordinator.closeOpen()) return;
     if (guard.blocked() || !onPress) return;
     onPress();
-  }, [guard, onPress]);
+  }, [guard, coordinator, onPress]);
 }
 
 // Wisch-Wrapper mit rechter Aktion. Die SessionRow darunter hat eine deckende Fläche,
@@ -145,21 +187,30 @@ function SwipeRow({ action, children }: { action: React.ReactNode; children: Rea
   // Verschwendung. `true` ab Zieh-Beginn und solange offen; erst beim Schließen wieder frei.
   const activeRef = useRef(false);
   const guard = useMemo(() => ({ blocked: () => activeRef.current }), []);
+  const coordinator = useContext(SwipeCoordinatorContext);
+  // Imperatives Handle auf die Swipeable, damit der Koordinator diese Zeile schließen kann.
+  const swipeRef = useRef<SwipeableMethods | null>(null);
+  const openRow = useMemo<OpenRow>(() => ({ close: () => swipeRef.current?.close() }), []);
 
   return (
     <SwipeGuardContext.Provider value={guard}>
       <ReanimatedSwipeable
+        ref={swipeRef}
         friction={2}
         rightThreshold={40}
         overshootRight={false}
         onSwipeableOpenStartDrag={() => {
           activeRef.current = true;
+          // Aufziehen schließt sofort jede andere noch offene Zeile.
+          coordinator.onOpen(openRow);
         }}
         onSwipeableWillOpen={() => {
           activeRef.current = true;
+          coordinator.onOpen(openRow);
         }}
         onSwipeableWillClose={() => {
           activeRef.current = false;
+          coordinator.onClose(openRow);
         }}
         renderRightActions={() => action}>
         {children}
@@ -288,6 +339,7 @@ export default function Chats() {
   const dissolve = useDeleteSession();
   const leave = useLeaveSession();
   const [refreshing, setRefreshing] = useState(false);
+  const swipe = useSwipeCoordinator();
 
   // Alle drei on-focus refetchen: der Tab bleibt in expo-router gemountet, ohne das
   // tauchte eine gerade angenommene/erstellte Session erst nach App-Neustart auf.
@@ -299,7 +351,11 @@ export default function Chats() {
       refetchCreated();
       refetchParticipations();
       refetchChats();
-    }, [refetchCreated, refetchParticipations, refetchChats]),
+      // Beim Verlassen des Tabs keinen offenen Wisch-Zustand zurücklassen.
+      return () => {
+        swipe.closeOpen();
+      };
+    }, [refetchCreated, refetchParticipations, refetchChats, swipe]),
   );
 
   async function onRefresh() {
@@ -475,17 +531,20 @@ export default function Chats() {
           </Text>
         </View>
       ) : (
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="pb-10"
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.brand[500]}
-            />
-          }>
-          {requested.length > 0 ? (
+        <SwipeCoordinatorContext.Provider value={swipe}>
+          <ScrollView
+            className="flex-1"
+            contentContainerClassName="pb-10"
+            // Scrollen woanders schließt eine offene Wisch-Zeile.
+            onScrollBeginDrag={() => swipe.closeOpen()}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.brand[500]}
+              />
+            }>
+            {requested.length > 0 ? (
             <Section
               title="Requested Sessions"
               rows={requested.map((session) => ({
@@ -515,10 +574,11 @@ export default function Chats() {
             <Section title="Hosting Sessions" rows={mySessions.map((e) => renderEntry(e, 'host'))} />
           ) : null}
 
-          {joined.length > 0 ? (
-            <Section title="Joined Sessions" rows={joined.map((e) => renderEntry(e, 'joined'))} />
-          ) : null}
-        </ScrollView>
+            {joined.length > 0 ? (
+              <Section title="Joined Sessions" rows={joined.map((e) => renderEntry(e, 'joined'))} />
+            ) : null}
+          </ScrollView>
+        </SwipeCoordinatorContext.Provider>
       )}
     </SafeAreaView>
   );
