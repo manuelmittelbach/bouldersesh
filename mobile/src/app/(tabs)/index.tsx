@@ -330,6 +330,16 @@ export default function Dashboard() {
                   ? 'Full'
                   : `${spotsLeft} of ${spotsTotal} ${spotsTotal === 1 ? 'spot' : 'spots'} left`
               }
+              // Kader-Stack: die schon Beigetretenen (ohne Host, der links groß steht) als
+              // namenlose, zum Profil tippbare Avatare. Bild-URL + Ton hier fertig gerechnet,
+              // die Karte bleibt dumm.
+              climbers={item.climbers.map((c) => ({
+                id: c.id,
+                name: c.display_name,
+                tone: avatarTone(c.id),
+                src: publicImageUrl(c.avatar_path),
+              }))}
+              onPressClimber={(id) => router.push(`/profile/${id}`)}
               full={isFull}
               note={item.note}
               label={label}

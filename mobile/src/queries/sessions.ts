@@ -31,6 +31,13 @@ export type FeedSessionsParams = {
   to?: string; // ISO timestamp
 };
 
+/** Ein angenommenes Mitglied (ohne Ersteller:in) — nur was der Avatar-Stack braucht. */
+export type SessionClimber = {
+  id: string;
+  display_name: string | null;
+  avatar_path: string | null;
+};
+
 /** A session row with the creator profile and gym joined in. Used for the feed. */
 export type SessionWithMeta = Session & {
   creator: {
@@ -50,9 +57,14 @@ export type SessionWithMeta = Session & {
     city: { id: string; name: string } | null;
   } | null;
   /**
-   * Zahl der ANGENOMMENEN Anfragen. Belegte Plätze = 1 (Ersteller:in) + diese Zahl;
-   * freie Plätze = capacity − belegt (ADR-0007). Kommt als eingebetteter, auf
-   * `status='accepted'` gefilterter Count aus einem Query — kein N+1.
+   * Profile der ANGENOMMENEN Mitkletternden (OHNE Ersteller:in) — für den Avatar-Stack
+   * auf der Feed-Karte. Kommt als eingebetteter, auf `status='accepted'` gefilterter
+   * Zeilen-Embed (RLS 0018 gibt die accepted-Zeilen auch Außenstehenden frei).
+   */
+  climbers: SessionClimber[];
+  /**
+   * Zahl der ANGENOMMENEN Anfragen = `climbers.length`. Belegte Plätze = 1 (Ersteller:in)
+   * + diese Zahl; freie Plätze = capacity − belegt (ADR-0007).
    */
   accepted_count: number;
 };
@@ -61,25 +73,32 @@ export type SessionWithMeta = Session & {
 // `.eq("gym.city_id", …)`. There are no sessions without a gym (gym_id is NOT NULL),
 // so the result set is unchanged.
 //
-// `accepted:match_requests ( count )` zählt eingebettet die angenommenen Anfragen. Der
-// Status-Filter steht am Query (`.eq("accepted.status","accepted")`), damit derselbe
-// SELECT für Feed und Detail gilt. To-many-Filter lassen Eltern mit 0 Treffern stehen —
-// teilbesetzte und leere Sessions bleiben im Feed (genau gewollt).
+// `climbers:match_requests ( requester:profiles(…) )` bettet die angenommenen Mitglieder
+// als Zeilen ein (nicht mehr nur als `count`) — daraus zieht der Feed den Avatar-Stack UND
+// den `accepted_count` (= Länge). Der Status-Filter steht am Query
+// (`.eq("climbers.status","accepted")`), damit derselbe SELECT für Feed und Detail gilt.
+// To-many-Filter lassen Eltern mit 0 Treffern stehen — teilbesetzte und leere Sessions
+// bleiben im Feed (genau gewollt). RLS 0018 gibt die accepted-Requester auch Außenstehenden
+// frei, sonst sähe der Feed fremde Kader nicht.
 const SESSION_SELECT = `
   *,
   creator:profiles!sessions_creator_id_fkey ( id, display_name, avatar_path, gallery_paths, skill_level ),
   gym:gyms!inner ( id, name, city_id, city:cities ( id, name ) ),
-  accepted:match_requests ( count )
+  climbers:match_requests ( requester:profiles!match_requests_requester_id_fkey ( id, display_name, avatar_path ) )
 `;
 
-/** Den eingebetteten `accepted`-Count zu einem flachen `accepted_count` normalisieren. */
-function withAcceptedCount(row: unknown): SessionWithMeta {
-  const { accepted, ...rest } = row as Record<string, unknown> & {
-    accepted?: { count: number }[];
+/** Den `climbers`-Embed zu einer flachen Profilliste + `accepted_count` normalisieren. */
+function withClimbers(row: unknown): SessionWithMeta {
+  const { climbers, ...rest } = row as Record<string, unknown> & {
+    climbers?: { requester: SessionClimber | null }[];
   };
+  const list = (climbers ?? [])
+    .map((c) => c.requester)
+    .filter((r): r is SessionClimber => r != null);
   return {
     ...(rest as unknown as SessionWithMeta),
-    accepted_count: accepted?.[0]?.count ?? 0,
+    climbers: list,
+    accepted_count: list.length,
   };
 }
 
@@ -92,7 +111,7 @@ async function getFeedSessions(
     // Joinbare (`open`) UND volle (`matched`) Sessions des Tages — volle bleiben als
     // gedimmter „Full"-Beleg im Feed (ADR-0011). `done`/`cancelled` bleiben draußen.
     .in("status", ["open", "matched"])
-    .eq("accepted.status", "accepted")
+    .eq("climbers.status", "accepted")
     .order("starts_at", { ascending: true });
 
   if (params.city_id) query = query.eq("gym.city_id", params.city_id);
@@ -102,7 +121,7 @@ async function getFeedSessions(
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []).map(withAcceptedCount);
+  return (data ?? []).map(withClimbers);
 }
 
 export function useFeedSessions(params: FeedSessionsParams = {}) {
@@ -123,10 +142,10 @@ async function getSession(id: string): Promise<SessionWithMeta | null> {
     .from("sessions")
     .select(SESSION_SELECT)
     .eq("id", id)
-    .eq("accepted.status", "accepted")
+    .eq("climbers.status", "accepted")
     .maybeSingle();
   if (error) throw error;
-  return data ? withAcceptedCount(data) : null;
+  return data ? withClimbers(data) : null;
 }
 
 export function useSession(id: string | undefined) {
@@ -148,12 +167,12 @@ async function getMySessions(userId: string): Promise<SessionWithMeta[]> {
     .from("sessions")
     .select(SESSION_SELECT)
     .eq("creator_id", userId)
-    .eq("accepted.status", "accepted")
+    .eq("climbers.status", "accepted")
     .in("status", ["open", "matched"])
     .gte("starts_at", new Date().toISOString())
     .order("starts_at", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map(withAcceptedCount);
+  return (data ?? []).map(withClimbers);
 }
 
 export function useMySessions() {
@@ -201,13 +220,13 @@ async function getMyParticipations(userId: string): Promise<MyParticipation[]> {
     .from("sessions")
     .select(SESSION_SELECT)
     .in("id", ids)
-    .eq("accepted.status", "accepted")
+    .eq("climbers.status", "accepted")
     .gte("starts_at", new Date().toISOString())
     .order("starts_at", { ascending: true });
   if (error) throw error;
 
   return (data ?? []).map((row) => {
-    const session = withAcceptedCount(row);
+    const session = withClimbers(row);
     return { session, myStatus: statusBySession.get(session.id)! };
   });
 }
