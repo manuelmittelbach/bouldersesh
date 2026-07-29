@@ -72,7 +72,7 @@ function ClimbersRow({ people, spotsLabel }: { people: Climber[]; spotsLabel: st
               <Avatar
                 name={p.name}
                 tone={avatarTone(p.id ?? p.name)}
-                size="sm"
+                size="md"
                 src={publicImageUrl(p.avatarPath)}
               />
             </Pressable>
