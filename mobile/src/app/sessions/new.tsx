@@ -343,7 +343,7 @@ export default function SessionCreate() {
           onChangeText={setNote}
           onFieldLayout={onFieldLayout}
           multiline
-          maxLength={120}
+          maxLength={80}
           showCount
           placeholder="e.g. “trying to crack some reds”"
         />

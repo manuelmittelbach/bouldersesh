@@ -131,6 +131,16 @@ export function SessionCard({
             </Text>
             {grade ? <GradePill grade={grade} band={band} /> : null}
           </View>
+          {/* Die Beschreibung („was ich klettern will", ADR-0005) steht direkt unter dem
+              Namen — die Stimme der Ersteller:in bei der Person, nicht am Kartenende. Auf 2
+              Zeilen geclampt, damit eine lange Notiz die Fakten (Zeit/Halle/Kader) darunter
+              nicht wegschiebt; das Erstell-Limit (80 Zeichen) hält sie ohnehin knapp. Voll
+              lesbar im Session-Detail. */}
+          {note ? (
+            <Text numberOfLines={2} className="mt-1 font-sans text-[13px] leading-5 text-rock-700">
+              {note}
+            </Text>
+          ) : null}
           {time ? (
             <MetaRow icon={<Clock size={14} color={colors.rock[400]} strokeWidth={2} />}>{time}</MetaRow>
           ) : null}
@@ -160,11 +170,6 @@ export function SessionCard({
                 </Text>
               ) : null}
             </View>
-          ) : null}
-          {note ? (
-            <Text numberOfLines={3} className="mt-2 font-sans text-[13px] leading-5 text-rock-700">
-              {note}
-            </Text>
           ) : null}
           {footer ? <View className="mt-3">{footer}</View> : null}
         </View>
