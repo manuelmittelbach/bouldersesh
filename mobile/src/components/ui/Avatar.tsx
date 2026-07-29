@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { cn, initials as toInitials } from '@/lib/utils';
 
@@ -73,19 +73,24 @@ export type AvatarStackMember = {
   src?: string | null;
 };
 
-// Überlappende Avatar-Gruppe für Gruppen-Chat-Zeilen (ADR-0007). Zeigt bis zu `max`
-// Gesichter, der Rest wird als „+N"-Chip zusammengefasst. Jedes Rund bekommt einen Ring
-// in `ringColor` (= Zeilenhintergrund), damit die Überlappung sauber getrennt bleibt.
+// Überlappende Avatar-Gruppe für Gruppen-Chat-Zeilen (ADR-0007) und den Kader-Stack auf
+// Feed-Karten. Zeigt bis zu `max` Gesichter, der Rest wird als „+N"-Chip zusammengefasst.
+// Jedes Rund bekommt einen Ring in `ringColor` (= Hintergrund der Fläche darunter), damit
+// die Überlappung sauber getrennt bleibt. Ist `onPressMember` gesetzt, wird jedes gezeigte
+// Gesicht einzeln tippbar (→ Profil); der „+N"-Chip bleibt stumm — der Rest des Kaders
+// hängt hinter der Karte selbst (→ Session-Detail mit voller, tippbarer Climbers-Liste).
 export function AvatarStack({
   members,
   size = 'lg',
   max = 3,
   ringColor = '#f7f8fa', // rock-25 (Zeilenhintergrund)
+  onPressMember,
 }: {
   members: AvatarStackMember[];
   size?: Size;
   max?: number;
   ringColor?: string;
+  onPressMember?: (id: string) => void;
 }) {
   const dim = dims[size];
   const ring = 2;
@@ -97,24 +102,50 @@ export function AvatarStack({
   // Fällt bei genau einer Person auf einen normalen Avatar zurück — kein Stapel nötig.
   if (members.length <= 1) {
     const m = members[0];
-    return <Avatar name={m?.name} tone={m?.tone} size={size} src={m?.src} />;
+    const solo = <Avatar name={m?.name} tone={m?.tone} size={size} src={m?.src} />;
+    return onPressMember && m ? (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`View ${m.name ?? 'climber'}’s profile`}
+        hitSlop={6}
+        onPress={() => onPressMember(m.id)}
+        className="shrink-0 active:opacity-70">
+        {solo}
+      </Pressable>
+    ) : (
+      solo
+    );
   }
 
   return (
     <View className="flex-row shrink-0">
-      {shown.map((m, i) => (
-        <View
-          key={m.id}
-          style={{
-            marginLeft: i === 0 ? 0 : -overlap,
-            borderRadius: (dim + ring * 2) / 2,
-            backgroundColor: ringColor,
-            padding: ring,
-            zIndex: shown.length - i,
-          }}>
-          <Avatar name={m.name} tone={m.tone} size={size} src={m.src} />
-        </View>
-      ))}
+      {shown.map((m, i) => {
+        const face = <Avatar name={m.name} tone={m.tone} size={size} src={m.src} />;
+        return (
+          <View
+            key={m.id}
+            style={{
+              marginLeft: i === 0 ? 0 : -overlap,
+              borderRadius: (dim + ring * 2) / 2,
+              backgroundColor: ringColor,
+              padding: ring,
+              zIndex: shown.length - i,
+            }}>
+            {onPressMember ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`View ${m.name ?? 'climber'}’s profile`}
+                hitSlop={2}
+                onPress={() => onPressMember(m.id)}
+                className="active:opacity-70">
+                {face}
+              </Pressable>
+            ) : (
+              face
+            )}
+          </View>
+        );
+      })}
       {extra > 0 ? (
         <View
           style={{

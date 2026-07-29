@@ -2,7 +2,7 @@ import { Check, Clock, Crown, MapPin, Users } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { Avatar, Card, GradePill } from '@/components/ui';
+import { Avatar, AvatarStack, Card, GradePill, type AvatarStackMember } from '@/components/ui';
 import { cn, type AvatarTone, type GradeBand } from '@/lib/utils';
 import { colors } from '@/theme/colors';
 
@@ -65,6 +65,11 @@ export type SessionCardProps = {
   gym?: string;
   /** „N of M spots left" — freie Plätze für Mitkletternde, ohne die Ersteller:in (ADR-0007). */
   spots?: string | null;
+  /** Angenommene Mitkletternde (OHNE Ersteller:in) → überlappender Avatar-Stack, keine
+   *  Namen. Leer/fehlend → kein Stack. Die Avatar-URLs sind fertig (nicht der Storage-Pfad). */
+  climbers?: AvatarStackMember[];
+  /** Tippen auf ein Kader-Gesicht öffnet dessen Profil. Fehlt es, ist der Stack stumm. */
+  onPressClimber?: (id: string) => void;
   note?: string | null;
   /** Footer-Slot — z. B. ein Match-Badge. */
   footer?: ReactNode;
@@ -90,6 +95,8 @@ export function SessionCard({
   time,
   gym,
   spots,
+  climbers,
+  onPressClimber,
   note,
   footer,
   label,
@@ -131,6 +138,20 @@ export function SessionCard({
           ) : null}
           {spots ? (
             <MetaRow icon={<Users size={14} color={colors.rock[400]} strokeWidth={2} />}>{spots}</MetaRow>
+          ) : null}
+          {/* Kader-Stack: die Gesichter der schon Beigetretenen (ohne Host, der links
+              groß steht) — Avatare ohne Namen, jedes tippbar zum Profil. Ring = Kartenweiß
+              (rock-0), damit die Überlappung sauber trennt. Kein Kader → nichts. */}
+          {climbers && climbers.length > 0 ? (
+            <View className="mt-2">
+              <AvatarStack
+                members={climbers}
+                size="sm"
+                max={4}
+                ringColor="#ffffff"
+                onPressMember={onPressClimber}
+              />
+            </View>
           ) : null}
           {note ? (
             <Text numberOfLines={3} className="mt-2 font-sans text-[13px] leading-5 text-rock-700">
