@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { usePendingCountsForSessions } from "@/queries/matches";
 import { useMyParticipations, useMySessions } from "@/queries/sessions";
-import type { Message } from "@/types/database";
+import type { Message, MessageKind } from "@/types/database";
 
 const MESSAGES_KEY = (chatId: string) => ["chat", chatId, "messages"] as const;
 const CHATS_LIST_KEY = (userId: string) => ["chats", "list", userId] as const;
@@ -177,6 +177,20 @@ function resolveSenderName(
   return firstName(member.profile?.display_name ?? null);
 }
 
+/**
+ * System-Zeile („Ben joined", ADR-0007) aus der Perspektive der Betrachter:in. Der Body
+ * trägt fest den Namen der handelnden Person eingebacken ({name} joined/left, 0014/0016/0017) —
+ * ist es mein eigenes Event, lese ich es lieber als „You joined" (WhatsApp-Ich-Perspektive).
+ * Für andere bleibt der Body wie er ist („Ben joined"). Über das Suffix statt über den Namen
+ * gematcht, damit Namen mit Leerzeichen nicht zerbrechen; unbekanntes Format bleibt unberührt.
+ */
+export function systemMessageForViewer(body: string, isMine: boolean): string {
+  if (!isMine) return body;
+  if (body.endsWith(" joined")) return "You joined";
+  if (body.endsWith(" left")) return "You left";
+  return body;
+}
+
 export type ChatListItem = {
   id: string;
   createdAt: string;
@@ -215,6 +229,7 @@ export type ChatListItem = {
     sent_at: string;
     sender_id: string | null;
     senderName: string | null;
+    kind: MessageKind;
   } | null;
   unread: boolean;
 };
@@ -251,14 +266,14 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
   // 3. Last message per chat (fetch newest-first, keep the first seen per chat).
   const { data: msgs, error: msgErr } = await supabase
     .from("messages")
-    .select("chat_id, body, sent_at, sender_id")
+    .select("chat_id, body, sent_at, sender_id, kind")
     .in("chat_id", chatIds)
     .order("sent_at", { ascending: false });
   if (msgErr) throw msgErr;
 
   const lastByChat = new Map<
     string,
-    { body: string; sent_at: string; sender_id: string | null }
+    { body: string; sent_at: string; sender_id: string | null; kind: MessageKind }
   >();
   for (const m of msgs ?? []) {
     if (!lastByChat.has(m.chat_id)) lastByChat.set(m.chat_id, m);
@@ -288,9 +303,17 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
     // Absender der letzten Nachricht auf einen Namen mappen (für die Gruppen-Vorschau).
     // Eigene Nachricht → „You", ein bekanntes Mitglied → dessen Vorname (kompakt in der
     // einzeiligen Vorschau); Mitglied nicht mehr auffindbar/gelöscht → null (kein Präfix).
+    // System-Zeilen („Ben joined") sind ganze Sätze, kein „Name:"-Präfix — der Body wird
+    // aus meiner Perspektive umgeschrieben („You joined") und senderName bleibt null.
     const lastRaw = lastByChat.get(c.id) ?? null;
     const lastMessage = lastRaw
-      ? { ...lastRaw, senderName: resolveSenderName(lastRaw.sender_id, userId, c.members) }
+      ? lastRaw.kind === "system"
+        ? {
+            ...lastRaw,
+            body: systemMessageForViewer(lastRaw.body, lastRaw.sender_id === userId),
+            senderName: null,
+          }
+        : { ...lastRaw, senderName: resolveSenderName(lastRaw.sender_id, userId, c.members) }
       : null;
     const lastRead = lastReadByChat.get(c.id) ?? null;
     const unread =
