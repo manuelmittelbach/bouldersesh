@@ -29,39 +29,36 @@ import { useHasReported, useReportProfile } from '@/queries/reports';
 import { useDeleteSession, useLeaveSession, useSession } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
-function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+function InfoRow({ icon, value }: { icon: ReactNode; value: string }) {
   return (
     <View className="flex-row items-center gap-3">
       <View className="h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50">
         {icon}
       </View>
       <View className="min-w-0 flex-1">
-        <Text className="font-sans text-xs text-rock-500">{label}</Text>
         <Text className="font-display text-sm text-rock-900">{value}</Text>
       </View>
     </View>
   );
 }
 
-/** Eine Person in der „Climbers"-Zeile: nur der/die Ersteller:in ist immer dabei,
- *  danach folgen die angenommenen Mitkletternden. `id === null` = gelöschtes Profil
- *  (untippbar). */
-type Climber = { id: string | null; name: string; avatarPath: string | null };
+/** Eine Person in der „Buddies"-Zeile: die angenommenen Mitkletternden (ohne den/die
+ *  Ersteller:in). `id === null` = gelöschtes Profil (untippbar). */
+type Buddy = { id: string | null; name: string; avatarPath: string | null };
 
-/** „Climbers"-Zeile im selben Info-Block-Stil wie When/Where (InfoRow), nur dass der
- *  Wert eine kleine Avatar-Reihe ist statt Text: Host zuerst, dann die Beigetretenen.
+/** „Buddies"-Zeile im selben Info-Block-Stil wie When/Where (InfoRow), nur dass der
+ *  Wert eine kleine Avatar-Reihe ist statt Text: die Beigetretenen (ohne Host).
  *  Jeder Avatar ist tippbar zum read-only Profil (profile/[id]), wie die Feed-Avatare.
  *  Hinter den Avataren steht dezent, wie viele Plätze noch frei sind (`spotsLabel`) —
  *  die frühere eigene „Spots"-Zeile ist darin aufgegangen. */
-function ClimbersRow({ people, spotsLabel }: { people: Climber[]; spotsLabel: string }) {
+function BuddiesRow({ people, spotsLabel }: { people: Buddy[]; spotsLabel: string }) {
   return (
     <View className="flex-row items-center gap-3">
       <View className="h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50">
         <UsersRound size={16} color={colors.brand[700]} strokeWidth={2} />
       </View>
       <View className="min-w-0 flex-1">
-        <Text className="font-sans text-xs text-rock-500">Climbers</Text>
-        <View className="mt-1.5 flex-row flex-wrap items-center gap-1.5">
+        <View className="flex-row flex-wrap items-center gap-1.5">
           {people.map((p) => (
             <Pressable
               key={p.id ?? p.name}
@@ -147,7 +144,7 @@ export default function SessionDetail() {
   const myRequest = useMyRequestForSession(id, !!session && !isMine);
   const myStatus = myRequest.data?.status;
 
-  // Der bestätigte Kader (accepted) — die „Climbers"-Liste weiter unten. Realtime
+  // Der bestätigte Kader (accepted) — die „Buddies"-Liste weiter unten. Realtime
   // hält sie live und konsistent mit „Spots left" (siehe useSessionClimbers).
   const { data: climbers } = useSessionClimbers(id);
 
@@ -178,25 +175,15 @@ export default function SessionDetail() {
 
   const name = session.creator?.display_name ?? 'Anonymous';
 
-  // Wer dabei ist — Host zuerst (immer, er:sie zählt zur Runde), dann die angenommenen
-  // Mitkletternden. Speist die kompakte Avatar-Reihe in der „Climbers"-Zeile. Gelöschte
-  // Profile (kein creator / kein requester) bleiben als untippbarer Avatar drin.
-  const roster: Climber[] = [
-    ...(session.creator
-      ? [
-          {
-            id: session.creator.id,
-            name,
-            avatarPath: session.creator.avatar_path,
-          },
-        ]
-      : []),
-    ...(climbers ?? []).map((c) => ({
-      id: c.requester?.id ?? null,
-      name: c.requester?.display_name ?? 'Anonymous',
-      avatarPath: c.requester?.avatar_path ?? null,
-    })),
-  ];
+  // Wer beigetreten ist — nur die angenommenen Mitkletternden (der/die Ersteller:in
+  // steht als Host oben im Screen, nicht mehr in dieser Reihe). Speist die kompakte
+  // Avatar-Reihe in der „Buddies"-Zeile. Gelöschte Profile (kein requester) bleiben
+  // als untippbarer Avatar drin.
+  const roster: Buddy[] = (climbers ?? []).map((c) => ({
+    id: c.requester?.id ?? null,
+    name: c.requester?.display_name ?? 'Anonymous',
+    avatarPath: c.requester?.avatar_path ?? null,
+  }));
 
   // Plätze (ADR-0007): die Ersteller:in ist Gastgeber:in, kein Platz — es gibt also
   // capacity − 1 Plätze für Mitkletternde, jede angenommene Anfrage belegt einen. Voll,
@@ -302,20 +289,17 @@ export default function SessionDetail() {
         <Card className="mt-6 gap-3.5">
           <InfoRow
             icon={<Calendar size={16} color={colors.brand[700]} strokeWidth={2} />}
-            label="When"
             value={formatSessionTime(session.starts_at)}
           />
           <InfoRow
             icon={<MapPin size={16} color={colors.brand[700]} strokeWidth={2} />}
-            label="Where"
             value={session.gym?.name ?? '—'}
           />
-          {/* Climbers — kleine Avatare im selben Info-Block-Stil, Host zuerst, dahinter
+          {/* Buddies — kleine Avatare im selben Info-Block-Stil (ohne Host), dahinter
               die freien Plätze (spotsLabel). Wächst per Realtime live
-              (useSessionClimbers); Host ist immer dabei, also steht die Zeile immer. */}
-          {roster.length > 0 ? (
-            <ClimbersRow people={roster} spotsLabel={spotsLabel} />
-          ) : null}
+              (useSessionClimbers). Steht immer, damit „N spots left" auch dann sichtbar
+              bleibt, wenn noch niemand beigetreten ist. */}
+          <BuddiesRow people={roster} spotsLabel={spotsLabel} />
         </Card>
 
         {session.note ? (
