@@ -17,7 +17,7 @@ import type { Session } from "@/types/database";
 // umbenannt, nicht das Key-Array.
 const FEED_SESSIONS_KEY = (params: FeedSessionsParams) =>
   ["sessions", "open", params] as const;
-const SESSION_KEY = (id: string) => ["sessions", id] as const;
+export const SESSION_KEY = (id: string) => ["sessions", id] as const;
 const MY_SESSIONS_KEY = (userId: string) =>
   ["sessions", "mine", userId] as const;
 const MY_PARTICIPATIONS_KEY = (userId: string) =>

@@ -12,13 +12,15 @@ import {
 } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Avatar } from '@/components/ui';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, cn, formatSessionTime } from '@/lib/utils';
-import { useMyChats, type ChatListItem } from '@/queries/chat';
+import { CHAT_SESSION_ID_KEY, useMyChats, type ChatListItem } from '@/queries/chat';
 import { usePendingCountsForSessions, useWithdrawRequest } from '@/queries/matches';
 import {
+  SESSION_KEY,
   useDeleteSession,
   useLeaveSession,
   useMyParticipations,
@@ -273,6 +275,7 @@ function sortEntries(entries: Entry[]): Entry[] {
 }
 
 export default function Chats() {
+  const queryClient = useQueryClient();
   const created = useMySessions();
   const participations = useMyParticipations();
   const chats = useMyChats();
@@ -398,7 +401,20 @@ export default function Chats() {
         pill={hosting && pendingCount > 0 ? <RequestsPill count={pendingCount} /> : undefined}
         // Chat vorhanden → dorthin (auch die leere eigene Session hat seit 0017 einen);
         // sonst fällt SessionRow auf die Session-Detailseite zurück.
-        onPress={chat ? () => router.push(`/chats/${chat.id}`) : undefined}
+        // Vor der Navigation die frische Session — die diese Zeile ohnehin schon hält —
+        // in die Caches des Chat-Screens legen: die chatId→sessionId-Stufe und die
+        // Session selbst. Sonst baut der Chat-Screen den Status über eine eigene,
+        // oft noch veraltete Query-Kette neu auf und zeigt kurz den alten Stand, bevor
+        // der Hintergrund-Refetch ihn ersetzt (sichtbares Umspringen des Status).
+        onPress={
+          chat
+            ? () => {
+                queryClient.setQueryData(CHAT_SESSION_ID_KEY(chat.id), session.id);
+                queryClient.setQueryData(SESSION_KEY(session.id), session);
+                router.push(`/chats/${chat.id}`);
+              }
+            : undefined
+        }
       />
     );
 
