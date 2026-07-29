@@ -1,22 +1,19 @@
 import { router } from "expo-router";
-import { Camera, ChevronRight, UserCog } from "lucide-react-native";
+import { Camera, Check, ChevronRight, UserCog } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  KeyboardAwareScrollView,
+  KeyboardStickyView,
+} from "react-native-keyboard-controller";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GalleryEditor } from "@/components/GalleryEditor";
-import { Avatar, Chip, Input } from "@/components/ui";
+import { Avatar, Button, Chip, Input } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 import { useKeyboardAwareField } from "@/hooks/useKeyboardAwareField";
 import { publicImageUrl } from "@/lib/images";
-import {
-  avatarTone,
-  cn,
-  gradeBand,
-  SKILL_LABEL,
-  SKILL_LEVELS,
-} from "@/lib/utils";
+import { avatarTone, gradeBand, SKILL_LABEL, SKILL_LEVELS } from "@/lib/utils";
 import {
   useRemoveAvatar,
   useSetAvatar,
@@ -38,12 +35,21 @@ export default function Profile() {
   const update = useUpdateProfile();
   const setAvatar = useSetAvatar();
   const removeAvatar = useRemoveAvatar();
+  const insets = useSafeAreaInsets();
 
   const [skill, setSkill] = useState<SkillLevel | null>(null);
   const [bio, setBio] = useState("");
 
-  // bottomOffset aus der gemessenen Bio-Höhe (mehrzeilig, wächst mit dem Text).
-  const { bottomOffset, onFieldLayout } = useKeyboardAwareField();
+  const dirty =
+    !!profile && (skill !== profile.skill_level || bio !== (profile.bio ?? ""));
+
+  // Die einblendende Save-Leiste unten überlagert bei offener Tastatur das Bio-Feld.
+  // Ihre gemessene Höhe (barHeight) als clearance weiterreichen — aber nur, wenn sie
+  // sichtbar ist (dirty) —, damit das fokussierte Feld über Leiste UND Tastatur bleibt.
+  const [barHeight, setBarHeight] = useState(0);
+  const { bottomOffset, onFieldLayout } = useKeyboardAwareField({
+    clearance: dirty ? barHeight : 0,
+  });
 
   // Formularfelder EINMAL pro Profil-Identität aus dem geladenen Profil seeden. Nicht bei
   // jeder Daten-Änderung neu setzen — sonst würde ein Hintergrund-Refetch laufende (noch
@@ -55,9 +61,6 @@ export default function Profile() {
     setSkill(profile.skill_level);
     setBio(profile.bio ?? "");
   }, [profile]);
-
-  const dirty =
-    !!profile && (skill !== profile.skill_level || bio !== (profile.bio ?? ""));
 
   async function save() {
     if (!user || !dirty || update.isPending) return;
@@ -99,35 +102,13 @@ export default function Profile() {
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={["top"]}>
-      {/* Titel + Save kleben fest oben — scrollen nicht mit dem Formular weg.
-          Save sitzt oben rechts (Industriestandard für Edit-Profil: immer
-          sichtbar, kanonischer Ort), Brand-farben wenn dirty, sonst ausgegraut. */}
-      <View className="flex-row items-center justify-between px-5 pb-3 pt-2">
+      {/* Titel klebt fest oben. Gespeichert wird über die einblendende Leiste unten
+          (erscheint nur bei Änderungen, direkt bei den Feldern) — der frühere,
+          im Ruhezustand ausgegraute Save oben rechts wurde zu leicht übersehen. */}
+      <View className="px-5 pb-3 pt-2">
         <Text className="font-display-bold text-[30px] leading-none text-rock-900">
           Profile
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Save profile"
-          accessibilityState={{ disabled: !dirty || update.isPending }}
-          disabled={!dirty || update.isPending}
-          onPress={save}
-          hitSlop={10}
-          className="min-w-[56px] items-end justify-center py-1 active:opacity-60"
-        >
-          {update.isPending ? (
-            <ActivityIndicator size="small" color={colors.brand[500]} />
-          ) : (
-            <Text
-              className={cn(
-                "font-sans-semibold text-[17px]",
-                dirty ? "text-brand-500" : "text-rock-300",
-              )}
-            >
-              Save
-            </Text>
-          )}
-        </Pressable>
       </View>
 
       <KeyboardAwareScrollView
@@ -236,6 +217,32 @@ export default function Profile() {
           <ChevronRight size={20} color={colors.rock[400]} strokeWidth={2} />
         </Pressable>
       </KeyboardAwareScrollView>
+
+      {/* Save-Leiste — ersetzt den leicht zu übersehenden Save oben rechts: eine volle
+          Leiste, die nur bei ungespeicherten Änderungen (dirty) erscheint, direkt bei
+          den Feldern und per KeyboardStickyView über der Tastatur (wie in sessions/new).
+          Weiterhin explizites Speichern von Skill/Bio (ADR-0003), nur an sichtbarerer
+          Stelle; Avatar und Galerie speichern unverändert sofort. */}
+      {dirty ? (
+        <KeyboardStickyView>
+          <View
+            onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
+            className="border-t border-rock-100 bg-rock-0 px-5 pt-3"
+            style={{ paddingBottom: insets.bottom + 12 }}
+          >
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              loading={update.isPending}
+              icon={<Check size={18} color={colors.rock[0]} strokeWidth={2} />}
+              onPress={save}
+            >
+              Save changes
+            </Button>
+          </View>
+        </KeyboardStickyView>
+      ) : null}
     </SafeAreaView>
   );
 }
