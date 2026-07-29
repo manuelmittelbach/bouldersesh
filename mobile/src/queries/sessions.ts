@@ -9,7 +9,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import type { Session } from "@/types/database";
 
-const OPEN_SESSIONS_KEY = (params: OpenSessionsParams) =>
+// Der Feed lädt nicht mehr nur offene Sessions, sondern auch volle (`matched`) des
+// Tages (ADR-0011) — daher `feed`- statt `open`-Semantik im Symbolnamen. Der Cache-Key-
+// WERT bleibt aber bewusst `["sessions", "open", …]`: bestehende Invalidierungen
+// (useCreateSession mit `["sessions","open"]`, der breite `["sessions"]`-Prefix in
+// matches.ts / leave / delete / respond) treffen ihn nur so weiter. Nur die Symbole
+// umbenannt, nicht das Key-Array.
+const FEED_SESSIONS_KEY = (params: FeedSessionsParams) =>
   ["sessions", "open", params] as const;
 const SESSION_KEY = (id: string) => ["sessions", id] as const;
 const MY_SESSIONS_KEY = (userId: string) =>
@@ -17,7 +23,7 @@ const MY_SESSIONS_KEY = (userId: string) =>
 const MY_PARTICIPATIONS_KEY = (userId: string) =>
   ["sessions", "participations", userId] as const;
 
-export type OpenSessionsParams = {
+export type FeedSessionsParams = {
   /** The feed's city context. Filters through the gym — sessions carry no city. */
   city_id?: string;
   gym_id?: string;
@@ -77,13 +83,15 @@ function withAcceptedCount(row: unknown): SessionWithMeta {
   };
 }
 
-async function getOpenSessions(
-  params: OpenSessionsParams,
+async function getFeedSessions(
+  params: FeedSessionsParams,
 ): Promise<SessionWithMeta[]> {
   let query = supabase
     .from("sessions")
     .select(SESSION_SELECT)
-    .eq("status", "open")
+    // Joinbare (`open`) UND volle (`matched`) Sessions des Tages — volle bleiben als
+    // gedimmter „Full"-Beleg im Feed (ADR-0011). `done`/`cancelled` bleiben draußen.
+    .in("status", ["open", "matched"])
     .eq("accepted.status", "accepted")
     .order("starts_at", { ascending: true });
 
@@ -97,10 +105,10 @@ async function getOpenSessions(
   return (data ?? []).map(withAcceptedCount);
 }
 
-export function useOpenSessions(params: OpenSessionsParams = {}) {
+export function useFeedSessions(params: FeedSessionsParams = {}) {
   return useQuery({
-    queryKey: OPEN_SESSIONS_KEY(params),
-    queryFn: () => getOpenSessions(params),
+    queryKey: FEED_SESSIONS_KEY(params),
+    queryFn: () => getFeedSessions(params),
     // Beim Wechsel von Halle/Tag ändert sich der QueryKey. Ohne dies würde ein noch
     // nicht gecachter Key `data` kurz auf undefined setzen → `isLoading` true → der
     // Feed samt Hallen-Filterleiste flackert als Voll-Screen-Spinner weg (und die
