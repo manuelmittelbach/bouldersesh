@@ -63,7 +63,8 @@ export type SessionCardProps = {
   band?: GradeBand;
   time?: string;
   gym?: string;
-  /** „N of M spots left" — freie Plätze für Mitkletternde, ohne die Ersteller:in (ADR-0007). */
+  /** Freie Plätze für Mitkletternde, ohne die Ersteller:in — „N spots left" bzw. „Full"
+   *  (ADR-0007). Steht hinter dem Kader-Stack; die belegten Plätze zeigen die Avatare. */
   spots?: string | null;
   /** Angenommene Mitkletternde (OHNE Ersteller:in) → überlappender Avatar-Stack, keine
    *  Namen. Leer/fehlend → kein Stack. Die Avatar-URLs sind fertig (nicht der Storage-Pfad). */
@@ -136,21 +137,28 @@ export function SessionCard({
           {gym ? (
             <MetaRow icon={<MapPin size={14} color={colors.rock[400]} strokeWidth={2} />}>{gym}</MetaRow>
           ) : null}
-          {spots ? (
-            <MetaRow icon={<Users size={14} color={colors.rock[400]} strokeWidth={2} />}>{spots}</MetaRow>
-          ) : null}
-          {/* Kader-Stack: die Gesichter der schon Beigetretenen (ohne Host, der links
-              groß steht) — Avatare ohne Namen, jedes tippbar zum Profil. Ring = Kartenweiß
-              (rock-0), damit die Überlappung sauber trennt. Kein Kader → nichts. */}
-          {climbers && climbers.length > 0 ? (
-            <View className="mt-2">
-              <AvatarStack
-                members={climbers}
-                size="sm"
-                max={4}
-                ringColor="#ffffff"
-                onPressMember={onPressClimber}
-              />
+          {/* Kader + freie Plätze in EINER Zeile (wie im Session-Detail, statt „N of M
+              spots left"): das Users-Icon führt links (bündig mit Uhr/Pin darüber), dann
+              die Avatare der schon Beigetretenen — ohne Namen, jedes tippbar zum Profil —,
+              das Label dahinter nur die freien Plätze („N spots left" / „Full"). Ring =
+              Kartenweiß (rock-0) für saubere Überlappung. Leere Session → kein Stack. */}
+          {(climbers && climbers.length > 0) || spots ? (
+            <View className="mt-1.5 flex-row items-center gap-2">
+              <Users size={14} color={colors.rock[400]} strokeWidth={2} />
+              {climbers && climbers.length > 0 ? (
+                <AvatarStack
+                  members={climbers}
+                  size="md"
+                  max={4}
+                  ringColor="#ffffff"
+                  onPressMember={onPressClimber}
+                />
+              ) : null}
+              {spots ? (
+                <Text numberOfLines={1} className="font-sans text-[13px] text-rock-500">
+                  {spots}
+                </Text>
+              ) : null}
             </View>
           ) : null}
           {note ? (

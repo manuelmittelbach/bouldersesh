@@ -325,10 +325,10 @@ export default function Dashboard() {
               time={formatSessionTime(item.starts_at, { withDay: false })}
               // Nur der Hallenname: die Stadt steht bereits im Titel des Feeds.
               gym={item.gym?.name}
+              // Nur die freien Plätze (wie im Detail): „N spots left" / „Full" — die
+              // belegten zeigen die Kader-Avatare daneben, kein „N of M" mehr.
               spots={
-                isFull
-                  ? 'Full'
-                  : `${spotsLeft} of ${spotsTotal} ${spotsTotal === 1 ? 'spot' : 'spots'} left`
+                isFull ? 'Full' : `${spotsLeft} ${spotsLeft === 1 ? 'spot' : 'spots'} left`
               }
               // Kader-Stack: die schon Beigetretenen (ohne Host, der links groß steht) als
               // namenlose, zum Profil tippbare Avatare. Bild-URL + Ton hier fertig gerechnet,
