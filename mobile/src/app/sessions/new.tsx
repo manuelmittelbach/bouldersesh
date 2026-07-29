@@ -17,7 +17,7 @@ import { TimePickerSheet } from "@/components/TimePickerSheet";
 import { Button, Chip, IconButton, Input } from "@/components/ui";
 import { useActiveCity } from "@/hooks/useActiveCity";
 import { useKeyboardAwareField } from "@/hooks/useKeyboardAwareField";
-import { startOfDay, toDateKey } from "@/lib/utils";
+import { SESSION_DAY_WINDOW, startOfDay, toDateKey } from "@/lib/utils";
 import { useCities } from "@/queries/cities";
 import { useCreateSession } from "@/queries/sessions";
 import { GYM_ACCESS_LABEL, useGyms } from "@/queries/gyms";
@@ -51,7 +51,7 @@ export default function SessionCreate() {
   });
   // Optionale Vorauswahl-Params aus dem Feed:
   //  - `date` ("YYYY-MM-DD", passend zum Chip-Fenster unten). Fehlt/passt er nicht ins
-  //    7-Tage-Fenster, bleibt es bei Today.
+  //    Tagfenster (heute..heute+(SESSION_DAY_WINDOW-1)), bleibt es bei Today.
   //  - `gym` (Hallen-ID). Kommt aus dem aktiven Hallen-Filter des Feeds — die Halle liegt
   //    darum in der aktiven Stadt, die hier auch als cityId vorbelegt ist, also stimmig.
   //    Wird die Stadt im Formular gewechselt, setzt selectCity die Halle zurück.
@@ -84,13 +84,13 @@ export default function SessionCreate() {
     setGymId(null);
   }
   // Gewählter Tag als Date (Mitternacht-Anker). Optional aus params.date vorbelegt, sofern
-  // er ins 7-Tage-Fenster (heute..heute+6) fällt — sonst Today. Auswahl-UI ist dieselbe
-  // geteilte DateFilter wie im Home-Feed.
+  // er ins Tagfenster (heute..heute+(SESSION_DAY_WINDOW-1)) fällt — sonst Today. Auswahl-UI
+  // ist dieselbe geteilte DateFilter wie im Home-Feed.
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const raw = typeof params.date === "string" ? params.date : null;
     const base = startOfDay(new Date());
     if (raw) {
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < SESSION_DAY_WINDOW; i++) {
         const d = new Date(base);
         d.setDate(base.getDate() + i);
         if (toDateKey(d) === raw) return d;
