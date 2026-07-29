@@ -150,6 +150,30 @@ export function buildChatTitle(names: string[]): string {
   return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
 }
 
+/** Vorname für die kompakte einzeilige Vorschau; leerer Name → „Anonymous". */
+function firstName(name: string | null): string {
+  const trimmed = name?.trim();
+  if (!trimmed) return "Anonymous";
+  return trimmed.split(/\s+/)[0];
+}
+
+/**
+ * Name der Absender:in einer Nachricht für das Gruppen-Präfix. „You" für eigene
+ * Nachrichten, sonst der Vorname des passenden Mitglieds. `null`, wenn das Mitglied nicht
+ * (mehr) im Chat ist oder der Account gelöscht wurde — dann bleibt die Vorschau ohne Präfix.
+ */
+function resolveSenderName(
+  senderId: string | null,
+  userId: string,
+  members: { user_id: string; profile: ChatCounterpart | null }[] | null,
+): string | null {
+  if (senderId === userId) return "You";
+  if (!senderId) return null;
+  const member = (members ?? []).find((mem) => mem.user_id === senderId);
+  if (!member) return null;
+  return firstName(member.profile?.display_name ?? null);
+}
+
 export type ChatListItem = {
   id: string;
   createdAt: string;
@@ -171,8 +195,18 @@ export type ChatListItem = {
     starts_at: string;
     gym: { name: string } | null;
   } | null;
-  /** `sender_id === null`: die Absender:in hat ihren Account gelöscht (ADR-0004). */
-  lastMessage: { body: string; sent_at: string; sender_id: string | null } | null;
+  /**
+   * `sender_id === null`: die Absender:in hat ihren Account gelöscht (ADR-0004).
+   * `senderName`: aufgelöster Anzeigename fürs WhatsApp-Präfix in Gruppen-Vorschauen —
+   * „You" für eigene Nachrichten, sonst der Vorname des Mitglieds; `null`, wenn nicht
+   * auflösbar (kein Mitglied mehr / gelöschter Account).
+   */
+  lastMessage: {
+    body: string;
+    sent_at: string;
+    sender_id: string | null;
+    senderName: string | null;
+  } | null;
   unread: boolean;
 };
 
@@ -237,7 +271,14 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
       .filter((p): p is ChatCounterpart => !!p);
     const other = others[0] ?? null;
     const title = buildChatTitle(others.map((p) => p.display_name ?? "Anonymous"));
-    const lastMessage = lastByChat.get(c.id) ?? null;
+
+    // Absender der letzten Nachricht auf einen Namen mappen (für die Gruppen-Vorschau).
+    // Eigene Nachricht → „You", ein bekanntes Mitglied → dessen Vorname (kompakt in der
+    // einzeiligen Vorschau); Mitglied nicht mehr auffindbar/gelöscht → null (kein Präfix).
+    const lastRaw = lastByChat.get(c.id) ?? null;
+    const lastMessage = lastRaw
+      ? { ...lastRaw, senderName: resolveSenderName(lastRaw.sender_id, userId, c.members) }
+      : null;
     const lastRead = lastReadByChat.get(c.id) ?? null;
     const unread =
       !!lastMessage &&
