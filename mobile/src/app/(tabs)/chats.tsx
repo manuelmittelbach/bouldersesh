@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Clock, LogOut, MessageCircle, Trash2, Undo2, Users } from 'lucide-react-native';
+import { Clock, Crown, LogOut, MessageCircle, Trash2, Undo2, Users } from 'lucide-react-native';
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -447,7 +447,7 @@ export default function Chats() {
       ) : (
         <StatusRow
           session={session}
-          icon={<Clock size={22} color={colors.brand[600]} strokeWidth={2} />}
+          icon={<Crown size={22} color={colors.brand[600]} strokeWidth={2} />}
           subtitle={pendingCount > 0 ? '' : 'No climbers yet'}
           pill={pendingCount > 0 ? <RequestsPill count={pendingCount} /> : undefined}
           dot={pendingCount > 0}
@@ -543,7 +543,7 @@ export default function Chats() {
                     }>
                     <StatusRow
                       session={session}
-                      icon={<Clock size={22} color={colors.brand[600]} strokeWidth={2} />}
+                      icon={<Clock size={22} color={colors.rock[400]} strokeWidth={2} />}
                       subtitle={`with ${session.creator?.display_name ?? 'Anonymous'} · Waiting for reply`}
                     />
                   </SwipeRow>
