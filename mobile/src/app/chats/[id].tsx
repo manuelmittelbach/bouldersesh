@@ -235,12 +235,29 @@ export default function Chat() {
                   time={isGroupEnd ? formatClock(item.sent_at) : undefined}
                   avatar={
                     isGroupEnd ? (
-                      <Avatar
-                        name={senderName}
-                        tone={avatarTone(item.sender_id ?? senderName)}
-                        size="xs"
-                        src={publicImageUrl(sender?.avatar_path)}
-                      />
+                      // Avatar tippbar → read-only Profil, wie die Kopf-Leiste. Nur bei
+                      // echtem Absender; „Deleted user" (sender_id === null) hat kein Profil.
+                      item.sender_id ? (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`View ${senderName}’s profile`}
+                          onPress={() => router.push(`/profile/${item.sender_id}`)}
+                          className="active:opacity-70">
+                          <Avatar
+                            name={senderName}
+                            tone={avatarTone(item.sender_id)}
+                            size="xs"
+                            src={publicImageUrl(sender?.avatar_path)}
+                          />
+                        </Pressable>
+                      ) : (
+                        <Avatar
+                          name={senderName}
+                          tone={avatarTone(senderName)}
+                          size="xs"
+                          src={publicImageUrl(sender?.avatar_path)}
+                        />
+                      )
                     ) : undefined
                   }>
                   {item.body}
