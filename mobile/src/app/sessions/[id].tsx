@@ -5,8 +5,10 @@ import {
   CheckCircle2,
   Flag,
   Hand,
+  LogOut,
   MapPin,
   Trash2,
+  Undo2,
   UsersRound,
 } from 'lucide-react-native';
 import type { ReactNode } from 'react';
@@ -223,13 +225,15 @@ export default function SessionDetail() {
   // Copy passt sich der Zahl bereits Beigetretener an: sind Leute dabei, benennen wir
   // den Preis (sie verlieren Session und Gruppenchat) statt ihn zu verschweigen.
   function confirmDelete() {
-    const joined = session!.accepted_count;
+    // Gleiche Copy wie der „Delete session"-Swipe im Chats-Tab (confirmDissolve),
+    // damit dieselbe Handlung an beiden Stellen identisch klingt. Eigene Sessions
+    // haben immer einen Gruppenchat, sobald jemand beigetreten ist.
     const body =
-      joined > 0
-        ? `${joined} ${joined === 1 ? 'climber' : 'climbers'} already joined. They’ll lose the session and the group chat. This can’t be undone.`
-        : 'It’ll be removed from the feed. This can’t be undone.';
-    Alert.alert('Delete this session?', body, [
-      { text: 'Cancel', style: 'cancel' },
+      session!.accepted_count > 0
+        ? 'This removes the session and the group chat for everyone.'
+        : 'This removes the session for good.';
+    Alert.alert('Delete session?', body, [
+      { text: 'Keep', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
@@ -254,7 +258,7 @@ export default function SessionDetail() {
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5"
-        contentContainerStyle={{ paddingBottom: isMine ? 32 : 160 }}>
+        contentContainerStyle={{ paddingBottom: declined ? 32 : 160 }}>
         {/* Creator — tippbar zum read-only Profil (profile/[id]). Ist die
             Ersteller:in gelöscht (kein creator), bleibt der Block untippbar. */}
         <Pressable
@@ -331,27 +335,28 @@ export default function SessionDetail() {
         {/* Beitritts-Anfragen leben seit 0017 allein im Chat (oben angeheftet), nicht
             mehr hier — jede eigene Session hat von Anfang an einen Chat. Von hier
             führt der Chat-Einstieg über die Chats-Zeile bzw. den Info-Button im Chat. */}
-
-        {/* Owner: Session löschen. Bewusst am Ende und dezent — die Absage ist der
-            Ausnahmefall, nicht die angebotene Handlung (wie „Report profile"). */}
-        {isMine ? (
-          <View className="mt-10 items-center">
-            <Button
-              variant="ghost"
-              size="md"
-              loading={del.isPending}
-              icon={<Trash2 size={16} color={colors.danger} strokeWidth={2} />}
-              onPress={confirmDelete}>
-              <Text className="font-sans-semibold text-[15px] text-danger">Delete session</Text>
-            </Button>
-          </View>
-        ) : null}
       </ScrollView>
 
-      {/* Aktionsleiste — nur für fremde Sessions. Ein Platz, Inhalt je Zustand
-          (ADR-0006): laden → still, pending → „Request sent", accepted → „Open
-          chat", declined → dezent, sonst der „Climb together?"-Button. */}
-      {!isMine && !declined ? (
+      {/* Aktionsleiste — ein fester Platz am unteren Rand, Inhalt je Zustand
+          (ADR-0006): eigene Session → „Delete session"; sonst laden → still,
+          pending → „Request sent", accepted → „Leave session", declined → dezent
+          (keine Leiste), sonst der „Climb together?"-Button. Delete und Leave sitzen
+          bewusst an derselben Stelle. */}
+      {isMine ? (
+        <View
+          className="absolute inset-x-0 bottom-0 border-t border-rock-100 bg-rock-0 px-5 pt-3"
+          style={{ paddingBottom: insets.bottom + 12 }}>
+          <Button
+            variant="ghost"
+            size="md"
+            fullWidth
+            loading={del.isPending}
+            icon={<Trash2 size={16} color={colors.danger} strokeWidth={2} />}
+            onPress={confirmDelete}>
+            <Text className="font-sans-semibold text-[15px] text-danger">Delete session</Text>
+          </Button>
+        </View>
+      ) : !declined ? (
         <View
           className="absolute inset-x-0 bottom-0 border-t border-rock-100 bg-rock-0 px-5 pt-3"
           style={{ paddingBottom: insets.bottom + 12 }}>
@@ -374,6 +379,7 @@ export default function SessionDetail() {
                 size="md"
                 fullWidth
                 loading={withdraw.isPending}
+                icon={<Undo2 size={16} color={colors.rock[500]} strokeWidth={2} />}
                 onPress={() =>
                   Alert.alert('Withdraw request?', undefined, [
                     { text: 'Keep', style: 'cancel' },
@@ -402,24 +408,21 @@ export default function SessionDetail() {
                 size="md"
                 fullWidth
                 loading={leave.isPending}
+                icon={<LogOut size={16} color={colors.danger} strokeWidth={2} />}
                 onPress={() =>
-                  Alert.alert(
-                    'Leave session?',
-                    "You'll leave the group chat. You can ask to rejoin later.",
-                    [
-                      { text: 'Stay', style: 'cancel' },
-                      {
-                        text: 'Leave',
-                        style: 'destructive',
-                        // Zurück zum Ausgangs-Tab (Sessions oder Chats) — s. o.
-                        onPress: () => leave.mutate(session.id, { onSuccess: () => router.back() }),
-                      },
-                    ],
-                  )
+                  // Gleiche Copy und Optik (rot + LogOut) wie der „Leave session"-Swipe
+                  // im Chats-Tab (confirmLeave), damit die Handlung überall gleich wirkt.
+                  Alert.alert('Leave session?', "You'll leave this session and its chat.", [
+                    { text: 'Stay', style: 'cancel' },
+                    {
+                      text: 'Leave',
+                      style: 'destructive',
+                      // Zurück zum Ausgangs-Tab (Sessions oder Chats) — s. o.
+                      onPress: () => leave.mutate(session.id, { onSuccess: () => router.back() }),
+                    },
+                  ])
                 }>
-                <Text className="font-sans-semibold text-[15px] text-rock-500">
-                  Leave session
-                </Text>
+                <Text className="font-sans-semibold text-[15px] text-danger">Leave session</Text>
               </Button>
             </View>
           ) : (
