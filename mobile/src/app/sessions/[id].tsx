@@ -226,12 +226,8 @@ export default function SessionDetail() {
   function confirmDelete() {
     // Gleiche Copy wie der „Delete session"-Swipe im Chats-Tab (confirmDissolve),
     // damit dieselbe Handlung an beiden Stellen identisch klingt. Eigene Sessions
-    // haben immer einen Gruppenchat, sobald jemand beigetreten ist.
-    const body =
-      session!.accepted_count > 0
-        ? 'This removes the session and the group chat for everyone.'
-        : 'This removes the session for good.';
-    Alert.alert('Delete session?', body, [
+    // haben von Anfang an einen Gruppenchat → immer die „für alle"-Copy.
+    Alert.alert('Delete session?', 'This removes the session and the group chat for everyone.', [
       { text: 'Keep', style: 'cancel' },
       {
         text: 'Delete',
