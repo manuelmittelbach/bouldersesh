@@ -341,18 +341,10 @@ function Section({ title, rows }: { title: string; rows: Row[] }) {
   );
 }
 
-// Sortierschlüssel: Zeilen mit Chat nach letzter Aktivität (neu → alt), Zeilen ohne
-// Chat nach Termin (früh → spät) dahinter. So stehen aktive Gespräche oben, ruhende
-// oder noch leere Sessions darunter.
+// Sortierschlüssel: nach Termin (früh → spät), damit die zeitlich nächste Session oben
+// steht — unabhängig von Chat-Aktivität. Gleicher Schlüssel wie die Requested-Sektion.
 function sortEntries(entries: Entry[]): Entry[] {
-  const activity = (e: Entry) => e.chat?.lastMessage?.sent_at ?? e.chat?.createdAt ?? '';
-  const withChat = entries
-    .filter((e) => e.chat)
-    .sort((a, b) => activity(b).localeCompare(activity(a)));
-  const withoutChat = entries
-    .filter((e) => !e.chat)
-    .sort((a, b) => a.session.starts_at.localeCompare(b.session.starts_at));
-  return [...withChat, ...withoutChat];
+  return [...entries].sort((a, b) => a.session.starts_at.localeCompare(b.session.starts_at));
 }
 
 export default function Chats() {
