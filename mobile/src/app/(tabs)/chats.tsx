@@ -49,10 +49,16 @@ function RowSeparator() {
 
 // Icon-Kachel in Avatar-lg-Größe für Zeilen ohne menschliches Gegenüber (offene
 // Anfrage, noch leere eigene Session) — bewusst anders als ein Personen-Avatar,
-// damit „hier ist noch niemand" auf einen Blick lesbar ist.
-function IconTile({ icon }: { icon: React.ReactNode }) {
+// damit „hier ist noch niemand" auf einen Blick lesbar ist. `tint` legt den runden
+// Hintergrund rollen-abhängig fest (Krone brand, Uhr neutral) — angelehnt an die
+// Rollen-Streifen der Feed-Karten (SessionCard).
+function IconTile({ icon, tint }: { icon: React.ReactNode; tint?: string }) {
   return (
-    <View className="h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-50">
+    <View
+      className={cn(
+        'h-14 w-14 shrink-0 items-center justify-center rounded-full',
+        tint,
+      )}>
       {icon}
     </View>
   );
@@ -352,7 +358,7 @@ export default function Chats() {
     // Linkes Glyph rollen-abhängig: Hosting trägt durchgängig die Krone (identisch zum
     // Feed), Joined das Gesicht der Gastgeber:in.
     const leading = hosting ? (
-      <IconTile icon={<Crown size={22} color={colors.brand[600]} strokeWidth={2} />} />
+      <IconTile tint="bg-brand-50" icon={<Crown size={22} color={colors.brand[600]} strokeWidth={2} />} />
     ) : (
       <Avatar
         name={session.creator?.display_name ?? 'Anonymous'}
@@ -367,10 +373,18 @@ export default function Chats() {
     // „No messages yet". Sobald wer dabei ist, greift die Chat-Vorschau (fängt zugleich
     // den ADR-0004-Fall ab: accepted_count>0, aber kein Mitglied mehr → schlicht die
     // letzte Nachricht bzw. „No messages yet").
+    // Der letzten Nachricht immer den Absender voranstellen („Anna: …" / „You: …",
+    // WhatsApp-Stil), damit ohne Öffnen klar ist, wer schrieb. Bewusst auch im scheinbaren
+    // 1:1-Chat: eine Gruppensession kann jederzeit wachsen, dann wäre ein namensloses
+    // Präfix plötzlich mehrdeutig. Fällt nur weg, wenn der Absender nicht auflösbar ist.
+    const lastMsg = chat?.lastMessage;
+    const preview = lastMsg
+      ? lastMsg.senderName
+        ? `${lastMsg.senderName}: ${lastMsg.body}`
+        : lastMsg.body
+      : 'No messages yet';
     const subtitle =
-      hosting && session.accepted_count === 0
-        ? 'No climbers yet'
-        : (chat?.lastMessage?.body ?? 'No messages yet');
+      hosting && session.accepted_count === 0 ? 'No climbers yet' : preview;
 
     const inner = (
       <SessionRow
@@ -466,7 +480,7 @@ export default function Chats() {
                     }>
                     <SessionRow
                       session={session}
-                      leading={<IconTile icon={<Clock size={22} color={colors.rock[400]} strokeWidth={2} />} />}
+                      leading={<IconTile tint="bg-rock-100" icon={<Clock size={22} color={colors.rock[400]} strokeWidth={2} />} />}
                       subtitle="Waiting for reply"
                     />
                   </SwipeRow>
