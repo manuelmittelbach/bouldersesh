@@ -17,7 +17,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Avatar } from '@/components/ui';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, cn, formatSessionTime } from '@/lib/utils';
-import { CHAT_SESSION_ID_KEY, useMyChats, type ChatListItem } from '@/queries/chat';
+import {
+  CHAT_MEMBERS_KEY,
+  CHAT_SESSION_ID_KEY,
+  useMyChats,
+  type ChatListItem,
+} from '@/queries/chat';
 import { usePendingCountsForSessions, useWithdrawRequest } from '@/queries/matches';
 import {
   SESSION_KEY,
@@ -401,16 +406,17 @@ export default function Chats() {
         pill={hosting && pendingCount > 0 ? <RequestsPill count={pendingCount} /> : undefined}
         // Chat vorhanden → dorthin (auch die leere eigene Session hat seit 0017 einen);
         // sonst fällt SessionRow auf die Session-Detailseite zurück.
-        // Vor der Navigation die frische Session — die diese Zeile ohnehin schon hält —
-        // in die Caches des Chat-Screens legen: die chatId→sessionId-Stufe und die
-        // Session selbst. Sonst baut der Chat-Screen den Status über eine eigene,
-        // oft noch veraltete Query-Kette neu auf und zeigt kurz den alten Stand, bevor
-        // der Hintergrund-Refetch ihn ersetzt (sichtbares Umspringen des Status).
+        // Vor der Navigation die frischen Daten — die diese Zeile ohnehin schon hält —
+        // in die Caches des Chat-Screens legen: die chatId→sessionId-Stufe, die Session
+        // selbst und die Mitgliederliste. Sonst baut der Chat-Screen Status und Avatare
+        // über eigene, oft noch veraltete/leere Query-Ketten neu auf und zeigt kurz den
+        // alten Stand, bevor der Hintergrund-Refetch ihn ersetzt (sichtbares Umspringen).
         onPress={
           chat
             ? () => {
                 queryClient.setQueryData(CHAT_SESSION_ID_KEY(chat.id), session.id);
                 queryClient.setQueryData(SESSION_KEY(session.id), session);
+                queryClient.setQueryData(CHAT_MEMBERS_KEY(chat.id), chat.members);
                 router.push(`/chats/${chat.id}`);
               }
             : undefined
