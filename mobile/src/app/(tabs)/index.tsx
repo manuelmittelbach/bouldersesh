@@ -205,11 +205,14 @@ export default function Dashboard() {
   // Focus-Refetch wie „requested": kehrt man vom Detail zurück (wo man die Absage sieht),
   // fällt die Session raus, ohne dass der noch gemountete Tab hängen bliebe.
   const { data: declinedIds, refetch: refetchDeclined } = useMyDeclinedRequests();
-  // Auch den Feed selbst bei jeder Tab-Rückkehr neu laden: der Tab bleibt gemountet,
+  // Auch den Feed selbst bei jeder Tab-Rückkehr neu laden — dasselbe „nur Fetch-on-Focus,
+  // kein Realtime" wie bei den drei Streifen oben (ADR-0006). Der Tab bleibt gemountet,
   // also greift refetchOnMount nie — ohne diesen Focus-Refetch würden fremde neue
   // Sessions (oder gefüllte Plätze) erst per Pull-to-Refresh sichtbar. Da bereits
   // Daten im Cache liegen, bleibt `isLoading` false (kein Voll-Screen-Spinner) und der
   // eigene `refreshing`-State unberührt (kein Pull-Spinner) — es lädt still nach.
+  // Caveat: der Refetch nutzt denselben QueryKey, `range.from` bleibt also eingefroren
+  // (siehe oben) — eine erst nach Mount vergangene Session fällt hier NICHT raus.
   useFocusEffect(
     useCallback(() => {
       refetch();
