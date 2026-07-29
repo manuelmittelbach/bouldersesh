@@ -36,6 +36,13 @@ export function toDateKey(d: Date): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+/**
+ * Wie viele Tage ab heute (inkl. heute) Sessions liegen dürfen. Gemeinsames Fenster für
+ * Feed-Tagfilter und Create-Screen: heute..heute+(SESSION_DAY_WINDOW-1). Was man erstellen
+ * kann, soll man im Feed auch wiederfinden — darum EINE Konstante für beide.
+ */
+export const SESSION_DAY_WINDOW = 30;
+
 /** Kopie von `d` auf 00:00:00.000 desselben Kalendertags (lokale Zone). */
 export function startOfDay(d: Date): Date {
   const x = new Date(d);

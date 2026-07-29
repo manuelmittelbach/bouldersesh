@@ -4,13 +4,18 @@ import { Modal, Pressable, ScrollView } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 
 import { Chip } from '@/components/ui';
-import { formatDayChip, startOfDay, toDateKey } from '@/lib/utils';
+import {
+  formatDayChip,
+  SESSION_DAY_WINDOW,
+  startOfDay,
+  toDateKey,
+} from '@/lib/utils';
 import { colors } from '@/theme/colors';
 
 // Der Tag-Filter: feste Chips für heute/morgen, plus ein Kalender für die restlichen Tage
-// des 7-Tage-Fensters (weiter kann keine Session liegen — der Create-Flow lässt nur
-// heute+6 zu). Wird ein ferner Tag gewählt, erscheint ein dynamischer dritter Chip.
-// Geteilt zwischen Home-Feed und Create-Screen, damit die Tagauswahl überall gleich aussieht.
+// des Fensters (weiter kann keine Session liegen — der Create-Flow lässt nur heute..heute+
+// (SESSION_DAY_WINDOW-1) zu). Wird ein ferner Tag gewählt, erscheint ein dynamischer dritter
+// Chip. Geteilt zwischen Home-Feed und Create-Screen, damit die Tagauswahl überall gleich aussieht.
 export function DateFilter({
   selected,
   onSelect,
@@ -24,7 +29,7 @@ export function DateFilter({
   const tomorrow = startOfDay(new Date());
   tomorrow.setDate(today.getDate() + 1);
   const maxDate = startOfDay(new Date());
-  maxDate.setDate(today.getDate() + 6);
+  maxDate.setDate(today.getDate() + (SESSION_DAY_WINDOW - 1));
 
   const isToday = selected.toDateString() === today.toDateString();
   const isTomorrow = selected.toDateString() === tomorrow.toDateString();
