@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, formatClock, formatSessionTime } from '@/lib/utils';
 import {
+  systemMessageForViewer,
   useChatMembers,
   useMarkChatRead,
   useMessages,
@@ -211,11 +212,15 @@ export default function Chat() {
             }
             renderItem={({ item, index }) => {
               // System-Zeile („Ben joined", ADR-0007): zentrierte Meta-Zeile, keine
-              // Blase, kein Avatar — abgesetzt vom Gespräch.
+              // Blase, kein Avatar — abgesetzt vom Gespräch. Eigenes Event aus der
+              // Ich-Perspektive („You joined") statt in dritter Person über mich.
               if (item.kind === 'system') {
+                const isMine = !!item.sender_id && item.sender_id === user?.id;
                 return (
                   <View className="items-center py-1.5">
-                    <Text className="font-sans text-xs text-rock-400">{item.body}</Text>
+                    <Text className="font-sans text-xs text-rock-400">
+                      {systemMessageForViewer(item.body, isMine)}
+                    </Text>
                   </View>
                 );
               }
