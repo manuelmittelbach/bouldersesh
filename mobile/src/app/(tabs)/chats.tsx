@@ -258,7 +258,11 @@ function ConversationRow({
       // Deckende Fläche (= Seitenhintergrund), sonst schimmert beim Wischen die rote
       // Delete-Aktion durch.
       className="flex-row items-center gap-3 bg-rock-25 px-5 py-3 active:bg-rock-50">
-      {chat.others.length > 1 ? (
+      {hosting ? (
+        // Gastgeber-Sicht: durchgängig die große Krone-Kachel statt der Mitglieder-
+        // Gesichter — hält die Hosting-Rolle identisch zur leeren StatusRow und zum Feed.
+        <IconTile icon={<Crown size={22} color={colors.brand[600]} strokeWidth={2} />} />
+      ) : chat.others.length > 1 ? (
         // Gruppen-Runde: gestapelte Gesichter statt nur des ersten Mitglieds (ADR-0007).
         <AvatarStack
           size="lg"
