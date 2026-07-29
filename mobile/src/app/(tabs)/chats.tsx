@@ -13,9 +13,9 @@ import {
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Avatar, AvatarStack } from '@/components/ui';
+import { Avatar } from '@/components/ui';
 import { publicImageUrl } from '@/lib/images';
-import { avatarTone, cn, formatChatTime, formatSessionTime } from '@/lib/utils';
+import { avatarTone, cn, formatSessionTime } from '@/lib/utils';
 import { useMyChats, type ChatListItem } from '@/queries/chat';
 import { usePendingCountsForSessions, useWithdrawRequest } from '@/queries/matches';
 import {
@@ -125,8 +125,8 @@ function useSwipeGuardedPress(onPress?: () => void) {
   }, [guard, onPress]);
 }
 
-// Wisch-Wrapper mit rechter Aktion. Die Zeilen darunter (StatusRow/ConversationRow)
-// haben eine deckende Fläche, sonst schimmerte die Aktion beim Wischen durch.
+// Wisch-Wrapper mit rechter Aktion. Die SessionRow darunter hat eine deckende Fläche,
+// sonst schimmerte die Aktion beim Wischen durch.
 function SwipeRow({ action, children }: { action: React.ReactNode; children: React.ReactNode }) {
   // Ref statt State: der Wert wird nur im onPress-Moment gelesen, ein Re-Render wäre
   // Verschwendung. `true` ab Zieh-Beginn und solange offen; erst beim Schließen wieder frei.
@@ -180,22 +180,25 @@ function confirmDissolve(hasGroup: boolean, onConfirm: () => void) {
   );
 }
 
-// Status-Optik (Icon-Kachel, Halle+Zeit, Statustext + optionale Pill) für Zeilen ohne
-// menschliches Gegenüber: die angefragte Session, der seltene aufgenommene-ohne-Chat-Race
-// und — neu — die noch leere eigene Session. Das Tap-Ziel ist überschreibbar: die leere
-// eigene Session hat längst einen (leeren) Chat und springt dorthin (`onPress`), alle
-// anderen fallen auf die Session-Detailseite zurück.
-function StatusRow({
+// Die EINE Session-Zeile für alle drei Sektionen (ADR-0012): linkes Glyph · Titel
+// (Halle · Tag · Zeit) · Meta (letzte Nachricht oder Status). Das linke Glyph rendert die
+// Aufrufstelle je Rolle (Krone / Avatar der Gastgeber:in / Uhr), damit die Zeile selbst
+// rollen-frei bleibt. `emphasized` hebt die Meta-Zeile bei ungelesener Nachricht hervor.
+// Das Tap-Ziel ist überschreibbar: Zeilen mit Chat springen dorthin (`onPress`), der Rest
+// fällt auf die Session-Detailseite zurück (Requested hat keinen Chat).
+function SessionRow({
   session,
-  icon,
+  leading,
   subtitle,
+  emphasized,
   pill,
   dot,
   onPress,
 }: {
   session: SessionWithMeta;
-  icon: React.ReactNode;
+  leading: React.ReactNode;
   subtitle: string;
+  emphasized?: boolean;
   pill?: React.ReactNode;
   dot?: boolean;
   onPress?: () => void;
@@ -208,7 +211,7 @@ function StatusRow({
     <Pressable
       onPress={handlePress}
       className="flex-row items-center gap-3 bg-rock-25 px-5 py-3 active:bg-rock-50">
-      <IconTile icon={icon} />
+      {leading}
       <View className="min-w-0 flex-1">
         <View className="flex-row items-center gap-2">
           <Text numberOfLines={1} className="flex-1 font-display text-[15px] text-rock-900">
@@ -221,99 +224,15 @@ function StatusRow({
           {dot ? <AttentionDot /> : null}
         </View>
         <View className="mt-0.5 flex-row items-center justify-between gap-2">
-          <Text numberOfLines={1} className="flex-1 font-sans text-[13px] text-rock-500">
-            {subtitle}
-          </Text>
-          {pill ?? null}
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
-// Eine Session MIT Chat — die eigentliche Konversationszeile (Avatar, letzte Nachricht,
-// Ungelesen-Punkt). Bei eigenen Sessions kann rechts die „N wollen mit"-Pill stehen.
-// Tippen öffnet den Gruppenchat.
-function ConversationRow({
-  chat,
-  hosting,
-  pendingCount,
-}: {
-  chat: ChatListItem;
-  hosting: boolean;
-  pendingCount: number;
-}) {
-  const name = chat.title || (chat.counterpartDeleted ? 'Deleted user' : 'Anonymous');
-  const preview = chat.lastMessage?.body ?? 'No messages yet';
-  const stamp = chat.lastMessage?.sent_at ?? chat.createdAt;
-  const showRequests = hosting && pendingCount > 0;
-  // Zeile braucht Aufmerksamkeit: ungelesene Nachricht ODER offene Anfragen. Genau
-  // dieselbe Bedingung zählt der Chats-Tab-Badge (eine Zeile = ein Punkt = +1).
-  const dotted = chat.unread || showRequests;
-  const handlePress = useSwipeGuardedPress(() => router.push(`/chats/${chat.id}`));
-
-  return (
-    <Pressable
-      onPress={handlePress}
-      // Deckende Fläche (= Seitenhintergrund), sonst schimmert beim Wischen die rote
-      // Delete-Aktion durch.
-      className="flex-row items-center gap-3 bg-rock-25 px-5 py-3 active:bg-rock-50">
-      {hosting ? (
-        // Gastgeber-Sicht: durchgängig die große Krone-Kachel statt der Mitglieder-
-        // Gesichter — hält die Hosting-Rolle identisch zur leeren StatusRow und zum Feed.
-        <IconTile icon={<Crown size={22} color={colors.brand[600]} strokeWidth={2} />} />
-      ) : chat.others.length > 1 ? (
-        // Gruppen-Runde: gestapelte Gesichter statt nur des ersten Mitglieds (ADR-0007).
-        <AvatarStack
-          size="lg"
-          members={chat.others.map((m) => ({
-            id: m.id,
-            name: m.display_name ?? 'Anonymous',
-            tone: avatarTone(m.id),
-            src: publicImageUrl(m.avatar_path),
-          }))}
-        />
-      ) : (
-        <Avatar
-          name={name}
-          tone={avatarTone(chat.other?.id ?? name)}
-          size="lg"
-          src={publicImageUrl(chat.other?.avatar_path)}
-        />
-      )}
-      <View className="min-w-0 flex-1">
-        <View className="flex-row items-center justify-between gap-2">
-          <Text numberOfLines={1} className="flex-1 font-display text-[15px] text-rock-900">
-            {name}
-          </Text>
-          <Text
-            className={cn(
-              'shrink-0 font-mono text-[11px]',
-              chat.unread ? 'text-brand-600' : 'text-rock-400',
-            )}>
-            {formatChatTime(stamp)}
-          </Text>
-        </View>
-        <View className="mt-0.5 flex-row items-center justify-between gap-2">
           <Text
             numberOfLines={1}
             className={cn(
               'flex-1 text-[13px]',
-              chat.unread ? 'font-sans-medium text-rock-900' : 'font-sans text-rock-500',
+              emphasized ? 'font-sans-medium text-rock-900' : 'font-sans text-rock-500',
             )}>
-            {preview}
+            {subtitle}
           </Text>
-          {dotted ? <AttentionDot /> : null}
-        </View>
-        <View className="mt-0.5 flex-row items-center justify-between gap-2">
-          {chat.session?.gym ? (
-            <Text numberOfLines={1} className="flex-1 font-sans text-xs text-rock-400">
-              {chat.session.gym.name} · {formatSessionTime(chat.session.starts_at)}
-            </Text>
-          ) : (
-            <View className="flex-1" />
-          )}
-          {showRequests ? <RequestsPill count={pendingCount} /> : null}
+          {pill ?? null}
         </View>
       </View>
     </Pressable>
@@ -422,42 +341,50 @@ export default function Chats() {
   const error = (created.error ?? participations.error) as Error | null;
   const isEmpty = mySessions.length === 0 && requested.length === 0 && joined.length === 0;
 
-  // Eine Konversations- oder Statuszeile für eine eigene/beigetretene Session. Jede
+  // Eine einheitliche Session-Zeile für eine eigene/beigetretene Session (ADR-0012). Jede
   // Zeile ist wischbar — rollen-abhängig: als Gastgeber:in auflösen (rot), als
-  // Beigetretene:r verlassen (neutral). Auch die chat-losen Statuszeilen (leere eigene
-  // Session, seltener Beitritts-Race) sind wischbar, sonst gäbe es keinen Ausweg.
+  // Beigetretene:r verlassen (neutral).
   function renderEntry({ session, chat }: Entry, role: 'host' | 'joined'): Row {
     const hosting = role === 'host';
     const pendingCount = pendingCounts.data?.[session.id] ?? 0;
+    const unread = chat?.unread ?? false;
 
-    // Gastgeber-Sicht: seit 0017 hat JEDE eigene Session von Anfang an einen Chat, also
-    // taugt die Chat-Existenz nicht mehr als Verzweigung. Maßgeblich ist, ob schon wer
-    // dabei ist. Niemand aufgenommen → Status-Optik („No climbers yet"/Anfragen-Pill),
-    // die aber in den (leeren) Chat tippt statt auf die Detailseite. Sobald jemand
-    // beitritt, wird daraus die normale Konversationszeile. Das fängt zugleich den
-    // ADR-0004-Fall ab (accepted_count>0, aber kein anderes Mitglied mehr → „Deleted
-    // user" in der ConversationRow statt fälschlich „No climbers yet").
-    const inner = hosting ? (
-      session.accepted_count > 0 && chat ? (
-        <ConversationRow chat={chat} hosting={hosting} pendingCount={pendingCount} />
-      ) : (
-        <StatusRow
-          session={session}
-          icon={<Crown size={22} color={colors.brand[600]} strokeWidth={2} />}
-          subtitle={pendingCount > 0 ? '' : 'No climbers yet'}
-          pill={pendingCount > 0 ? <RequestsPill count={pendingCount} /> : undefined}
-          dot={pendingCount > 0}
-          onPress={chat ? () => router.push(`/chats/${chat.id}`) : undefined}
-        />
-      )
-    ) : chat ? (
-      <ConversationRow chat={chat} hosting={hosting} pendingCount={pendingCount} />
+    // Linkes Glyph rollen-abhängig: Hosting trägt durchgängig die Krone (identisch zum
+    // Feed), Joined das Gesicht der Gastgeber:in.
+    const leading = hosting ? (
+      <IconTile icon={<Crown size={22} color={colors.brand[600]} strokeWidth={2} />} />
     ) : (
-      // Beigetreten, aber (noch) kein Chat — seltener Race, trotzdem sichtbar halten.
-      <StatusRow
+      <Avatar
+        name={session.creator?.display_name ?? 'Anonymous'}
+        tone={avatarTone(session.creator?.id ?? session.id)}
+        size="lg"
+        src={publicImageUrl(session.creator?.avatar_path)}
+      />
+    );
+
+    // Zeile 2: letzte Nachricht mit Status-Fallback. „No climbers yet" hat bei der leeren
+    // eigenen Session Vorrang — „hier ist noch niemand" ist die wichtigere Info als
+    // „No messages yet". Sobald wer dabei ist, greift die Chat-Vorschau (fängt zugleich
+    // den ADR-0004-Fall ab: accepted_count>0, aber kein Mitglied mehr → schlicht die
+    // letzte Nachricht bzw. „No messages yet").
+    const subtitle =
+      hosting && session.accepted_count === 0
+        ? 'No climbers yet'
+        : (chat?.lastMessage?.body ?? 'No messages yet');
+
+    const inner = (
+      <SessionRow
         session={session}
-        icon={<Users size={22} color={colors.brand[600]} strokeWidth={2} />}
-        subtitle={`with ${session.creator?.display_name ?? 'Anonymous'}`}
+        leading={leading}
+        subtitle={subtitle}
+        emphasized={unread}
+        // Aufmerksamkeit: ungelesene Nachricht ODER offene Anfragen — dieselbe Bedingung
+        // zählt der Chats-Tab-Badge (eine Zeile = ein Punkt).
+        dot={unread || (hosting && pendingCount > 0)}
+        pill={hosting && pendingCount > 0 ? <RequestsPill count={pendingCount} /> : undefined}
+        // Chat vorhanden → dorthin (auch die leere eigene Session hat seit 0017 einen);
+        // sonst fällt SessionRow auf die Session-Detailseite zurück.
+        onPress={chat ? () => router.push(`/chats/${chat.id}`) : undefined}
       />
     );
 
@@ -537,10 +464,10 @@ export default function Chats() {
                         onPress={() => withdraw.mutate(session.id)}
                       />
                     }>
-                    <StatusRow
+                    <SessionRow
                       session={session}
-                      icon={<Clock size={22} color={colors.rock[400]} strokeWidth={2} />}
-                      subtitle={`with ${session.creator?.display_name ?? 'Anonymous'} · Waiting for reply`}
+                      leading={<IconTile icon={<Clock size={22} color={colors.rock[400]} strokeWidth={2} />} />}
+                      subtitle="Waiting for reply"
                     />
                   </SwipeRow>
                 ),
