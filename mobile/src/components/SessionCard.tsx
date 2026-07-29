@@ -77,13 +77,15 @@ export type SessionCardProps = {
   /** Meine Beziehung zu dieser Session → getönter Streifen unter der Karte
    *  (Hosting/Joined/Requested). Fehlt sie, hat die Karte keinen Streifen. */
   label?: SessionLabel | null;
-  /** Volle Session (`matched`) → Karte gedimmt, weiterhin tippbar (→ Detail, Climbers-
-   *  Liste). Orthogonal zum Rollen-Streifen: der bleibt stehen, dimmt nur mit (ADR-0011). */
+  /** Volle Session (`matched`) → Karte gedimmt. Ob sie tippbar ist, hängt allein an
+   *  `onPress`: bei einer eigenen/beigetretenen vollen Session setzt der Feed ihn (Sheet
+   *  mit Löschen/Verlassen), bei einer vollen Fremd-Session lässt er ihn weg — dann ist
+   *  die Karte ein stummer „Full"-Beleg. Orthogonal zum Rollen-Streifen (ADR-0011). */
   full?: boolean;
   online?: boolean;
   onPress?: () => void;
   /** Tippen auf den Avatar öffnet das Profil der Ersteller:in. Fehlt es, ist nur
-   *  die Karte als Ganzes tippbar (→ Session). */
+   *  die Karte als Ganzes tippbar (→ onPress, das Aktions-Sheet). */
   onPressAuthor?: () => void;
 };
 
@@ -111,7 +113,7 @@ export function SessionCard({
   return (
     <Card interactive={!!onPress} onPress={onPress} className={full ? 'opacity-60' : undefined}>
       <View className="flex-row items-start gap-3">
-        {/* Nur der Avatar führt zum Profil; der Rest der Karte bleibt → Session. */}
+        {/* Nur der Avatar führt zum Profil; der Rest der Karte löst onPress aus (Aktions-Sheet). */}
         {onPressAuthor ? (
           <Pressable
             accessibilityRole="button"

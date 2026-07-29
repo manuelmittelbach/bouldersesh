@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CitySwitcherSheet } from '@/components/CitySwitcherSheet';
 import { DateFilter } from '@/components/DateFilter';
+import { SessionActionSheet, type SessionActionTarget } from '@/components/SessionActionSheet';
 import { SessionCard, type SessionLabel } from '@/components/SessionCard';
 import { Button, Chip } from '@/components/ui';
 import { useActiveCity } from '@/hooks/useActiveCity';
@@ -234,6 +235,10 @@ export default function Dashboard() {
   // Der Stadt-Wechsler ist jetzt ein Bottom-Sheet auf Screen-Ebene, kein Route-Push mehr.
   // State hier oben, damit ihn sowohl der Header-Dropdown als auch der Empty-State öffnen.
   const [cityMenuOpen, setCityMenuOpen] = useState(false);
+  // Ein Tap auf eine Feed-Karte springt nicht mehr in den Detail-Screen (der lebt nur
+  // noch hinter dem „i" im Chat), sondern öffnet dieses Aktions-Sheet mit der einen
+  // Handlung, die zu meiner Rolle passt (Join/Leave/Withdraw/Delete).
+  const [actionTarget, setActionTarget] = useState<SessionActionTarget | null>(null);
   async function onRefresh() {
     setRefreshing(true);
     try {
@@ -343,7 +348,16 @@ export default function Dashboard() {
               full={isFull}
               note={item.note}
               label={label}
-              onPress={() => router.push(`/sessions/${item.id}`)}
+              // Tap → Aktions-Sheet (nicht mehr Detail-Screen). `label ?? 'open'` bildet
+              // meine Rolle auf die eine passende Handlung ab. AUSNAHME: eine volle
+              // Fremd-Session (kein Label + full) hat keine Handlung — sie bleibt gedimmt
+              // und schlicht nicht tippbar (kein onPress = kein Sheet, kein Ripple), statt
+              // ein Sheet nur für „No spots left" aufzuziehen (ADR-0013).
+              onPress={
+                !label && isFull
+                  ? undefined
+                  : () => setActionTarget({ id: item.id, relationship: label ?? 'open' })
+              }
               onPressAuthor={
                 item.creator?.id
                   ? () => router.push(`/profile/${item.creator!.id}`)
@@ -373,6 +387,8 @@ export default function Dashboard() {
         onSelect={setActiveCity}
         onClose={() => setCityMenuOpen(false)}
       />
+
+      <SessionActionSheet target={actionTarget} onClose={() => setActionTarget(null)} />
     </SafeAreaView>
   );
 }

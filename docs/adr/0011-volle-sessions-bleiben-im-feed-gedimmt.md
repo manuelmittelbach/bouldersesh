@@ -40,6 +40,13 @@ wer klettert (Climbers-Liste, [ADR-0009](0009-climbers-liste-accepted-kader-oeff
 Die Anfrage-Affordanz sitzt ohnehin im Detail, nicht auf der Karte; hier ändert
 sich nichts.
 
+> **Nachtrag ([ADR-0013](0013-feed-tap-oeffnet-aktions-sheet-statt-detailseite.md)):**
+> Der Tap-Zielort hat sich geändert — die Karte öffnet jetzt ein Aktions-Sheet statt
+> der Detailseite. Eine volle **Fremd**-Session ist dabei **gar nicht mehr tippbar**
+> (kein Sheet, sie bleibt nur der gedimmte „Full"-Beleg); eine volle **eigene/
+> beigetretene** öffnet das Sheet mit Löschen/Verlassen. Alles andere hier (volle
+> Sessions bleiben gedimmt in-place im Feed) bleibt gültig.
+
 **Orthogonal zu den Rollen-Labels (ADR-0010):** „Full" wird **kein vierter
 Streifen**. Ist die volle Session meine (`hosting`) oder beigetreten (`joined`),
 bleibt der **Rollen-Streifen** stehen und dimmt durch die Card-Opacity mit; „voll"
