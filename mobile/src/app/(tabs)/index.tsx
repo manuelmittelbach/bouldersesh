@@ -6,9 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CitySwitcherSheet } from '@/components/CitySwitcherSheet';
 import { DateFilter } from '@/components/DateFilter';
-import { SessionCard } from '@/components/SessionCard';
+import { SessionCard, type SessionLabel } from '@/components/SessionCard';
 import { Button, Chip } from '@/components/ui';
 import { useActiveCity } from '@/hooks/useActiveCity';
+import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
 import {
   avatarTone,
@@ -21,7 +22,11 @@ import {
 } from '@/lib/utils';
 import { useCities } from '@/queries/cities';
 import { useGyms, type GymWithCity } from '@/queries/gyms';
-import { useMyDeclinedRequests, useMyPendingRequests } from '@/queries/matches';
+import {
+  useMyAcceptedRequests,
+  useMyDeclinedRequests,
+  useMyPendingRequests,
+} from '@/queries/matches';
 import { useOpenSessions, type SessionWithMeta } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
@@ -133,6 +138,8 @@ function EmptyState({
 }
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const { cityId, setActiveCity } = useActiveCity();
   const { data: cities } = useCities();
   const city = cities?.find((c) => c.id === cityId) ?? null;
@@ -187,6 +194,11 @@ export default function Dashboard() {
   // zum Feed zurück, wird neu geladen — so verschwindet der Streifen an einer Session,
   // von der man zurückgetreten oder abgelehnt wurde (der Tab bleibt sonst gemountet).
   const { data: requestedIds, refetch: refetchRequested } = useMyPendingRequests();
+  // Sessions, in die ich aufgenommen wurde → „Joined"-Streifen. Nur solange die Runde
+  // noch offen ist (ein Platz frei) taucht sie überhaupt im Feed auf; wird sie voll,
+  // kippt sie auf `matched` und fällt raus. Gleicher Focus-Refetch wie „requested",
+  // damit ein frisch angenommener Beitritt beim Rückkehr in den Feed sichtbar wird.
+  const { data: acceptedIds, refetch: refetchAccepted } = useMyAcceptedRequests();
   // Sessions, aus denen mich die Ersteller:in abgelehnt hat — die blende ich unten aus,
   // damit eine Absage nicht als freier Platz zurück in den Feed rutscht. Gleicher
   // Focus-Refetch wie „requested": kehrt man vom Detail zurück (wo man die Absage sieht),
@@ -196,7 +208,8 @@ export default function Dashboard() {
     useCallback(() => {
       refetchRequested();
       refetchDeclined();
-    }, [refetchRequested, refetchDeclined]),
+      refetchAccepted();
+    }, [refetchRequested, refetchDeclined, refetchAccepted]),
   );
 
   // Abgelehnte Sessions raus, bevor die Liste sie rendert (ADR-0006).
@@ -273,6 +286,17 @@ export default function Dashboard() {
           // schon angenommenen. Der Feed zeigt nur offene Sessions, also ≥ 1 frei.
           const spotsTotal = item.capacity - 1;
           const spotsLeft = Math.max(0, spotsTotal - item.accepted_count);
+          // Meine Rolle an dieser Session → höchstens ein Streifen (ADR-0010). Priorität
+          // ist zugleich Ausschluss: Ersteller:in kann nicht anfragen, und eine Anfrage
+          // ist accepted ODER pending — die Zweige überschneiden sich also nie.
+          const label: SessionLabel | null =
+            userId && item.creator?.id === userId
+              ? 'hosting'
+              : acceptedIds?.has(item.id)
+                ? 'joined'
+                : requestedIds?.has(item.id)
+                  ? 'requested'
+                  : null;
           return (
             <SessionCard
               name={name}
@@ -289,7 +313,7 @@ export default function Dashboard() {
               gym={item.gym?.name}
               spots={`${spotsLeft} of ${spotsTotal} ${spotsTotal === 1 ? 'spot' : 'spots'} left`}
               note={item.note}
-              requested={requestedIds?.has(item.id) ?? false}
+              label={label}
               onPress={() => router.push(`/sessions/${item.id}`)}
               onPressAuthor={
                 item.creator?.id

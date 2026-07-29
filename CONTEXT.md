@@ -155,3 +155,20 @@ gewollt.
 
 Eine Session bleibt hier, **solange Plätze frei sind**; die Karte zeigt die
 verbleibenden Plätze („2 Plätze frei"). Volle Sessions fallen heraus.
+
+## Meine Rolle an einer Session (Hosting / Joined / Requested)
+
+Wie ich zu einer Session stehe, in **drei** Begriffen. Sie sind **gegenseitig
+ausschließend** — an einer Session habe ich höchstens eine Rolle:
+
+- **Hosting** — ich bin die [Ersteller:in](#session), die Session gehört mir.
+- **Joined** — ich wurde in eine fremde Session **aufgenommen** (meine
+  [Anfrage](#anfrage-match-request) ist angenommen).
+- **Requested** — ich habe eine fremde Session angefragt und **warte** noch
+  (Anfrage pending).
+
+Dieselben drei Wörter erscheinen an **zwei** Orten, damit die App eine Sprache
+spricht: im [Feed](#entdecken-feed-feed) als getönter Streifen unter der Karte
+(sichtbar nur, solange die Session offen ist), im [Chats-Tab](#session-chat) als
+Sektions-Überschrift („Hosting Sessions" / „Joined Sessions" / „Requested
+Sessions"), die meine Sessions nach Rolle gruppiert.

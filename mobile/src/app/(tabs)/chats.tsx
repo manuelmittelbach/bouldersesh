@@ -28,8 +28,9 @@ import {
 import { colors } from '@/theme/colors';
 
 // Der „Chats"-Tab bündelt alles, was mit meinen Sessions zu tun hat — nach ROLLE
-// gruppiert, nicht als flache Chat-Liste: „My Sessions" (selbst erstellt), „Requested
-// Sessions" (Beitritt angefragt, wartet) und „Joined Sessions" (aufgenommen). Jede
+// gruppiert, nicht als flache Chat-Liste: „Hosting Sessions" (selbst erstellt),
+// „Requested Sessions" (Beitritt angefragt, wartet) und „Joined Sessions" (aufgenommen).
+// Dieselben drei Wörter (Hosting/Joined/Requested) labeln die Karten im Feed. Jede
 // Session steht in genau einer Sektion; der Chat (falls schon vorhanden) sitzt inline
 // in der Zeile. Grund: ein Chat entsteht erst mit dem Match, pending hat also keinen.
 
@@ -552,7 +553,7 @@ export default function Chats() {
           ) : null}
 
           {mySessions.length > 0 ? (
-            <Section title="My Sessions" rows={mySessions.map((e) => renderEntry(e, 'host'))} />
+            <Section title="Hosting Sessions" rows={mySessions.map((e) => renderEntry(e, 'host'))} />
           ) : null}
 
           {joined.length > 0 ? (
