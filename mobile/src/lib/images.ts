@@ -18,15 +18,13 @@ export function publicImageUrl(path: string | null | undefined): string | null {
   return supabase.storage.from(PROFILE_IMAGES_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
-/** Avatar und Galeriefoto sind verschiedene Dinge (CONTEXT.md) und werden
- *  entsprechend verschieden aufbereitet. */
-export type ImageKind = 'avatar' | 'gallery';
+/** Bislang nur der Avatar. Als Union gehalten, damit weitere Bildarten (etwa
+ *  eine Profil-Galerie) hier andocken können, ohne die Signaturen zu ändern. */
+export type ImageKind = 'avatar';
 
-// Avatar: klein und quadratisch, er erscheint nur beiläufig in Listen.
-// Galeriefoto: wird bewusst angesehen, darf also mehr Kante haben.
-// Beide sind quadratisch (der Ausschnitt kommt aus dem Crop-Screen); die Form
-// unterscheidet nur die Anzeige (runder Avatar, abgerundete Galerie-Kachel).
-const MAX_EDGE: Record<ImageKind, number> = { avatar: 512, gallery: 1440 };
+// Avatar: klein und quadratisch, er erscheint nur beiläufig in Listen. Der
+// Ausschnitt kommt quadratisch aus dem Crop-Screen; die Anzeige rundet ihn.
+const MAX_EDGE: Record<ImageKind, number> = { avatar: 512 };
 const COMPRESS = 0.8;
 
 /** Wird geworfen, wenn die Person die Mediathek nicht freigibt. Eigener Typ,
@@ -69,7 +67,7 @@ export async function pickAndUploadProfileImage(
     uri: asset.uri,
     width: asset.width,
     height: asset.height,
-    mask: kind === 'avatar' ? 'circle' : 'rounded',
+    mask: 'circle',
   });
   router.push('/crop-image');
   const rect = await cropPromise;

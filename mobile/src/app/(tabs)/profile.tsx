@@ -8,7 +8,6 @@ import {
 } from "react-native-keyboard-controller";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { GalleryEditor } from "@/components/GalleryEditor";
 import { Avatar, Button, Chip, Input } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 import { useKeyboardAwareField } from "@/hooks/useKeyboardAwareField";
@@ -151,15 +150,6 @@ export default function Profile() {
             </Text>
           ) : null}
         </View>
-
-        {/* Galerie — wie der Avatar sofort gespeichert, deshalb oberhalb des
-              Formulars und optisch von ihm getrennt. */}
-        {profile ? (
-          <View className="mt-8">
-            <Eyebrow>Photos</Eyebrow>
-            <GalleryEditor profile={profile} />
-          </View>
-        ) : null}
 
         {/* Editierbar — ab hier zählt der Save-Button. */}
         <View className="mt-8 border-t border-rock-100 pt-8 gap-6">

@@ -9,9 +9,6 @@ import type { Profile } from "@/types/database";
 
 const PROFILE_KEY = (id: string) => ["profiles", id] as const;
 
-/** Muss zum CHECK aus 0009_profile_images.sql passen. */
-export const MAX_GALLERY_PHOTOS = 6;
-
 async function getProfile(id: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from("profiles")
@@ -61,7 +58,7 @@ export function useUpdateProfile() {
 
 async function writePaths(
   id: string,
-  patch: Partial<Pick<Profile, "avatar_path" | "gallery_paths">>,
+  patch: Partial<Pick<Profile, "avatar_path">>,
 ): Promise<Profile> {
   const { data, error } = await supabase
     .from("profiles")
@@ -95,47 +92,6 @@ export function useRemoveAvatar() {
     mutationFn: async (profile: Profile): Promise<Profile> => {
       const updated = await writePaths(profile.id, { avatar_path: null });
       await removeProfileImage(profile.avatar_path);
-      return updated;
-    },
-    onSuccess: syncProfileCaches(queryClient),
-  });
-}
-
-/** Galeriefoto hinten anhängen. Umsortieren gibt es nicht (ADR-0003). */
-export function useAddGalleryPhoto() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (profile: Profile): Promise<Profile | null> => {
-      // Der CHECK in der DB hat das letzte Wort; hier abfangen heißt nur, dass
-      // niemand erst ein Bild hochlädt, das die Zeile dann ablehnt.
-      if (profile.gallery_paths.length >= MAX_GALLERY_PHOTOS) {
-        throw new Error(`You can have up to ${MAX_GALLERY_PHOTOS} photos.`);
-      }
-      const path = await pickAndUploadProfileImage(profile.id, "gallery");
-      if (!path) return null;
-      return writePaths(profile.id, {
-        gallery_paths: [...profile.gallery_paths, path],
-      });
-    },
-    onSuccess: syncProfileCaches(queryClient),
-  });
-}
-
-/** Einzelnes Galeriefoto löschen. */
-export function useRemoveGalleryPhoto() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      profile,
-      path,
-    }: {
-      profile: Profile;
-      path: string;
-    }): Promise<Profile> => {
-      const updated = await writePaths(profile.id, {
-        gallery_paths: profile.gallery_paths.filter((p) => p !== path),
-      });
-      await removeProfileImage(path);
       return updated;
     },
     onSuccess: syncProfileCaches(queryClient),
