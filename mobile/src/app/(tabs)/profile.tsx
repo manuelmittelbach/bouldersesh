@@ -223,11 +223,11 @@ export default function Profile() {
           den Feldern und per KeyboardStickyView über der Tastatur (wie in sessions/new).
           Weiterhin explizites Speichern von Skill/Bio (ADR-0003), nur an sichtbarerer
           Stelle; Avatar und Galerie speichern unverändert sofort. */}
+      {/* Bei offener Tastatur reitet die Leiste direkt auf der Tastatur, die den
+          Home-Indicator-Bereich schon abdeckt — den insets.bottom-Anteil der
+          paddingBottom deshalb per offset.opened hinter die Tastatur schieben,
+          sonst bleibt ein toter weißer Streifen unter dem Button. */}
       {dirty ? (
-        {/* Bei offener Tastatur reitet die Leiste direkt auf der Tastatur, die den
-            Home-Indicator-Bereich schon abdeckt — den insets.bottom-Anteil der
-            paddingBottom deshalb per offset.opened hinter die Tastatur schieben,
-            sonst bleibt ein toter weißer Streifen unter dem Button. */}
         <KeyboardStickyView offset={{ opened: insets.bottom }}>
           <View
             onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
