@@ -111,7 +111,13 @@ export function SessionCard({
   const stripe = label ? LABEL_STYLE[label] : null;
   const avatar = <Avatar name={name} tone={avatarTone} size="md" online={online} src={avatarSrc} />;
   return (
-    <Card interactive={!!onPress} onPress={onPress} className={full ? 'opacity-60' : undefined}>
+    <Card
+      interactive={!!onPress}
+      onPress={onPress}
+      // Voll → grauer Kartengrund (statt rock-0-Weiß) + stärkeres Dimmen: hebt „nicht
+      // beitretbar" auf einen Blick von den weißen, joinbaren Karten ab — unabhängig
+      // davon, ob Host ein Foto/Grade hat (ADR-0011). twMerge überschreibt bg-rock-0.
+      className={full ? 'bg-rock-50 opacity-50' : undefined}>
       <View className="flex-row items-start gap-3">
         {/* Nur der Avatar führt zum Profil; der Rest der Karte löst onPress aus (Aktions-Sheet). */}
         {onPressAuthor ? (
