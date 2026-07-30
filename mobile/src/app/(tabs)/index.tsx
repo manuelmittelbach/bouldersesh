@@ -1,11 +1,12 @@
 import { router, useFocusEffect } from 'expo-router';
 import { ChevronDown, Mountain, Plus } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CitySwitcherSheet } from '@/components/CitySwitcherSheet';
 import { DateFilter } from '@/components/DateFilter';
+import { GymPickerSheet } from '@/components/GymPickerSheet';
 import { SessionActionSheet, type SessionActionTarget } from '@/components/SessionActionSheet';
 import { SessionCard, type SessionLabel } from '@/components/SessionCard';
 import { Button, Chip } from '@/components/ui';
@@ -44,7 +45,9 @@ function Header({
   onSelectDate,
   gyms,
   gymId,
+  gymName,
   onSelectGym,
+  onOpenGymPicker,
 }: {
   cityName: string | null;
   onOpenCityMenu: () => void;
@@ -52,7 +55,9 @@ function Header({
   onSelectDate: (d: Date) => void;
   gyms: GymWithCity[] | undefined;
   gymId: string | null;
+  gymName: string | null;
   onSelectGym: (id: string | null) => void;
+  onOpenGymPicker: () => void;
 }) {
   return (
     <View className="pb-3 pt-2">
@@ -82,22 +87,28 @@ function Header({
         <DateFilter selected={selectedDate} onSelect={onSelectDate} />
       </View>
 
-      {/* Hallen-Filter — nur zeigen, wenn es in der Stadt überhaupt etwas zu filtern gibt. */}
+      {/* Hallen-Filter — nur zeigen, wenn es in der Stadt überhaupt etwas zu filtern gibt.
+          Statt einer horizontal scrollenden Chip-Reihe (zu umständlich bei vielen Hallen)
+          nur zwei Chips: „All gyms" und ein Picker, der das Bottom-Sheet (GymPickerSheet)
+          öffnet und die gewählte Halle als Label trägt. */}
       {gyms && gyms.length > 1 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="gap-2 pr-4"
-          className="mt-2">
+        <View className="mt-2 flex-row gap-2">
           <Chip active={gymId === null} onPress={() => onSelectGym(null)}>
             All gyms
           </Chip>
-          {gyms.map((gym) => (
-            <Chip key={gym.id} active={gymId === gym.id} onPress={() => onSelectGym(gym.id)}>
-              {gym.name}
-            </Chip>
-          ))}
-        </ScrollView>
+          <Chip
+            active={gymId !== null}
+            onPress={onOpenGymPicker}
+            trailingIcon={
+              <ChevronDown
+                size={16}
+                color={gymId !== null ? colors.rock[0] : colors.rock[700]}
+                strokeWidth={2.5}
+              />
+            }>
+            {gymName ?? 'Pick a gym'}
+          </Chip>
+        </View>
       ) : null}
     </View>
   );
@@ -235,6 +246,9 @@ export default function Dashboard() {
   // Der Stadt-Wechsler ist jetzt ein Bottom-Sheet auf Screen-Ebene, kein Route-Push mehr.
   // State hier oben, damit ihn sowohl der Header-Dropdown als auch der Empty-State öffnen.
   const [cityMenuOpen, setCityMenuOpen] = useState(false);
+  // Der Hallen-Filter öffnet — wie der Stadt-Wechsler — ein Bottom-Sheet auf Screen-Ebene,
+  // statt die Hallen als lange horizontal scrollende Chip-Reihe auszubreiten.
+  const [gymPickerOpen, setGymPickerOpen] = useState(false);
   // Ein Tap auf eine Feed-Karte springt nicht mehr in den Detail-Screen (der lebt nur
   // noch hinter dem „i" im Chat), sondern öffnet dieses Aktions-Sheet mit der einen
   // Handlung, die zu meiner Rolle passt (Join/Leave/Withdraw/Delete).
@@ -262,7 +276,9 @@ export default function Dashboard() {
           onSelectDate={setSelectedDate}
           gyms={gyms}
           gymId={gymId}
+          gymName={gymName}
           onSelectGym={setGymId}
+          onOpenGymPicker={() => setGymPickerOpen(true)}
         />
       </View>
 
@@ -386,6 +402,14 @@ export default function Dashboard() {
         activeId={cityId}
         onSelect={setActiveCity}
         onClose={() => setCityMenuOpen(false)}
+      />
+
+      <GymPickerSheet
+        visible={gymPickerOpen}
+        gyms={gyms ?? []}
+        activeId={gymId}
+        onSelect={setGymId}
+        onClose={() => setGymPickerOpen(false)}
       />
 
       <SessionActionSheet target={actionTarget} onClose={() => setActionTarget(null)} />
