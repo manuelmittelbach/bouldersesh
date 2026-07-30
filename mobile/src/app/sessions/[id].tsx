@@ -23,7 +23,6 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-import { ProfileGallery } from "@/components/ProfileGallery";
 import { Avatar, Button, Card, GradePill, ScreenHeader } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 import { publicImageUrl } from "@/lib/images";
@@ -230,16 +229,20 @@ export default function SessionDetail() {
             zum read-only Profil (profile/[id]); gelöschter Creator → untippbar. Ist eine
             Notiz gesetzt, steht sie als deren „Stimme" darunter: linksbündiger Fließtext
             wie im Feed. */}
-        <Card className="mt-2 gap-3">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`View ${name}’s profile`}
-            disabled={!session.creator?.id}
-            onPress={() =>
-              session.creator?.id && router.push(`/profile/${session.creator.id}`)
-            }
-            className="flex-row items-center gap-3 active:opacity-70"
-          >
+        {/* Ganze Karte ist der Touch-Target zum Host-Profil – nicht nur die
+            Kopfzeile. Card mit onPress wird selbst zum Pressable (Padding inkl.,
+            Press-Scale). Gelöschter Creator → kein onPress, also untippbar. */}
+        <Card
+          className="mt-2 gap-3"
+          accessibilityRole="button"
+          accessibilityLabel={`View ${name}’s profile`}
+          onPress={
+            session.creator?.id
+              ? () => router.push(`/profile/${session.creator!.id}`)
+              : undefined
+          }
+        >
+          <View className="flex-row items-center gap-3">
             <Avatar
               name={name}
               tone={avatarTone(session.creator?.id ?? name)}
@@ -269,21 +272,13 @@ export default function SessionDetail() {
                 band={gradeBand(session.creator?.skill_level)}
               />
             ) : null}
-          </Pressable>
+          </View>
           {session.note ? (
             <Text className="font-sans text-[15px] leading-6 text-rock-700">
               {session.note}
             </Text>
           ) : null}
         </Card>
-
-        {/* Galeriefotos der/des Gastgeber:in. Die Host-Karte oben führt zum vollen
-            (read-only) Profil-Screen; die Galerie steht hier zusätzlich im Kontext. */}
-        {session.creator?.gallery_paths?.length ? (
-          <View className="mt-5">
-            <ProfileGallery paths={session.creator.gallery_paths} />
-          </View>
-        ) : null}
 
         {/* Info-Block */}
         <Card className="mt-6 gap-3.5">
