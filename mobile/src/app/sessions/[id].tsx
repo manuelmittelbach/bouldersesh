@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   Calendar,
   CheckCircle2,
-  Flag,
   Hand,
   LogOut,
   MapPin,
@@ -25,7 +24,6 @@ import {
   useSessionClimbers,
   useWithdrawRequest,
 } from '@/queries/matches';
-import { useHasReported, useReportProfile } from '@/queries/reports';
 import { useDeleteSession, useLeaveSession, useSession } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
@@ -79,49 +77,6 @@ function BuddiesRow({ people, spotsLabel }: { people: Buddy[]; spotsLabel: strin
         </View>
       </View>
     </View>
-  );
-}
-
-/** Melden eines fremden Profils. Bewusst ohne Grund-Eingabe: die Meldung soll
- *  keine Hürde haben, geprüft wird ohnehin von Hand. */
-function ReportButton({ profileId, name }: { profileId: string; name: string }) {
-  const { data: alreadyReported } = useHasReported(profileId);
-  const report = useReportProfile();
-  const done = alreadyReported || report.isSuccess;
-
-  function confirm() {
-    Alert.alert(
-      `Report ${name}?`,
-      'We’ll take a look at this profile. Nothing happens to it right away, and they won’t be told who reported them.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Report',
-          style: 'destructive',
-          onPress: () => report.mutate({ reportedId: profileId }),
-        },
-      ],
-    );
-  }
-
-  if (done) {
-    return (
-      <Text className="font-sans text-[13px] text-rock-400">
-        You reported this profile. We’re looking into it.
-      </Text>
-    );
-  }
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Report ${name}`}
-      disabled={report.isPending}
-      onPress={confirm}
-      className="flex-row items-center gap-1.5 px-3 py-2 active:opacity-60">
-      <Flag size={13} color={colors.rock[400]} strokeWidth={2} />
-      <Text className="font-sans text-[13px] text-rock-400">Report profile</Text>
-    </Pressable>
   );
 }
 
@@ -277,13 +232,8 @@ export default function SessionDetail() {
           </View>
         ) : null}
 
-        {/* Melden — nur bei fremden Sessions, und unauffällig: die Meldung ist
-            der Ausnahmefall, nicht die angebotene Handlung. */}
-        {!isMine && session.creator ? (
-          <View className="mt-4 items-center">
-            <ReportButton profileId={session.creator.id} name={name} />
-          </View>
-        ) : null}
+        {/* Melden ist ins Profil gewandert (profile/[id]) — der Creator-Block oben
+            führt dorthin. Hier steht es nicht mehr. */}
 
         {/* Info-Block */}
         <Card className="mt-6 gap-3.5">
