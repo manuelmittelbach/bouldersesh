@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { ChevronDown, Clock, Send, X } from "lucide-react-native";
+import { ChevronDown, Clock, Send } from "lucide-react-native";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import {
@@ -14,7 +14,7 @@ import {
 import { DateFilter } from "@/components/DateFilter";
 import { GymPickerSheet } from "@/components/GymPickerSheet";
 import { TimePickerSheet } from "@/components/TimePickerSheet";
-import { Button, Chip, IconButton, Input } from "@/components/ui";
+import { Button, Chip, Input, ScreenHeader } from "@/components/ui";
 import { useActiveCity } from "@/hooks/useActiveCity";
 import { useKeyboardAwareField } from "@/hooks/useKeyboardAwareField";
 import { SESSION_DAY_WINDOW, startOfDay, toDateKey } from "@/lib/utils";
@@ -188,15 +188,7 @@ export default function SessionCreate() {
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={["top"]}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-3 py-2">
-        <IconButton variant="ghost" label="Close" onPress={() => router.back()}>
-          <X size={24} color={colors.rock[700]} strokeWidth={2} />
-        </IconButton>
-        <Text className="font-display text-base text-rock-900">
-          New session
-        </Text>
-        <View className="w-10" />
-      </View>
+      <ScreenHeader icon="close" title="New session" titleAlign="center" />
 
       <KeyboardAwareScrollView
         className="flex-1"
