@@ -1,13 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ArrowLeft, Flag } from 'lucide-react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileGallery } from '@/components/ProfileGallery';
 import { Avatar, GradePill, IconButton } from '@/components/ui';
+import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, gradeBand, skillLabel } from '@/lib/utils';
 import { useProfile } from '@/queries/profiles';
+import { useHasReported, useReportProfile } from '@/queries/reports';
 import { colors } from '@/theme/colors';
 
 // Read-only-Ansicht eines beliebigen Kletterers. Kehrt die frühere Entscheidung um,
@@ -33,9 +35,58 @@ function BackHeader() {
   );
 }
 
+/** Melden eines fremden Profils. Bewusst ohne Grund-Eingabe: die Meldung soll
+ *  keine Hürde haben, geprüft wird ohnehin von Hand. Lebt seit dem Verschieben
+ *  hier im Profil-Screen (früher in der Session-Detail). */
+function ReportButton({ profileId, name }: { profileId: string; name: string }) {
+  const { data: alreadyReported } = useHasReported(profileId);
+  const report = useReportProfile();
+  const done = alreadyReported || report.isSuccess;
+
+  function confirm() {
+    Alert.alert(
+      `Report ${name}?`,
+      'We’ll take a look at this profile. Nothing happens to it right away, and they won’t be told who reported them.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Report',
+          style: 'destructive',
+          onPress: () => report.mutate({ reportedId: profileId }),
+        },
+      ],
+    );
+  }
+
+  if (done) {
+    return (
+      <Text className="font-sans text-[13px] text-rock-400">
+        You reported this profile. We’re looking into it.
+      </Text>
+    );
+  }
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Report ${name}`}
+      disabled={report.isPending}
+      onPress={confirm}
+      className="flex-row items-center gap-1.5 px-3 py-2 active:opacity-60">
+      <Flag size={13} color={colors.rock[400]} strokeWidth={2} />
+      <Text className="font-sans text-[13px] text-rock-400">Report profile</Text>
+    </Pressable>
+  );
+}
+
 export default function ProfileDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: profile, isLoading } = useProfile(id);
+  const { user } = useAuth();
+
+  // Das eigene Profil landet hier ohne Sonderfall (read-only) — dort ist Melden
+  // sinnlos, also nur bei fremden Profilen anbieten.
+  const isOwn = !!user && user.id === id;
 
   if (isLoading) {
     return (
@@ -99,6 +150,15 @@ export default function ProfileDetail() {
           <View className="mt-8">
             <Eyebrow>Photos</Eyebrow>
             <ProfileGallery paths={profile.gallery_paths} />
+          </View>
+        ) : null}
+
+        {/* Melden — nur bei fremden Profilen, und unauffällig am Fuß: die Meldung
+            ist der Ausnahmefall, nicht die angebotene Handlung. Früher in der
+            Session-Detail, seit dem Verschieben hier. */}
+        {!isOwn ? (
+          <View className="mt-10 items-center">
+            <ReportButton profileId={profile.id} name={name} />
           </View>
         ) : null}
       </ScrollView>
