@@ -34,6 +34,16 @@ const CHAT_RETENTION_MS = 24 * 60 * 60 * 1000;
 const chatRetentionCutoff = () =>
   new Date(Date.now() - CHAT_RETENTION_MS).toISOString();
 
+// Unbeantwortete (pending) Anfragen haben keinen Chat und nach dem Termin nichts mehr
+// zu planen — sie verschwinden schon 1h nach `starts_at` aus der Requested-Sektion,
+// statt die vollen 24h (Chat-Fenster) zu liegen. Der pg_cron-Job 0020 löscht sie
+// DB-seitig; dieser Filter spiegelt die Grenze read-side, damit die Anfrage sofort am
+// 1h-Punkt aus der Liste fällt. (Das Gegenstück für nie-bespielte eigene Sessions lebt
+// in chats.tsx, weil es den Chat-Verlauf kennen muss — siehe dort.)
+const REQUEST_RETENTION_MS = 60 * 60 * 1000;
+const requestRetentionCutoff = () =>
+  new Date(Date.now() - REQUEST_RETENTION_MS).toISOString();
+
 export type FeedSessionsParams = {
   /** The feed's city context. Filters through the gym — sessions carry no city. */
   city_id?: string;
@@ -183,6 +193,9 @@ async function getMySessions(userId: string): Promise<SessionWithMeta[]> {
     .gte("starts_at", chatRetentionCutoff())
     .order("starts_at", { ascending: true });
   if (error) throw error;
+  // Nie-bespielte Sessions (niemand beigetreten UND kein Chat-Verlauf) blendet die
+  // Chats-Liste 1h nach Start aus (siehe chats.tsx) — das braucht die Chat-Daten und
+  // lebt daher dort, nicht hier. Der pg_cron-Job 0021/0022 löscht sie DB-seitig.
   return (data ?? []).map(withClimbers);
 }
 
@@ -236,10 +249,17 @@ async function getMyParticipations(userId: string): Promise<MyParticipation[]> {
     .order("starts_at", { ascending: true });
   if (error) throw error;
 
-  return (data ?? []).map((row) => {
-    const session = withClimbers(row);
-    return { session, myStatus: statusBySession.get(session.id)! };
-  });
+  // pending fällt schon ab `starts_at + 1h` raus (Requested-Sektion, siehe
+  // REQUEST_RETENTION_MS); accepted bleibt bis `+ 24h` sichtbar (Chat-Fenster).
+  const requestCutoff = requestRetentionCutoff();
+  return (data ?? [])
+    .map((row) => {
+      const session = withClimbers(row);
+      return { session, myStatus: statusBySession.get(session.id)! };
+    })
+    .filter(
+      (p) => p.myStatus !== "pending" || p.session.starts_at >= requestCutoff,
+    );
 }
 
 export function useMyParticipations() {
