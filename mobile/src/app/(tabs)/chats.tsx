@@ -581,6 +581,13 @@ export default function Chats() {
             {joined.length > 0 ? (
               <Section title="Joined Sessions" rows={joined.map((e) => renderEntry(e, 'joined'))} />
             ) : null}
+
+            {/* Housekeeping-Hinweis ans Listen-Ende (nicht an den Kopf): leise Meta-Info
+                zur 24h-Chat-Retention (ADR-0014), keine Aktion. Steht nur, wenn es
+                überhaupt Chats gibt — der Empty-State oben braucht ihn nicht. */}
+            <Text className="px-6 pt-6 text-center font-sans text-[12px] leading-4 text-rock-400">
+              Chats disappear 24h after the session starts.
+            </Text>
           </ScrollView>
         </SwipeCoordinatorContext.Provider>
       )}
