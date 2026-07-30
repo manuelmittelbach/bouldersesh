@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Info, Send, Users } from 'lucide-react-native';
+import { ArrowLeft, Crown, Info, Send, Users } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -71,7 +71,15 @@ export default function Chat() {
   // Der Kopf zeigt die *anderen* Mitglieder (ADR-0007) als Avatar+Name-Leiste — jede
   // Person tippbar zu ihrem Profil. Hat sich das einzige Gegenüber gelöscht, ist der
   // Chat nur noch ich → generisches „Chat“ (ADR-0004).
-  const others = (members ?? []).filter((m) => m.id !== user?.id);
+  // Die/der Gastgeber:in steht immer zuerst (ganz links neben dem Back-Button) — sie:er
+  // trägt die Krone, und die feste Position macht die Rolle im Chat auf einen Blick lesbar.
+  const others = (members ?? [])
+    .filter((m) => m.id !== user?.id)
+    .sort((a, b) => {
+      const aHost = a.id === session?.creator_id ? 0 : 1;
+      const bHost = b.id === session?.creator_id ? 0 : 1;
+      return aHost - bHost;
+    });
   // Solo-Kopf: bin ich (noch) allein im Chat. Als Gastgeber:in der eigenen, noch
   // leeren Runde sagt der Kopf schlicht „No climbers yet" (Halle/Zeit stehen ohnehin
   // einen Tap weiter über den Info-Knopf). Sonst — etwa wenn sich das einzige
@@ -111,7 +119,7 @@ export default function Chat() {
             horizontal
             showsHorizontalScrollIndicator={false}
             className="flex-1"
-            contentContainerClassName="items-center gap-3 pr-2">
+            contentContainerClassName="items-center gap-3 py-1.5 pr-2">
             {others.map((m) => {
               const memberName = m.display_name ?? 'Anonymous';
               return (
@@ -121,12 +129,27 @@ export default function Chat() {
                   accessibilityLabel={`View ${memberName}’s profile`}
                   onPress={() => router.push(`/profile/${m.id}`)}
                   className="flex-row items-center gap-1.5 active:opacity-70">
-                  <Avatar
-                    name={memberName}
-                    tone={avatarTone(m.id)}
-                    size="xs"
-                    src={publicImageUrl(m.avatar_path)}
-                  />
+                  {/* Krone-Badge oben rechts am Avatar markiert die/den Gastgeber:in —
+                      direkt am Profilbild sichtbar, unabhängig von der Namenslänge (Host
+                      via session.creator_id, aus dem bereits geladenen session). */}
+                  <View className="relative">
+                    <Avatar
+                      name={memberName}
+                      tone={avatarTone(m.id)}
+                      size="xs"
+                      src={publicImageUrl(m.avatar_path)}
+                    />
+                    {m.id === session?.creator_id ? (
+                      <View className="absolute -right-1 -top-1 h-[15px] w-[15px] items-center justify-center rounded-full border border-rock-0 bg-brand-500">
+                        <Crown
+                          size={9}
+                          color={colors.rock[0]}
+                          fill={colors.rock[0]}
+                          strokeWidth={2}
+                        />
+                      </View>
+                    ) : null}
+                  </View>
                   <Text
                     numberOfLines={1}
                     className="max-w-[140px] font-display text-base text-rock-900">
