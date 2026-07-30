@@ -24,6 +24,16 @@ const MY_SESSIONS_KEY = (userId: string) =>
 const MY_PARTICIPATIONS_KEY = (userId: string) =>
   ["sessions", "participations", userId] as const;
 
+// Der Chat einer Session bleibt bis 24h NACH `starts_at` erreichbar (damit man
+// während UND kurz nach dem Bouldern noch tippen kann), danach räumt ihn ein
+// pg_cron-Job in der DB weg (Migration 0019). Damit UI-Sichtbarkeit und DB-Löschung
+// dieselbe Grenze teilen, filtern die Chat-getriebenen Listen (Hosting/Joined + Badge)
+// auf `starts_at >= now - 24h` statt `>= now`. Die Grenze lebt in der queryFn (nicht
+// im Key) → stabiler Key, kein Refetch-Sturm; Aktualisierung per Focus-Refetch.
+const CHAT_RETENTION_MS = 24 * 60 * 60 * 1000;
+const chatRetentionCutoff = () =>
+  new Date(Date.now() - CHAT_RETENTION_MS).toISOString();
+
 export type FeedSessionsParams = {
   /** The feed's city context. Filters through the gym — sessions carry no city. */
   city_id?: string;
@@ -160,9 +170,9 @@ export function useSession(id: string | undefined) {
 // Meine eigenen kommenden Sessions — der „Your sessions"-Abschnitt am Profil-Tab.
 // Bewusst `open` UND `matched`: sobald jemand annimmt, kippt die Session per Trigger
 // auf `matched` und fällt aus dem Feed (der filtert `open`) — dann ist diese Liste
-// der einzige Ort, an dem die Ersteller:in sie noch wiederfindet. `starts_at >= now`
-// wie der Feed, damit Vergangenes verschwindet. Das `now` lebt in der queryFn (nicht
-// im Key), der Key ist stabil → kein Refetch-Sturm; Aktualisierung per Focus-Refetch.
+// der einzige Ort, an dem die Ersteller:in sie noch wiederfindet. Sichtbar bis 24h
+// nach `starts_at` (Chat-Fenster, siehe CHAT_RETENTION_MS), danach verschwindet die
+// Zeile und der pg_cron-Job (0019) löscht den Chat.
 async function getMySessions(userId: string): Promise<SessionWithMeta[]> {
   const { data, error } = await supabase
     .from("sessions")
@@ -170,7 +180,7 @@ async function getMySessions(userId: string): Promise<SessionWithMeta[]> {
     .eq("creator_id", userId)
     .eq("climbers.status", "accepted")
     .in("status", ["open", "matched"])
-    .gte("starts_at", new Date().toISOString())
+    .gte("starts_at", chatRetentionCutoff())
     .order("starts_at", { ascending: true });
   if (error) throw error;
   return (data ?? []).map(withClimbers);
@@ -197,9 +207,9 @@ export type MyParticipation = {
 // pending = warte noch auf Zusage (Pending). Bewusst zwei Schritte statt eines
 // verschachtelten Embeds: erst meine match_requests-Zeilen (RLS gibt mir meine
 // eigenen, ADR-0006), dann die Sessions über dasselbe SESSION_SELECT wie der Feed —
-// so bleibt der accepted_count-Pfad identisch. `starts_at >= now` wie überall, damit
-// Vergangenes verschwindet; das `now` lebt in der queryFn (stabiler Key, kein Refetch-
-// Sturm). Session-Status bleibt UNgefiltert: beigetretene Sessions dürfen `open` wie
+// so bleibt der accepted_count-Pfad identisch. Sichtbar bis 24h nach `starts_at`
+// (Chat-Fenster, CHAT_RETENTION_MS) wie in getMySessions, damit der Gruppenchat auch
+// nach dem Termin noch erreichbar ist. Session-Status bleibt UNgefiltert: beigetretene Sessions dürfen `open` wie
 // `matched` (voll) sein. Ersteller und Anfragende überschneiden sich nie — der Join-
 // Button erscheint nur an fremden Sessions —, darum ist keine Deduplizierung nötig.
 async function getMyParticipations(userId: string): Promise<MyParticipation[]> {
@@ -222,7 +232,7 @@ async function getMyParticipations(userId: string): Promise<MyParticipation[]> {
     .select(SESSION_SELECT)
     .in("id", ids)
     .eq("climbers.status", "accepted")
-    .gte("starts_at", new Date().toISOString())
+    .gte("starts_at", chatRetentionCutoff())
     .order("starts_at", { ascending: true });
   if (error) throw error;
 
