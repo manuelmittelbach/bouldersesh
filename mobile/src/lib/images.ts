@@ -25,6 +25,12 @@ export type ImageKind = 'avatar' | 'gallery';
 const MAX_EDGE: Record<ImageKind, number> = { avatar: 512, gallery: 1440 };
 const COMPRESS = 0.8;
 
+// Zielformat je Bildart. Beide werden auf genau dieses Seitenverhältnis
+// geschnitten, damit Crop-Vorschau, Bearbeiten-Raster und Betrachter exakt
+// denselben Ausschnitt zeigen. Avatar quadratisch (die Kreismaske zeigt die
+// Mitte), Galeriefoto im Hochformat 4:5.
+const ASPECT: Record<ImageKind, [number, number]> = { avatar: [1, 1], gallery: [4, 5] };
+
 /** Wird geworfen, wenn die Person die Mediathek nicht freigibt. Eigener Typ,
  *  damit die UI das von einem echten Fehler unterscheiden kann. */
 export class MediaLibraryDeniedError extends Error {
@@ -51,10 +57,11 @@ export async function pickAndUploadProfileImage(
 
   const picked = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: 'images',
-    // Nur der Avatar wird zugeschnitten, und zwar quadratisch. Ein Galeriefoto
-    // soll den Bildausschnitt behalten, den die Person fotografiert hat.
-    allowsEditing: kind === 'avatar',
-    aspect: [1, 1],
+    // Beide Arten werden im Picker zugeschnitten, und zwar aufs Zielformat.
+    // So sieht die Person in der Crop-Vorschau genau den Ausschnitt, der später
+    // im Avatar bzw. in der Galerie erscheint.
+    allowsEditing: true,
+    aspect: ASPECT[kind],
     quality: 1,
   });
   if (picked.canceled || !picked.assets?.length) return null;
@@ -100,19 +107,27 @@ async function processImage(
   let w = width;
   let h = height;
 
-  // Der Zuschnitt im Picker ist auf iOS quadratisch, auf Android nur mit
-  // `aspect` — verlassen kann man sich auf keins von beidem. Deshalb hier noch
-  // einmal mittig quadratisch schneiden, wenn nötig.
-  if (kind === 'avatar' && width !== height) {
-    const edge = Math.min(width, height);
+  // Der Zuschnitt im Picker ist über Plattformen hinweg unzuverlässig (iOS/Android
+  // behandeln `aspect` unterschiedlich). Deshalb hier verbindlich noch einmal
+  // mittig aufs Zielformat schneiden, falls die Quelle davon abweicht.
+  const [aw, ah] = ASPECT[kind];
+  const target = aw / ah;
+  if (Math.abs(width / height - target) > 0.001) {
+    let cropW = width;
+    let cropH = height;
+    if (width / height > target) {
+      cropW = Math.round(height * target); // Quelle zu breit → seitlich beschneiden
+    } else {
+      cropH = Math.round(width / target); // Quelle zu hoch → oben/unten beschneiden
+    }
     context.crop({
-      originX: Math.round((width - edge) / 2),
-      originY: Math.round((height - edge) / 2),
-      width: edge,
-      height: edge,
+      originX: Math.round((width - cropW) / 2),
+      originY: Math.round((height - cropH) / 2),
+      width: cropW,
+      height: cropH,
     });
-    w = edge;
-    h = edge;
+    w = cropW;
+    h = cropH;
   }
 
   // Nur verkleinern. Ein kleines Bild hochzurechnen macht es größer, nicht besser.

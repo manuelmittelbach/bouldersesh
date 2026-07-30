@@ -20,7 +20,7 @@ export function ProfileGallery({ paths }: Props) {
       showsHorizontalScrollIndicator={false}
       contentContainerClassName="gap-2">
       {paths.map((path) => (
-        <View key={path} className="h-[132px] w-[104px] overflow-hidden rounded-md bg-rock-100">
+        <View key={path} className="h-[130px] w-[104px] overflow-hidden rounded-md bg-rock-100">
           <Image
             source={{ uri: publicImageUrl(path) ?? undefined }}
             style={{ width: '100%', height: '100%' }}

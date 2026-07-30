@@ -40,7 +40,7 @@ export function GalleryEditor({ profile }: Props) {
     <View>
       <View className="flex-row flex-wrap gap-2">
         {paths.map((path) => (
-          <View key={path} className="h-[104px] w-[104px]">
+          <View key={path} className="h-[130px] w-[104px]">
             <View className="h-full w-full overflow-hidden rounded-md bg-rock-100">
               <Image
                 source={{ uri: publicImageUrl(path) ?? undefined }}
@@ -67,7 +67,7 @@ export function GalleryEditor({ profile }: Props) {
             accessibilityLabel="Add photo"
             disabled={add.isPending}
             onPress={() => add.mutate(profile)}
-            className="h-[104px] w-[104px] items-center justify-center rounded-md border border-dashed border-rock-300 bg-rock-0 active:scale-[0.98]">
+            className="h-[130px] w-[104px] items-center justify-center rounded-md border border-dashed border-rock-300 bg-rock-0 active:scale-[0.98]">
             {add.isPending ? (
               <ActivityIndicator color={colors.rock[500]} />
             ) : (
