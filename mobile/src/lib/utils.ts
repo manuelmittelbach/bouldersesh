@@ -61,9 +61,10 @@ export function endOfDay(d: Date): Date {
  * Tages-Zeitfenster für den Feed-Filter als ISO-Strings. `toISOString()` schreibt den
  * korrekten UTC-Offset, deshalb rechnen wir die Grenzen in lokaler Gerätezeit.
  *
- * Ist `date` heute, beginnt das Fenster JETZT statt um Mitternacht — vergangene
- * Sessions von heute sollen aus dem Feed fallen (man kann bei ihnen nicht mehr
- * mitklettern). An allen anderen Tagen umspannt es den ganzen Kalendertag.
+ * Ist `date` heute, beginnt das Fenster vor EINER STUNDE statt um Mitternacht —
+ * eine gestartete Session bleibt so noch 1 h im Feed sichtbar (man kann kurz nach
+ * Start noch mitklettern), fällt danach aber raus. An allen anderen Tagen umspannt
+ * es den ganzen Kalendertag.
  *
  * Für „heute" wird der Startpunkt auf die volle Minute abgerundet: Sekunden/Millis
  * würden bei jedem Aufruf einen minimal anderen ISO-String liefern → jeder Today-Tap
@@ -75,7 +76,7 @@ export function dayRange(date: Date): { from: string; to: string } {
   const isToday = date.toDateString() === now.toDateString();
   let from: Date;
   if (isToday) {
-    from = new Date(now);
+    from = new Date(now.getTime() - 60 * 60 * 1000);
     from.setSeconds(0, 0);
   } else {
     from = startOfDay(date);
