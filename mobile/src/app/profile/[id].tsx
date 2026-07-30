@@ -105,7 +105,7 @@ export default function ProfileDetail() {
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
-      <BackHeader />
+      <ScreenHeader />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-8">
         {/* Kopf */}

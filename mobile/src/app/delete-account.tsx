@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
-import { ArrowLeft, Check, Lock, X } from 'lucide-react-native';
+import { Check, Lock, X } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, IconButton, Input } from '@/components/ui';
+import { Button, Input, ScreenHeader } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { ReauthFailedError, useDeleteAccount } from '@/queries/account';
 import { colors } from '@/theme/colors';
@@ -58,11 +58,7 @@ export default function DeleteAccount() {
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View className="px-4 py-2">
-          <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
-            <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
-          </IconButton>
-        </View>
+        <ScreenHeader />
 
         <ScrollView
           className="flex-1"

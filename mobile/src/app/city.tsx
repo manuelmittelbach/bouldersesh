@@ -1,11 +1,10 @@
 import { router } from 'expo-router';
-import { X } from 'lucide-react-native';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CityOptionList } from '@/components/CityOptionList';
-import { IconButton } from '@/components/ui';
+import { ScreenHeader } from '@/components/ui';
 import { useActiveCity } from '@/hooks/useActiveCity';
 import { useCities } from '@/queries/cities';
 import { colors } from '@/theme/colors';
@@ -39,16 +38,9 @@ export default function CityPicker() {
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
-      <View className="h-12 flex-row items-center justify-between px-3">
-        {isSwitching ? (
-          <IconButton variant="ghost" label="Close" onPress={() => router.back()}>
-            <X size={24} color={colors.rock[700]} strokeWidth={2} />
-          </IconButton>
-        ) : (
-          <View className="w-10" />
-        )}
-        <View className="w-10" />
-      </View>
+      {/* Als Wechsler mit Schließen-Button, als Gate ohne — die leere h-14 hält in
+          beiden Fällen denselben Abstand über der Überschrift. */}
+      {isSwitching ? <ScreenHeader icon="close" /> : <View className="h-14" />}
 
       <ScrollView contentContainerClassName="px-5 pb-10">
         <Text className="font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
