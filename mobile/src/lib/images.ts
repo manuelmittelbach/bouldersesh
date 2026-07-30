@@ -61,8 +61,8 @@ export async function pickAndUploadProfileImage(
 
   const asset = picked.assets[0];
 
-  // Eigener Zuschnitt-Screen: die Maske zeigt exakt die spätere Form (Kreis für
-  // Avatar, abgerundetes Quadrat für Galerie). Der Ausschnitt selbst ist quadratisch.
+  // Eigener Zuschnitt-Screen: die Maske zeigt exakt die spätere Form. Derzeit gibt
+  // es nur den Avatar (Kreis); der Ausschnitt selbst ist quadratisch.
   const cropPromise = requestCrop({
     uri: asset.uri,
     width: asset.width,

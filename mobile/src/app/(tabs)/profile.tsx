@@ -212,7 +212,7 @@ export default function Profile() {
           Leiste, die nur bei ungespeicherten Änderungen (dirty) erscheint, direkt bei
           den Feldern und per KeyboardStickyView über der Tastatur (wie in sessions/new).
           Weiterhin explizites Speichern von Skill/Bio (ADR-0003), nur an sichtbarerer
-          Stelle; Avatar und Galerie speichern unverändert sofort. */}
+          Stelle; der Avatar speichert unverändert sofort. */}
       {/* Bei offener Tastatur reitet die Leiste direkt auf der Tastatur, die den
           Home-Indicator-Bereich schon abdeckt — den insets.bottom-Anteil der
           paddingBottom deshalb per offset.opened hinter die Tastatur schieben,

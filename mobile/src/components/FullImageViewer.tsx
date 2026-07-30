@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // gesetzt ist — der Aufrufer hält den Zustand und setzt beim Schließen `null`.
 //
 // `shape` spiegelt die spätere Form: 'circle' zeigt das Profilbild rund (wie der
-// Avatar), 'contain' zeigt das ganze Bild (z. B. ein Galeriefoto).
+// Avatar), 'contain' zeigt das ganze Bild ohne Beschnitt.
 type Props = {
   uri: string | null;
   onClose: () => void;

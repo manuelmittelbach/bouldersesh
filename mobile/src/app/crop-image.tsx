@@ -1,9 +1,10 @@
 // Eigener Zuschnitt-Screen. Warum nicht der eingebaute Picker-Editor? Der zeigt
 // auf iOS/Android seine eigene, eckige Crop-UI — nie rund, nie mit abgerundeten
-// Ecken. Hier ist die sichtbare Maske exakt die spätere Form: ein Kreis für den
-// Avatar, ein abgerundetes Quadrat für Galeriefotos. Was in der Maske hell steht,
-// ist genau das, was am Ende erscheint. Der Ausschnitt ist immer quadratisch;
-// nur die Maske unterscheidet die beiden Fälle.
+// Ecken. Hier ist die sichtbare Maske exakt die spätere Form. Was in der Maske
+// hell steht, ist genau das, was am Ende erscheint; der Ausschnitt ist immer
+// quadratisch, nur die Maske unterscheidet die Fälle (Kreis oder abgerundetes
+// Quadrat). Derzeit fragt nur der Avatar zu (Kreis) — die 'rounded'-Maske bleibt
+// für eine spätere Galerie erhalten.
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
