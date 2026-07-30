@@ -1,8 +1,10 @@
 import { useLocalSearchParams } from 'expo-router';
 import { Flag } from 'lucide-react-native';
+import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FullImageViewer } from '@/components/FullImageViewer';
 import { ProfileGallery } from '@/components/ProfileGallery';
 import { Avatar, GradePill, ScreenHeader } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
@@ -74,6 +76,9 @@ export default function ProfileDetail() {
   const { data: profile, isLoading } = useProfile(id);
   const { user } = useAuth();
 
+  // Profilbild in groß: gesetzte URI = Betrachter offen.
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
+
   // Das eigene Profil landet hier ohne Sonderfall (read-only) — dort ist Melden
   // sinnlos, also nur bei fremden Profilen anbieten.
   const isOwn = !!user && user.id === id;
@@ -102,6 +107,7 @@ export default function ProfileDetail() {
 
   const name = profile.display_name ?? 'Anonymous';
   const skill = skillLabel(profile.skill_level);
+  const avatarSrc = publicImageUrl(profile.avatar_path);
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
@@ -110,12 +116,19 @@ export default function ProfileDetail() {
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-8">
         {/* Kopf */}
         <View className="mt-2 items-center">
-          <Avatar
-            name={name}
-            tone={avatarTone(profile.id)}
-            size="xl"
-            src={publicImageUrl(profile.avatar_path)}
-          />
+          {/* Mit Bild antippbar → Vollbild. Ohne Bild (Initialen) gibt es nichts
+              zu vergrößern, dann kein Pressable. */}
+          {avatarSrc ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="View profile picture"
+              onPress={() => setViewerUri(avatarSrc)}
+              className="active:opacity-90">
+              <Avatar name={name} tone={avatarTone(profile.id)} size="xl" src={avatarSrc} />
+            </Pressable>
+          ) : (
+            <Avatar name={name} tone={avatarTone(profile.id)} size="xl" src={null} />
+          )}
           <Text className="mt-3 font-display-bold text-[22px] text-rock-900">{name}</Text>
           {/* Pill = Kletter-Niveau (ADR-0005). Kein Niveau gesetzt → kein Pill. */}
           {skill ? (
@@ -152,6 +165,8 @@ export default function ProfileDetail() {
           </View>
         ) : null}
       </ScrollView>
+
+      <FullImageViewer uri={viewerUri} onClose={() => setViewerUri(null)} shape="circle" />
     </SafeAreaView>
   );
 }
