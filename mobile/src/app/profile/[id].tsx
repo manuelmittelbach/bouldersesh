@@ -5,7 +5,6 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FullImageViewer } from '@/components/FullImageViewer';
-import { ProfileGallery } from '@/components/ProfileGallery';
 import { Avatar, GradePill, ScreenHeader } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
@@ -145,14 +144,6 @@ export default function ProfileDetail() {
             <Text className="font-sans text-[15px] leading-6 text-rock-700">
               {profile.bio.trim()}
             </Text>
-          </View>
-        ) : null}
-
-        {/* Galerie — verschwindet ganz, wenn keine Fotos da sind. */}
-        {profile.gallery_paths?.length ? (
-          <View className="mt-8">
-            <Eyebrow>Photos</Eyebrow>
-            <ProfileGallery paths={profile.gallery_paths} />
           </View>
         ) : null}
 
