@@ -6,15 +6,11 @@
 // aufgelöste Promise. Bewusst modul-global (Single-Instance): es ist immer nur
 // genau ein Zuschnitt gleichzeitig offen.
 
-export type CropMask = 'circle' | 'rounded';
-
 export type CropRequest = {
   uri: string;
   /** Intrinsische Pixelmaße des gewählten Bildes (aus ImagePicker). */
   width: number;
   height: number;
-  /** Nur die Form der sichtbaren Maske — der Ausschnitt ist immer quadratisch. */
-  mask: CropMask;
 };
 
 /** Quadratischer Ausschnitt in Quell-Pixeln, direkt für ImageManipulator.crop. */
