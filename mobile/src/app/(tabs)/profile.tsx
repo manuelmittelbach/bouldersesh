@@ -180,7 +180,7 @@ export default function Profile() {
           </View>
 
           <Input
-            label="Bio (optional)"
+            label="Bio"
             value={bio}
             onChangeText={setBio}
             onFieldLayout={onFieldLayout}
