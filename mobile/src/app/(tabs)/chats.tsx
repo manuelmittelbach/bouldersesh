@@ -385,10 +385,25 @@ export default function Chats() {
   const pendingCounts = usePendingCountsForSessions(hostedIds);
 
   // My Sessions = alles, was ich selbst erstellt habe (mit Chat, sobald wer dabei ist).
-  const mySessions = useMemo<Entry[]>(
-    () => sortEntries((created.data ?? []).map((s) => ({ session: s, chat: chatBySession.get(s.id) }))),
-    [created.data, chatBySession],
-  );
+  // Nie-bespielte Sessions (niemand ist beigetreten UND der Chat hatte nie eine
+  // Nachricht) fallen 1h nach Start raus — sie sind wie eine Session, die es nie gab.
+  // Sobald aber mal jemand drin war (accepted ODER der Chat trägt Verlauf, auch wenn
+  // die Person wieder ging), bleibt sie die vollen 24h (Chat-Fenster). Spiegelt den
+  // pg_cron-Job 0022; „Chat hatte je eine Nachricht" = jeder Beitritt erzeugt eine
+  // „X joined"-Systemzeile (0017), eine nie-bespielte Session hat einen leeren Chat.
+  const mySessions = useMemo<Entry[]>(() => {
+    const emptyCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    return sortEntries(
+      (created.data ?? [])
+        .map((s) => ({ session: s, chat: chatBySession.get(s.id) }))
+        .filter(
+          (e) =>
+            e.session.accepted_count > 0 ||
+            e.chat?.lastMessage != null ||
+            e.session.starts_at >= emptyCutoff,
+        ),
+    );
+  }, [created.data, chatBySession]);
 
   // Requested = fremde Sessions, deren Beitritt ich angefragt habe (wartet auf Zusage).
   const requested = useMemo<SessionWithMeta[]>(
