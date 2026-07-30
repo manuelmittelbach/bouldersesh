@@ -4,7 +4,9 @@
 import { File } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 
+import { type CropRect, requestCrop } from '@/lib/cropStore';
 import { supabase } from '@/lib/supabase';
 
 export const PROFILE_IMAGES_BUCKET = 'profile-images';
@@ -22,14 +24,10 @@ export type ImageKind = 'avatar' | 'gallery';
 
 // Avatar: klein und quadratisch, er erscheint nur beiläufig in Listen.
 // Galeriefoto: wird bewusst angesehen, darf also mehr Kante haben.
+// Beide sind quadratisch (der Ausschnitt kommt aus dem Crop-Screen); die Form
+// unterscheidet nur die Anzeige (runder Avatar, abgerundete Galerie-Kachel).
 const MAX_EDGE: Record<ImageKind, number> = { avatar: 512, gallery: 1440 };
 const COMPRESS = 0.8;
-
-// Zielformat je Bildart. Beide werden auf genau dieses Seitenverhältnis
-// geschnitten, damit Crop-Vorschau, Bearbeiten-Raster und Betrachter exakt
-// denselben Ausschnitt zeigen. Beide quadratisch — beim Avatar zeigt die
-// Kreismaske die Mitte.
-const ASPECT: Record<ImageKind, [number, number]> = { avatar: [1, 1], gallery: [1, 1] };
 
 /** Wird geworfen, wenn die Person die Mediathek nicht freigibt. Eigener Typ,
  *  damit die UI das von einem echten Fehler unterscheiden kann. */
@@ -55,19 +53,29 @@ export async function pickAndUploadProfileImage(
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) throw new MediaLibraryDeniedError();
 
+  // Kein `allowsEditing`: der eingebaute Editor zeigt eine eckige OS-Crop-UI, die
+  // nie zur runden/abgerundeten Endform passt. Wir schneiden im eigenen Screen zu.
   const picked = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: 'images',
-    // Beide Arten werden im Picker zugeschnitten, und zwar aufs Zielformat.
-    // So sieht die Person in der Crop-Vorschau genau den Ausschnitt, der später
-    // im Avatar bzw. in der Galerie erscheint.
-    allowsEditing: true,
-    aspect: ASPECT[kind],
     quality: 1,
   });
   if (picked.canceled || !picked.assets?.length) return null;
 
   const asset = picked.assets[0];
-  const processedUri = await processImage(asset.uri, asset.width, asset.height, kind);
+
+  // Eigener Zuschnitt-Screen: die Maske zeigt exakt die spätere Form (Kreis für
+  // Avatar, abgerundetes Quadrat für Galerie). Der Ausschnitt selbst ist quadratisch.
+  const cropPromise = requestCrop({
+    uri: asset.uri,
+    width: asset.width,
+    height: asset.height,
+    mask: kind === 'avatar' ? 'circle' : 'rounded',
+  });
+  router.push('/crop-image');
+  const rect = await cropPromise;
+  if (!rect) return null; // Zuschnitt abgebrochen
+
+  const processedUri = await processImage(asset.uri, rect, kind);
 
   // Neuer Zufallsname pro Upload: damit braucht es keinen `?v=`-Cache-Buster,
   // der sich sonst durch jede Komponente ziehen würde (ADR-0003).
@@ -99,41 +107,23 @@ export async function removeProfileImage(path: string | null | undefined): Promi
 
 async function processImage(
   uri: string,
-  width: number,
-  height: number,
+  rect: CropRect,
   kind: ImageKind,
 ): Promise<string> {
   const context = ImageManipulator.manipulate(uri);
-  let w = width;
-  let h = height;
 
-  // Der Zuschnitt im Picker ist über Plattformen hinweg unzuverlässig (iOS/Android
-  // behandeln `aspect` unterschiedlich). Deshalb hier verbindlich noch einmal
-  // mittig aufs Zielformat schneiden, falls die Quelle davon abweicht.
-  const [aw, ah] = ASPECT[kind];
-  const target = aw / ah;
-  if (Math.abs(width / height - target) > 0.001) {
-    let cropW = width;
-    let cropH = height;
-    if (width / height > target) {
-      cropW = Math.round(height * target); // Quelle zu breit → seitlich beschneiden
-    } else {
-      cropH = Math.round(width / target); // Quelle zu hoch → oben/unten beschneiden
-    }
-    context.crop({
-      originX: Math.round((width - cropW) / 2),
-      originY: Math.round((height - cropH) / 2),
-      width: cropW,
-      height: cropH,
-    });
-    w = cropW;
-    h = cropH;
-  }
+  // Genau den im Crop-Screen gewählten (quadratischen) Ausschnitt schneiden.
+  context.crop({
+    originX: rect.originX,
+    originY: rect.originY,
+    width: rect.size,
+    height: rect.size,
+  });
 
   // Nur verkleinern. Ein kleines Bild hochzurechnen macht es größer, nicht besser.
   const max = MAX_EDGE[kind];
-  if (Math.max(w, h) > max) {
-    context.resize(w >= h ? { width: max } : { height: max });
+  if (rect.size > max) {
+    context.resize({ width: max });
   }
 
   const rendered = await context.renderAsync();

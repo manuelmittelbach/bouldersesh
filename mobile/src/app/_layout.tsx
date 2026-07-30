@@ -59,6 +59,12 @@ function RootNavigator() {
           <Stack.Screen name="sessions/[id]" />
           <Stack.Screen name="chats/[id]" />
           <Stack.Screen name="profile/[id]" />
+          {/* Eigener Bild-Zuschnitt (Avatar/Galerie). Vollbild-Modal, damit die
+              Maske die spätere Form zeigt statt der eckigen OS-Crop-UI. */}
+          <Stack.Screen
+            name="crop-image"
+            options={{ presentation: "fullScreenModal", animation: "fade" }}
+          />
         </Stack.Protected>
         <Stack.Screen name="city" />
         {/* Aus dem Profil erreichbare Account-Screens. Bewusst nur im Session-
