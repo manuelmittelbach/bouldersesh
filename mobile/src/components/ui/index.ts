@@ -7,3 +7,4 @@ export { Chip, type ChipProps } from './Chip';
 export { GradePill, type GradePillProps } from './GradePill';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { Input, type InputProps } from './Input';
+export { ScreenHeader } from './ScreenHeader';
