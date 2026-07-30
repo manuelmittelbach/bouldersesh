@@ -57,6 +57,20 @@ export function endOfDay(d: Date): Date {
   return x;
 }
 
+// Gnadenfrist, die eine Session nach `starts_at` noch auf dem Feed hält (dayRange unten)
+// UND zugleich die Grenze, ab der man den Plan nicht mehr absagen kann: bis hierher
+// „Delete session"/„Leave session", danach nur noch „Leave chat" (still aus dem Chat).
+// Eine Zahl, damit Feed-Sichtbarkeit und dieses Gate nie auseinanderdriften.
+export const FEED_GRACE_MS = 60 * 60 * 1000;
+
+/**
+ * True, sobald die Session vom Feed gefallen ist — mehr als FEED_GRACE_MS nach `starts_at`.
+ * Ab hier ist „Absagen" (Delete/Leave session) weg; es bleibt nur „Leave chat".
+ */
+export function hasLeftFeed(startsAt: string, now: Date = new Date()): boolean {
+  return new Date(startsAt).getTime() < now.getTime() - FEED_GRACE_MS;
+}
+
 /**
  * Tages-Zeitfenster für den Feed-Filter als ISO-Strings. `toISOString()` schreibt den
  * korrekten UTC-Offset, deshalb rechnen wir die Grenzen in lokaler Gerätezeit.
@@ -76,7 +90,7 @@ export function dayRange(date: Date): { from: string; to: string } {
   const isToday = date.toDateString() === now.toDateString();
   let from: Date;
   if (isToday) {
-    from = new Date(now.getTime() - 60 * 60 * 1000);
+    from = new Date(now.getTime() - FEED_GRACE_MS);
     from.setSeconds(0, 0);
   } else {
     from = startOfDay(date);
