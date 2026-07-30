@@ -1,11 +1,11 @@
 import { router } from "expo-router";
-import { ArrowLeft, Lock, LogOut, Mail } from "lucide-react-native";
+import { Lock, LogOut, Mail } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Button, IconButton, Input } from "@/components/ui";
+import { Button, Input, ScreenHeader } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 import { useKeyboardAwareField } from "@/hooks/useKeyboardAwareField";
 import {
@@ -116,11 +116,7 @@ export default function Account() {
     <SafeAreaView className="flex-1 bg-rock-25" edges={["top"]}>
       {/* Zurück-Knopf und Titel kleben fest oben — der Titel scrollt nicht mit dem
           Formular weg. */}
-      <View className="px-4 py-2">
-        <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
-          <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
-        </IconButton>
-      </View>
+      <ScreenHeader />
       <View className="px-5 pb-2">
         <Text className="font-display-bold text-[28px] leading-8 text-rock-900">
           Account

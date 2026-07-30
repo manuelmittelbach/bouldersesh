@@ -1,10 +1,10 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Flag } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { Flag } from 'lucide-react-native';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileGallery } from '@/components/ProfileGallery';
-import { Avatar, GradePill, IconButton } from '@/components/ui';
+import { Avatar, GradePill, ScreenHeader } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, gradeBand, skillLabel } from '@/lib/utils';
@@ -22,16 +22,6 @@ function Eyebrow({ children }: { children: string }) {
     <Text className="mb-2 font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
       {children}
     </Text>
-  );
-}
-
-function BackHeader() {
-  return (
-    <View className="px-4 py-2">
-      <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
-        <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
-      </IconButton>
-    </View>
   );
 }
 
@@ -100,7 +90,7 @@ export default function ProfileDetail() {
   if (!profile) {
     return (
       <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
-        <BackHeader />
+        <ScreenHeader />
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-center font-sans text-rock-500">
             This climber doesn’t exist (anymore).

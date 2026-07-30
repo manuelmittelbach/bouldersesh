@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Crown, Info, Send, Users } from 'lucide-react-native';
+import { Crown, Info, Send, Users } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,7 +16,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { MessageBubble } from '@/components/MessageBubble';
 import { RequestRow } from '@/components/RequestRow';
-import { Avatar, IconButton } from '@/components/ui';
+import { Avatar, IconButton, ScreenHeader } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, formatClock, formatSessionTime } from '@/lib/utils';
@@ -107,10 +107,7 @@ export default function Chat() {
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
       {/* Header */}
-      <View className="flex-row items-center gap-1 border-b border-rock-100 px-3 pb-2">
-        <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
-          <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
-        </IconButton>
+      <ScreenHeader border>
         {/* Mitglieder-Leiste: jede andere Person als Avatar + Name, tippbar zum
             read-only Profil. Horizontal scrollbar, falls die Namen nicht in eine
             Zeile passen. Gelöschtes Gegenüber (keine anderen) → untippbares „Chat“. */}
@@ -174,7 +171,7 @@ export default function Chat() {
             <Info size={22} color={colors.rock[700]} strokeWidth={2} />
           </IconButton>
         ) : null}
-      </View>
+      </ScreenHeader>
 
       {/* Angeheftete Beitritts-Anfragen (nur Gastgeber:in, nur wenn offene da sind).
           Sitzt fix unter dem Kopf über den Nachrichten — bei vielen Anfragen scrollt

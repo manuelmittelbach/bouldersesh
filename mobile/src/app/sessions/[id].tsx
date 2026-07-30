@@ -1,6 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
 import {
-  ArrowLeft,
   Calendar,
   CheckCircle2,
   Crown,
@@ -25,7 +24,7 @@ import {
 } from "react-native-safe-area-context";
 
 import { ProfileGallery } from "@/components/ProfileGallery";
-import { Avatar, Button, Card, GradePill, IconButton } from "@/components/ui";
+import { Avatar, Button, Card, GradePill, ScreenHeader } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 import { publicImageUrl } from "@/lib/images";
 import {
@@ -143,15 +142,7 @@ export default function SessionDetail() {
   if (!session) {
     return (
       <SafeAreaView className="flex-1 bg-rock-25" edges={["top"]}>
-        <View className="px-4 py-3">
-          <IconButton
-            variant="ghost"
-            label="Back"
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
-          </IconButton>
-        </View>
+        <ScreenHeader />
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-center font-sans text-rock-500">
             This session doesn’t exist (anymore).
@@ -226,11 +217,7 @@ export default function SessionDetail() {
 
   return (
     <SafeAreaView className="flex-1 bg-rock-25" edges={["top"]}>
-      <View className="px-4 py-2">
-        <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
-          <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
-        </IconButton>
-      </View>
+      <ScreenHeader />
 
       <ScrollView
         className="flex-1"
