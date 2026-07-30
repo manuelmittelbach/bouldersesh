@@ -1,3 +1,4 @@
+import { useEffect, useId } from "react";
 import {
   keepPreviousData,
   useMutation,
@@ -232,13 +233,54 @@ async function getMyParticipations(userId: string): Promise<MyParticipation[]> {
 }
 
 export function useMyParticipations() {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const userId = user?.id;
-  return useQuery({
+  // Eindeutig pro Hook-Instanz (siehe Realtime-Kommentar unten): useMyParticipations
+  // läuft im Chats-Screen UND im Tab-Badge (useChatsBadgeCount) gleichzeitig.
+  const channelId = useId();
+
+  const query = useQuery({
     queryKey: MY_PARTICIPATIONS_KEY(userId ?? ""),
     queryFn: () => getMyParticipations(userId!),
     enabled: !!userId,
   });
+
+  // Realtime: Beantwortet die Ersteller:in meine Anfrage (accept/decline), soll die
+  // Zeile im Chats-Tab sofort wandern — Requested → Joined bei „accepted", raus bei
+  // „declined" (getMyParticipations filtert auf accepted|pending). Ohne dies bewegte
+  // sich nichts bis zum nächsten Focus-Refetch. KEIN session_id-Filter nötig: der
+  // Filter geht über `requester_id`, und Realtime erzwingt ohnehin RLS (nur meine
+  // eigenen match_requests-Zeilen werden zugestellt). channelId (useId) hält den Topic
+  // pro Hook-Instanz eindeutig — derselbe Hook läuft im Chats-Screen UND im Tab-Badge
+  // (useChatsBadgeCount in _layout); zwei Kanäle mit gleichem Topic kollidieren in
+  // supabase-js („postgres_changes after subscribe", siehe queries/chat.ts).
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`my-participations:${userId}:${channelId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "match_requests",
+          filter: `requester_id=eq.${userId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({
+            queryKey: MY_PARTICIPATIONS_KEY(userId),
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, channelId, queryClient]);
+
+  return query;
 }
 
 export type CreateSessionInput = {

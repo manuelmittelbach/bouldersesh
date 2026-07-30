@@ -316,9 +316,17 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
         : { ...lastRaw, senderName: resolveSenderName(lastRaw.sender_id, userId, c.members) }
       : null;
     const lastRead = lastReadByChat.get(c.id) ?? null;
+    // Eine System-Zeile („You joined") trägt zwar meine sender_id (die beitretende
+    // Person, 0014/0017), ist aber ein System-Ereignis ÜBER mich, nichts, das ich
+    // geschrieben habe — es soll bis zum Öffnen des Chats (useMarkChatRead setzt
+    // last_read_at) einen Aufmerksamkeits-Punkt tragen. So wird die frisch aufgenommene
+    // „Joined"-Session gepunktet, statt still zu landen — symmetrisch zur Gastgeber:in,
+    // die „Ben joined" ohnehin als ungelesen sieht. Eigene TEXT-Nachrichten dürfen die
+    // eigene Zeile weiterhin NICHT punkten (sonst leuchtete jeder gesendete Text nach).
+    const isSystem = lastMessage?.kind === "system";
     const unread =
       !!lastMessage &&
-      lastMessage.sender_id !== userId &&
+      (isSystem || lastMessage.sender_id !== userId) &&
       (!lastRead || lastMessage.sent_at > lastRead);
 
     return {
