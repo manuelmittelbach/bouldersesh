@@ -5,6 +5,12 @@ date: 2026-07-21
 
 # Profilbilder liegen in einem öffentlichen Bucket, die DB speichert Pfade statt URLs
 
+> **Nachtrag (2026-07-30):** Die **Galerie** ist in der App vorerst deaktiviert —
+> UI und Hooks wurden entfernt, der vollständige Stand liegt auf dem Branch
+> `feature/profile-gallery`. Die Spalte `gallery_paths` und die Storage-Policies
+> bleiben unverändert; die Rückkehr ist ein reiner Code-Merge. Alles Übrige in
+> diesem ADR (öffentlicher Bucket, Pfade statt URLs, Avatar-Flow) gilt unverändert.
+
 ## Kontext & Entscheidung
 
 Nutzer:innen bekommen einen Avatar und eine Galerie (max. 6 Bilder). Avatare

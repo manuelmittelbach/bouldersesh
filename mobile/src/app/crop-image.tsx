@@ -1,10 +1,9 @@
 // Eigener Zuschnitt-Screen. Warum nicht der eingebaute Picker-Editor? Der zeigt
-// auf iOS/Android seine eigene, eckige Crop-UI — nie rund, nie mit abgerundeten
-// Ecken. Hier ist die sichtbare Maske exakt die spätere Form. Was in der Maske
-// hell steht, ist genau das, was am Ende erscheint; der Ausschnitt ist immer
-// quadratisch, nur die Maske unterscheidet die Fälle (Kreis oder abgerundetes
-// Quadrat). Derzeit fragt nur der Avatar zu (Kreis) — die 'rounded'-Maske bleibt
-// für eine spätere Galerie erhalten.
+// auf iOS/Android seine eigene, eckige Crop-UI — nie rund. Hier ist die sichtbare
+// runde Maske exakt die spätere Avatar-Form: was hell steht, ist genau das, was
+// am Ende erscheint. Der Ausschnitt selbst ist quadratisch, die Anzeige rundet ihn.
+// (Eine zweite, abgerundet-quadratische Maske für eine Galerie lebt auf dem Branch
+// feature/profile-gallery.)
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -132,10 +131,6 @@ export default function CropImageScreen() {
     router.back();
   }
 
-  const isCircle = req.mask === 'circle';
-  const holeX = cx - V / 2;
-  const holeY = cy - V / 2;
-
   return (
     <View style={styles.root}>
       <GestureDetector gesture={gesture}>
@@ -169,36 +164,18 @@ export default function CropImageScreen() {
         <Defs>
           <Mask id="hole">
             <Rect x={0} y={0} width={SW} height={SH} fill="white" />
-            {isCircle ? (
-              <Circle cx={cx} cy={cy} r={V / 2} fill="black" />
-            ) : (
-              <Rect x={holeX} y={holeY} width={V} height={V} rx={18} ry={18} fill="black" />
-            )}
+            <Circle cx={cx} cy={cy} r={V / 2} fill="black" />
           </Mask>
         </Defs>
         <Rect x={0} y={0} width={SW} height={SH} fill={SCRIM} mask="url(#hole)" />
-        {isCircle ? (
-          <Circle
-            cx={cx}
-            cy={cy}
-            r={V / 2}
-            fill="none"
-            stroke="rgba(255,255,255,0.9)"
-            strokeWidth={2}
-          />
-        ) : (
-          <Rect
-            x={holeX}
-            y={holeY}
-            width={V}
-            height={V}
-            rx={18}
-            ry={18}
-            fill="none"
-            stroke="rgba(255,255,255,0.9)"
-            strokeWidth={2}
-          />
-        )}
+        <Circle
+          cx={cx}
+          cy={cy}
+          r={V / 2}
+          fill="none"
+          stroke="rgba(255,255,255,0.9)"
+          strokeWidth={2}
+        />
       </Svg>
 
       {/* Kopfzeile: Abbrechen / Titel / Übernehmen */}
@@ -206,9 +183,7 @@ export default function CropImageScreen() {
         <Pressable onPress={onCancel} hitSlop={12}>
           <Text style={styles.action}>Cancel</Text>
         </Pressable>
-        <Text style={styles.title}>
-          {isCircle ? 'Profile picture' : 'Photo'}
-        </Text>
+        <Text style={styles.title}>Profile picture</Text>
         <Pressable onPress={onUse} hitSlop={12}>
           <Text style={[styles.action, styles.actionBold]}>Use</Text>
         </Pressable>
