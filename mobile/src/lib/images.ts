@@ -27,9 +27,9 @@ const COMPRESS = 0.8;
 
 // Zielformat je Bildart. Beide werden auf genau dieses Seitenverhältnis
 // geschnitten, damit Crop-Vorschau, Bearbeiten-Raster und Betrachter exakt
-// denselben Ausschnitt zeigen. Avatar quadratisch (die Kreismaske zeigt die
-// Mitte), Galeriefoto im Hochformat 4:5.
-const ASPECT: Record<ImageKind, [number, number]> = { avatar: [1, 1], gallery: [4, 5] };
+// denselben Ausschnitt zeigen. Beide quadratisch — beim Avatar zeigt die
+// Kreismaske die Mitte.
+const ASPECT: Record<ImageKind, [number, number]> = { avatar: [1, 1], gallery: [1, 1] };
 
 /** Wird geworfen, wenn die Person die Mediathek nicht freigibt. Eigener Typ,
  *  damit die UI das von einem echten Fehler unterscheiden kann. */
