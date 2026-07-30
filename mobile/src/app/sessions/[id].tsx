@@ -1,31 +1,51 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from "expo-router";
 import {
   ArrowLeft,
   Calendar,
   CheckCircle2,
+  Crown,
   Hand,
   LogOut,
   MapPin,
   Trash2,
   UsersRound,
-} from 'lucide-react-native';
-import type { ReactNode } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "lucide-react-native";
+import type { ReactNode } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
-import { ProfileGallery } from '@/components/ProfileGallery';
-import { Avatar, Button, Card, GradePill, IconButton } from '@/components/ui';
-import { useAuth } from '@/hooks/useAuth';
-import { publicImageUrl } from '@/lib/images';
-import { avatarTone, formatSessionTime, gradeBand, skillLabel } from '@/lib/utils';
+import { ProfileGallery } from "@/components/ProfileGallery";
+import { Avatar, Button, Card, GradePill, IconButton } from "@/components/ui";
+import { useAuth } from "@/hooks/useAuth";
+import { publicImageUrl } from "@/lib/images";
+import {
+  avatarTone,
+  formatSessionTime,
+  gradeBand,
+  skillLabel,
+} from "@/lib/utils";
 import {
   useCreateMatchRequest,
   useMyRequestForSession,
   useSessionClimbers,
   useWithdrawRequest,
-} from '@/queries/matches';
-import { useDeleteSession, useLeaveSession, useSession } from '@/queries/sessions';
-import { colors } from '@/theme/colors';
+} from "@/queries/matches";
+import {
+  useDeleteSession,
+  useLeaveSession,
+  useSession,
+} from "@/queries/sessions";
+import { colors } from "@/theme/colors";
 
 function InfoRow({ icon, value }: { icon: ReactNode; value: string }) {
   return (
@@ -49,7 +69,13 @@ type Buddy = { id: string | null; name: string; avatarPath: string | null };
  *  Jeder Avatar ist tippbar zum read-only Profil (profile/[id]), wie die Feed-Avatare.
  *  Hinter den Avataren steht dezent, wie viele Plätze noch frei sind (`spotsLabel`) —
  *  die frühere eigene „Spots"-Zeile ist darin aufgegangen. */
-function BuddiesRow({ people, spotsLabel }: { people: Buddy[]; spotsLabel: string }) {
+function BuddiesRow({
+  people,
+  spotsLabel,
+}: {
+  people: Buddy[];
+  spotsLabel: string;
+}) {
   return (
     <View className="flex-row items-center gap-3">
       <View className="h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50">
@@ -64,7 +90,8 @@ function BuddiesRow({ people, spotsLabel }: { people: Buddy[]; spotsLabel: strin
               accessibilityLabel={`View ${p.name}’s profile`}
               disabled={!p.id}
               onPress={() => p.id && router.push(`/profile/${p.id}`)}
-              className="active:opacity-70">
+              className="active:opacity-70"
+            >
               <Avatar
                 name={p.name}
                 tone={avatarTone(p.id ?? p.name)}
@@ -73,7 +100,9 @@ function BuddiesRow({ people, spotsLabel }: { people: Buddy[]; spotsLabel: strin
               />
             </Pressable>
           ))}
-          <Text className="ml-1 font-sans text-[13px] text-rock-500">{spotsLabel}</Text>
+          <Text className="ml-1 font-sans text-[13px] text-rock-500">
+            {spotsLabel}
+          </Text>
         </View>
       </View>
     </View>
@@ -113,9 +142,13 @@ export default function SessionDetail() {
 
   if (!session) {
     return (
-      <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-rock-25" edges={["top"]}>
         <View className="px-4 py-3">
-          <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
+          <IconButton
+            variant="ghost"
+            label="Back"
+            onPress={() => router.back()}
+          >
             <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
           </IconButton>
         </View>
@@ -128,7 +161,7 @@ export default function SessionDetail() {
     );
   }
 
-  const name = session.creator?.display_name ?? 'Anonymous';
+  const name = session.creator?.display_name ?? "Anonymous";
 
   // Wer beigetreten ist — nur die angenommenen Mitkletternden (der/die Ersteller:in
   // steht als Host oben im Screen, nicht mehr in dieser Reihe). Speist die kompakte
@@ -136,7 +169,7 @@ export default function SessionDetail() {
   // als untippbarer Avatar drin.
   const roster: Buddy[] = (climbers ?? []).map((c) => ({
     id: c.requester?.id ?? null,
-    name: c.requester?.display_name ?? 'Anonymous',
+    name: c.requester?.display_name ?? "Anonymous",
     avatarPath: c.requester?.avatar_path ?? null,
   }));
 
@@ -145,22 +178,22 @@ export default function SessionDetail() {
   // wenn keiner frei ist — oder der Trigger die Session schon auf `matched` (= voll) kippt.
   const spotsTotal = session.capacity - 1;
   const spotsLeft = Math.max(0, spotsTotal - session.accepted_count);
-  const full = spotsLeft === 0 || session.status === 'matched';
+  const full = spotsLeft === 0 || session.status === "matched";
   // Kompakt, weil er:sie jetzt hinter den Climbers-Avataren steht (keine eigene Zeile
   // mehr): nur „N spots left" bzw. „Full" — die belegten Plätze zeigen ja die Avatare.
   const spotsLabel = full
-    ? 'Full'
-    : `${spotsLeft} ${spotsLeft === 1 ? 'spot' : 'spots'} left`;
+    ? "Full"
+    : `${spotsLeft} ${spotsLeft === 1 ? "spot" : "spots"} left`;
 
   // Der eine untere Aktions-Platz wechselt seinen Inhalt je nach eigenem Anfrage-
   // Zustand (ADR-0006). Der geladene Status GEWINNT immer — so schlägt ein
   // Realtime-Wechsel (Ersteller:in nimmt an/lehnt ab) sofort durch. `isSuccess`
   // überbrückt nur das Fenster, bevor myRequest erstmals „pending" liefert (Status
   // noch unbekannt), damit der Button nach dem Absenden nicht zurückblitzt.
-  const status = myStatus ?? (request.isSuccess ? 'pending' : undefined);
-  const pending = status === 'pending';
-  const accepted = status === 'accepted';
-  const declined = status === 'declined';
+  const status = myStatus ?? (request.isSuccess ? "pending" : undefined);
+  const pending = status === "pending";
+  const accepted = status === "accepted";
+  const declined = status === "declined";
 
   // Löschen ist endgültig (Row weg, Chat via Cascade mit) → immer bestätigen. Die
   // Copy passt sich der Zahl bereits Beigetretener an: sind Leute dabei, benennen wir
@@ -169,23 +202,30 @@ export default function SessionDetail() {
     // Gleiche Copy wie der „Delete session"-Swipe im Chats-Tab (confirmDissolve),
     // damit dieselbe Handlung an beiden Stellen identisch klingt. Eigene Sessions
     // haben von Anfang an einen Gruppenchat → immer die „für alle"-Copy.
-    Alert.alert('Delete session?', 'This removes the session and the group chat for everyone.', [
-      { text: 'Keep', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () =>
-          del.mutate(session!.id, {
-            onSuccess: () => router.back(),
-            onError: () =>
-              Alert.alert('Couldn’t delete', 'Something went wrong. Please try again.'),
-          }),
-      },
-    ]);
+    Alert.alert(
+      "Delete session?",
+      "This removes the session and the group chat for everyone.",
+      [
+        { text: "Keep", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () =>
+            del.mutate(session!.id, {
+              onSuccess: () => router.back(),
+              onError: () =>
+                Alert.alert(
+                  "Couldn’t delete",
+                  "Something went wrong. Please try again.",
+                ),
+            }),
+        },
+      ],
+    );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-rock-25" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-rock-25" edges={["top"]}>
       <View className="px-4 py-2">
         <IconButton variant="ghost" label="Back" onPress={() => router.back()}>
           <ArrowLeft size={24} color={colors.rock[700]} strokeWidth={2} />
@@ -195,36 +235,62 @@ export default function SessionDetail() {
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5"
-        contentContainerStyle={{ paddingBottom: declined ? 32 : 160 }}>
-        {/* Creator — tippbar zum read-only Profil (profile/[id]). Ist die
-            Ersteller:in gelöscht (kein creator), bleibt der Block untippbar. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`View ${name}’s profile`}
-          disabled={!session.creator?.id}
-          onPress={() =>
-            session.creator?.id && router.push(`/profile/${session.creator.id}`)
-          }
-          className="mt-2 items-center active:opacity-70">
-          <Avatar
-            name={name}
-            tone={avatarTone(session.creator?.id ?? name)}
-            size="xl"
-            src={publicImageUrl(session.creator?.avatar_path)}
-          />
-          <Text className="mt-3 font-display-bold text-[22px] text-rock-900">{name}</Text>
-          {/* Pill = Niveau der Ersteller:in (ADR-0005). Kein Niveau gesetzt → kein Pill. */}
-          {skillLabel(session.creator?.skill_level) ? (
-            <View className="mt-3">
+        contentContainerStyle={{ paddingBottom: declined ? 32 : 160 }}
+      >
+        {/* Host-Karte: ersetzt den früheren großen Hero oben. Mini-Avatar + Name +
+            „Host"-Pill machen die/den Gastgeber:in eindeutig (der Kader steht separat im
+            Info-Block darunter). Die ganze Kopfzeile ist — wie zuvor der Hero — tippbar
+            zum read-only Profil (profile/[id]); gelöschter Creator → untippbar. Ist eine
+            Notiz gesetzt, steht sie als deren „Stimme" darunter: linksbündiger Fließtext
+            wie im Feed. */}
+        <Card className="mt-2 gap-3">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`View ${name}’s profile`}
+            disabled={!session.creator?.id}
+            onPress={() =>
+              session.creator?.id && router.push(`/profile/${session.creator.id}`)
+            }
+            className="flex-row items-center gap-3 active:opacity-70"
+          >
+            <Avatar
+              name={name}
+              tone={avatarTone(session.creator?.id ?? name)}
+              size="md"
+              src={publicImageUrl(session.creator?.avatar_path)}
+            />
+            <View className="min-w-0 flex-1">
+              {/* Host-Kennzeichnung als Eyebrow über dem Namen (Krone + „Host", Brand). */}
+              <View className="flex-row items-center gap-1">
+                <Crown size={12} color={colors.brand[600]} strokeWidth={2.5} />
+                <Text className="font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-brand-700">
+                  Host
+                </Text>
+              </View>
+              <Text
+                numberOfLines={1}
+                className="mt-0.5 font-display text-[17px] text-rock-900"
+              >
+                {name}
+              </Text>
+            </View>
+            {/* Skill-Level dort, wo vorher das Host-Pill saß (oben rechts). Kein Niveau
+                → kein Pill. */}
+            {skillLabel(session.creator?.skill_level) ? (
               <GradePill
                 grade={skillLabel(session.creator?.skill_level)!}
                 band={gradeBand(session.creator?.skill_level)}
               />
-            </View>
+            ) : null}
+          </Pressable>
+          {session.note ? (
+            <Text className="font-sans text-[15px] leading-6 text-rock-700">
+              {session.note}
+            </Text>
           ) : null}
-        </Pressable>
+        </Card>
 
-        {/* Galeriefotos der Ersteller:in. Der Creator-Block oben führt zum vollen
+        {/* Galeriefotos der/des Gastgeber:in. Die Host-Karte oben führt zum vollen
             (read-only) Profil-Screen; die Galerie steht hier zusätzlich im Kontext. */}
         {session.creator?.gallery_paths?.length ? (
           <View className="mt-5">
@@ -232,18 +298,19 @@ export default function SessionDetail() {
           </View>
         ) : null}
 
-        {/* Melden ist ins Profil gewandert (profile/[id]) — der Creator-Block oben
-            führt dorthin. Hier steht es nicht mehr. */}
-
         {/* Info-Block */}
         <Card className="mt-6 gap-3.5">
           <InfoRow
-            icon={<Calendar size={16} color={colors.brand[700]} strokeWidth={2} />}
+            icon={
+              <Calendar size={16} color={colors.brand[700]} strokeWidth={2} />
+            }
             value={formatSessionTime(session.starts_at)}
           />
           <InfoRow
-            icon={<MapPin size={16} color={colors.brand[700]} strokeWidth={2} />}
-            value={session.gym?.name ?? '—'}
+            icon={
+              <MapPin size={16} color={colors.brand[700]} strokeWidth={2} />
+            }
+            value={session.gym?.name ?? "—"}
           />
           {/* Buddies — kleine Avatare im selben Info-Block-Stil (ohne Host), dahinter
               die freien Plätze (spotsLabel). Wächst per Realtime live
@@ -251,15 +318,6 @@ export default function SessionDetail() {
               bleibt, wenn noch niemand beigetreten ist. */}
           <BuddiesRow people={roster} spotsLabel={spotsLabel} />
         </Card>
-
-        {session.note ? (
-          <View className="mt-4 rounded-lg bg-rock-50 p-4">
-            <Text className="mb-1.5 font-sans-semibold text-[11px] uppercase tracking-[0.08em] text-rock-500">
-              Note
-            </Text>
-            <Text className="font-sans text-sm leading-6 text-rock-700">{session.note}</Text>
-          </View>
-        ) : null}
 
         {/* Beitritts-Anfragen leben seit 0017 allein im Chat (oben angeheftet), nicht
             mehr hier — jede eigene Session hat von Anfang an einen Chat. Von hier
@@ -274,21 +332,26 @@ export default function SessionDetail() {
       {isMine ? (
         <View
           className="absolute inset-x-0 bottom-0 border-t border-rock-100 bg-rock-0 px-5 pt-3"
-          style={{ paddingBottom: insets.bottom + 12 }}>
+          style={{ paddingBottom: insets.bottom + 12 }}
+        >
           <Button
             variant="ghost"
             size="md"
             fullWidth
             loading={del.isPending}
             icon={<Trash2 size={16} color={colors.danger} strokeWidth={2} />}
-            onPress={confirmDelete}>
-            <Text className="font-sans-semibold text-[15px] text-danger">Delete session</Text>
+            onPress={confirmDelete}
+          >
+            <Text className="font-sans-semibold text-[15px] text-danger">
+              Delete session
+            </Text>
           </Button>
         </View>
       ) : !declined ? (
         <View
           className="absolute inset-x-0 bottom-0 border-t border-rock-100 bg-rock-0 px-5 pt-3"
-          style={{ paddingBottom: insets.bottom + 12 }}>
+          style={{ paddingBottom: insets.bottom + 12 }}
+        >
           {myRequest.isLoading ? (
             // Kein Button-Flackern, solange der eigene Status noch lädt.
             <View className="h-[52px] items-center justify-center">
@@ -300,8 +363,14 @@ export default function SessionDetail() {
             // (ADR-0006). Zurückziehen ist umkehrbar → danach wieder der Button.
             <View className="gap-2">
               <View className="h-[52px] flex-row items-center justify-center gap-2 rounded-md bg-success-surface">
-                <CheckCircle2 size={16} color={colors.success} strokeWidth={2} />
-                <Text className="font-sans-semibold text-base text-success">Request sent</Text>
+                <CheckCircle2
+                  size={16}
+                  color={colors.success}
+                  strokeWidth={2}
+                />
+                <Text className="font-sans-semibold text-base text-success">
+                  Request sent
+                </Text>
               </View>
               <Button
                 variant="ghost"
@@ -309,17 +378,21 @@ export default function SessionDetail() {
                 fullWidth
                 loading={withdraw.isPending}
                 onPress={() =>
-                  Alert.alert('Withdraw request?', undefined, [
-                    { text: 'Keep', style: 'cancel' },
+                  Alert.alert("Withdraw request?", undefined, [
+                    { text: "Keep", style: "cancel" },
                     {
-                      text: 'Withdraw',
-                      style: 'destructive',
+                      text: "Withdraw",
+                      style: "destructive",
                       // Zurück zum Ausgangs-Tab (Sessions oder Chats) — die Detailseite
                       // liegt über den Tabs, back enthüllt also den richtigen.
-                      onPress: () => withdraw.mutate(session.id, { onSuccess: () => router.back() }),
+                      onPress: () =>
+                        withdraw.mutate(session.id, {
+                          onSuccess: () => router.back(),
+                        }),
                     },
                   ])
-                }>
+                }
+              >
                 <Text className="font-sans-semibold text-[15px] text-rock-500">
                   Withdraw request
                 </Text>
@@ -336,21 +409,33 @@ export default function SessionDetail() {
                 size="md"
                 fullWidth
                 loading={leave.isPending}
-                icon={<LogOut size={16} color={colors.danger} strokeWidth={2} />}
+                icon={
+                  <LogOut size={16} color={colors.danger} strokeWidth={2} />
+                }
                 onPress={() =>
                   // Gleiche Copy und Optik (rot + LogOut) wie der „Leave session"-Swipe
                   // im Chats-Tab (confirmLeave), damit die Handlung überall gleich wirkt.
-                  Alert.alert('Leave session?', "You'll leave this session and its chat.", [
-                    { text: 'Stay', style: 'cancel' },
-                    {
-                      text: 'Leave',
-                      style: 'destructive',
-                      // Zurück zum Ausgangs-Tab (Sessions oder Chats) — s. o.
-                      onPress: () => leave.mutate(session.id, { onSuccess: () => router.back() }),
-                    },
-                  ])
-                }>
-                <Text className="font-sans-semibold text-[15px] text-danger">Leave session</Text>
+                  Alert.alert(
+                    "Leave session?",
+                    "You'll leave this session and its chat.",
+                    [
+                      { text: "Stay", style: "cancel" },
+                      {
+                        text: "Leave",
+                        style: "destructive",
+                        // Zurück zum Ausgangs-Tab (Sessions oder Chats) — s. o.
+                        onPress: () =>
+                          leave.mutate(session.id, {
+                            onSuccess: () => router.back(),
+                          }),
+                      },
+                    ],
+                  )
+                }
+              >
+                <Text className="font-sans-semibold text-[15px] text-danger">
+                  Leave session
+                </Text>
               </Button>
             </View>
           ) : (
@@ -361,7 +446,8 @@ export default function SessionDetail() {
                 fullWidth
                 loading={request.isPending}
                 icon={<Hand size={18} color={colors.rock[0]} strokeWidth={2} />}
-                onPress={() => request.mutate(session.id)}>
+                onPress={() => request.mutate(session.id)}
+              >
                 Climb together?
               </Button>
               {request.isError ? (
