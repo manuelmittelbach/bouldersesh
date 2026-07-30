@@ -183,7 +183,7 @@ export function SessionActionSheet({
             <Text className="font-sans-semibold text-base text-success">Request sent</Text>
           </View>
           <Text className="text-center font-sans text-[13px] leading-4 text-success">
-            Once accepted, plan together in Chats.
+            Once accepted, plan together in the chat.
           </Text>
         </View>
         <Button
