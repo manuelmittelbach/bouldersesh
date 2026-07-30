@@ -231,6 +231,16 @@ export interface Database {
         Args: { p_session_id: string };
         Returns: undefined;
       };
+      /**
+       * Nur den Gruppenchat verlassen (Migration 0023): entfernt die eigene
+       * Mitgliedschaft und sagt „X left" an — ohne Platz-Neurechnung, ohne die
+       * Session oder match_requests zu ändern. Für Host UND Aufgenommene, sobald
+       * die Session vom Feed gefallen ist (Delete/Leave session weichen dann hier).
+       */
+      leave_chat: {
+        Args: { p_session_id: string };
+        Returns: undefined;
+      };
     };
     Enums: {
       skill_level: SkillLevel;

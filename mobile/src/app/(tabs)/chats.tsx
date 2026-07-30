@@ -18,7 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { Avatar } from '@/components/ui';
 import { publicImageUrl } from '@/lib/images';
-import { avatarTone, cn, formatSessionTime } from '@/lib/utils';
+import { avatarTone, cn, formatSessionTime, hasLeftFeed } from '@/lib/utils';
 import {
   CHAT_MEMBERS_KEY,
   CHAT_SESSION_ID_KEY,
@@ -29,6 +29,7 @@ import { usePendingCountsForSessions, useWithdrawRequest } from '@/queries/match
 import {
   SESSION_KEY,
   useDeleteSession,
+  useLeaveChat,
   useLeaveSession,
   useMyParticipations,
   useMySessions,
@@ -233,17 +234,31 @@ function confirmLeave(onConfirm: () => void) {
   ]);
 }
 
-// Löschen ist unwiderruflich und trifft alle — Rückfrage mit Kontext, ob schon
-// jemand dabei ist (dann geht auch der Gruppenchat verloren).
-function confirmDissolve(hasGroup: boolean, onConfirm: () => void) {
+// Löschen ist unwiderruflich und trifft alle. Eigene Sessions haben von Anfang an einen
+// Gruppenchat (0017) → immer die „für alle"-Copy (gleicher Wortlaut wie confirmDelete im
+// Session-Detail). Nur verfügbar, solange die Session auf dem Feed ist — danach greift
+// stattdessen confirmLeaveChat.
+function confirmDissolve(onConfirm: () => void) {
   Alert.alert(
     'Delete session?',
-    hasGroup
-      ? 'This removes the session and the group chat for everyone.'
-      : 'This removes the session for good.',
+    'This removes the session from the feed and the group chat for everyone.',
     [
       { text: 'Keep', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: onConfirm },
+    ],
+  );
+}
+
+// Nur den Chat verlassen (Host wie Aufgenommene:r), sobald die Session vom Feed gefallen
+// ist — endgültig, ohne Re-Join. Session und Chat bleiben für die anderen stehen
+// (leave_chat, 0023). Gleicher Wortlaut wie confirmLeaveChat im Session-Detail.
+function confirmLeaveChat(onConfirm: () => void) {
+  Alert.alert(
+    'Leave chat?',
+    "You'll leave this group chat. The others keep it until it expires.",
+    [
+      { text: 'Stay', style: 'cancel' },
+      { text: 'Leave', style: 'destructive', onPress: onConfirm },
     ],
   );
 }
@@ -342,6 +357,7 @@ export default function Chats() {
   const withdraw = useWithdrawRequest();
   const dissolve = useDeleteSession();
   const leave = useLeaveSession();
+  const leaveChat = useLeaveChat();
   const [refreshing, setRefreshing] = useState(false);
   const swipe = useSwipeCoordinator();
 
@@ -380,6 +396,17 @@ export default function Chats() {
     return m;
   }, [chats.data]);
 
+  // „Leave chat" (leave_chat, 0023) entfernt nur die eigene chat_members-Zeile — die
+  // Session bleibt in created/participations, soll aber aus Hosting/Joined verschwinden,
+  // sobald ich kein Mitglied mehr bin. useMyChats spiegelt genau meine Mitgliedschaft
+  // (chatBySession), also gaten beide Sektionen darauf. Erst prüfen, wenn useMyChats
+  // geladen ist (isSuccess) — sonst blitzten Zeilen beim Erstladen weg, bevor die
+  // Mitgliedschaft bekannt ist (Host/Joined sind ab Erstellung/Zusage immer Mitglied).
+  const stillMember = useCallback(
+    (sessionId: string) => !chats.isSuccess || chatBySession.has(sessionId),
+    [chats.isSuccess, chatBySession],
+  );
+
   // Offene Anfragen je EIGENER Session (Gastgeber-Sicht) für die „N wollen mit"-Pill.
   const hostedIds = useMemo(() => (created.data ?? []).map((s) => s.id), [created.data]);
   const pendingCounts = usePendingCountsForSessions(hostedIds);
@@ -398,12 +425,14 @@ export default function Chats() {
         .map((s) => ({ session: s, chat: chatBySession.get(s.id) }))
         .filter(
           (e) =>
-            e.session.accepted_count > 0 ||
-            e.chat?.lastMessage != null ||
-            e.session.starts_at >= emptyCutoff,
+            // Nach „Leave chat" bin ich kein Mitglied mehr → Zeile fällt raus.
+            stillMember(e.session.id) &&
+            (e.session.accepted_count > 0 ||
+              e.chat?.lastMessage != null ||
+              e.session.starts_at >= emptyCutoff),
         ),
     );
-  }, [created.data, chatBySession]);
+  }, [created.data, chatBySession, stillMember]);
 
   // Requested = fremde Sessions, deren Beitritt ich angefragt habe (wartet auf Zusage).
   const requested = useMemo<SessionWithMeta[]>(
@@ -420,10 +449,11 @@ export default function Chats() {
     () =>
       sortEntries(
         (participations.data ?? [])
-          .filter((p) => p.myStatus === 'accepted')
+          // Nach „Leave chat" bin ich kein Mitglied mehr → Zeile fällt raus.
+          .filter((p) => p.myStatus === 'accepted' && stillMember(p.session.id))
           .map((p) => ({ session: p.session, chat: chatBySession.get(p.session.id) })),
       ),
-    [participations.data, chatBySession],
+    [participations.data, chatBySession, stillMember],
   );
 
   const isLoading = created.isLoading || participations.isLoading;
@@ -499,16 +529,22 @@ export default function Chats() {
       />
     );
 
-    const action = hosting ? (
+    // Vom Feed gefallen (>1h nach Start)? Dann für BEIDE Rollen nur noch „Leave chat" —
+    // absagen (Delete/Leave session) ergibt nach dem Termin keinen Sinn mehr.
+    const offFeed = hasLeftFeed(session.starts_at);
+    const action = offFeed ? (
+      <SwipeAction
+        label="Leave chat"
+        tone="danger"
+        icon={<LogOut size={22} color={colors.rock[0]} strokeWidth={2} />}
+        onPress={() => confirmLeaveChat(() => leaveChat.mutate(session.id))}
+      />
+    ) : hosting ? (
       <SwipeAction
         label="Delete session"
         tone="danger"
         icon={<Trash2 size={22} color={colors.rock[0]} strokeWidth={2} />}
-        onPress={() =>
-          confirmDissolve(!!chat || session.accepted_count > 0, () =>
-            dissolve.mutate(session.id),
-          )
-        }
+        onPress={() => confirmDissolve(() => dissolve.mutate(session.id))}
       />
     ) : (
       <SwipeAction

@@ -30,6 +30,7 @@ import {
   avatarTone,
   formatSessionTime,
   gradeBand,
+  hasLeftFeed,
   skillLabel,
 } from "@/lib/utils";
 import {
@@ -40,6 +41,7 @@ import {
 } from "@/queries/matches";
 import {
   useDeleteSession,
+  useLeaveChat,
   useLeaveSession,
   useSession,
 } from "@/queries/sessions";
@@ -115,6 +117,7 @@ export default function SessionDetail() {
   const request = useCreateMatchRequest();
   const withdraw = useWithdrawRequest();
   const leave = useLeaveSession();
+  const leaveChat = useLeaveChat();
   const del = useDeleteSession();
 
   // Ist die Session meine? Vor den frühen Returns berechnet (session evtl. noch
@@ -185,6 +188,11 @@ export default function SessionDetail() {
   const accepted = status === "accepted";
   const declined = status === "declined";
 
+  // Ist die Session vom Feed gefallen (>1h nach Start)? Dann ist „Absagen" (Delete/
+  // Leave session) vorbei — der Plan ist gelaufen. Die untere Aktion wird für Host UND
+  // Aufgenommene zum stillen „Leave chat" (die Session bleibt für die anderen stehen).
+  const offFeed = hasLeftFeed(session.starts_at);
+
   // Löschen ist endgültig (Row weg, Chat via Cascade mit) → immer bestätigen. Die
   // Copy passt sich der Zahl bereits Beigetretener an: sind Leute dabei, benennen wir
   // den Preis (sie verlieren Session und Gruppenchat) statt ihn zu verschweigen.
@@ -194,7 +202,7 @@ export default function SessionDetail() {
     // haben von Anfang an einen Gruppenchat → immer die „für alle"-Copy.
     Alert.alert(
       "Delete session?",
-      "This removes the session and the group chat for everyone.",
+      "This removes the session from the feed and the group chat for everyone.",
       [
         { text: "Keep", style: "cancel" },
         {
@@ -206,6 +214,32 @@ export default function SessionDetail() {
               onError: () =>
                 Alert.alert(
                   "Couldn’t delete",
+                  "Something went wrong. Please try again.",
+                ),
+            }),
+        },
+      ],
+    );
+  }
+
+  // Nur den Chat verlassen (Host wie Aufgenommene:r), sobald die Session vom Feed ist —
+  // endgültig, ohne Re-Join. Session und Chat bleiben für die anderen stehen (leave_chat,
+  // 0023). Gleiche Copy wie der „Leave chat"-Swipe im Chats-Tab (confirmLeaveChat).
+  function confirmLeaveChat() {
+    Alert.alert(
+      "Leave chat?",
+      "You'll leave this group chat. The others keep it until it expires.",
+      [
+        { text: "Stay", style: "cancel" },
+        {
+          text: "Leave",
+          style: "destructive",
+          onPress: () =>
+            leaveChat.mutate(session!.id, {
+              onSuccess: () => router.back(),
+              onError: () =>
+                Alert.alert(
+                  "Couldn’t leave",
                   "Something went wrong. Please try again.",
                 ),
             }),
@@ -316,18 +350,34 @@ export default function SessionDetail() {
           className="absolute inset-x-0 bottom-0 border-t border-rock-100 bg-rock-0 px-5 pt-3"
           style={{ paddingBottom: insets.bottom + 12 }}
         >
-          <Button
-            variant="ghost"
-            size="md"
-            fullWidth
-            loading={del.isPending}
-            icon={<Trash2 size={16} color={colors.danger} strokeWidth={2} />}
-            onPress={confirmDelete}
-          >
-            <Text className="font-sans-semibold text-[15px] text-danger">
-              Delete session
-            </Text>
-          </Button>
+          {offFeed ? (
+            // Session vom Feed → nicht mehr absagen, nur noch still den Chat verlassen.
+            <Button
+              variant="ghost"
+              size="md"
+              fullWidth
+              loading={leaveChat.isPending}
+              icon={<LogOut size={16} color={colors.danger} strokeWidth={2} />}
+              onPress={confirmLeaveChat}
+            >
+              <Text className="font-sans-semibold text-[15px] text-danger">
+                Leave chat
+              </Text>
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="md"
+              fullWidth
+              loading={del.isPending}
+              icon={<Trash2 size={16} color={colors.danger} strokeWidth={2} />}
+              onPress={confirmDelete}
+            >
+              <Text className="font-sans-semibold text-[15px] text-danger">
+                Delete session
+              </Text>
+            </Button>
+          )}
         </View>
       ) : !declined ? (
         <View
@@ -382,43 +432,62 @@ export default function SessionDetail() {
             </View>
           ) : accepted ? (
             // Aufgenommen: nur austreten (den Chat erreicht man über den Chats-Tab).
-            // Verlassen setzt die eigene Anfrage auf `cancelled` (Realtime kippt diesen
-            // Block danach auf „Climb together?" zurück) und gibt den Platz frei —
-            // Wiedereintritt bleibt möglich.
+            // Vor dem Feed-Ende ist es „Leave session" — setzt die eigene Anfrage auf
+            // `cancelled` (Realtime kippt diesen Block danach auf „Climb together?"
+            // zurück), gibt den Platz frei, Wiedereintritt bleibt möglich. Ist die
+            // Session vom Feed gefallen (>1h nach Start), gibt es nichts mehr freizugeben:
+            // dann nur noch „Leave chat" — endgültig, ohne Re-Join (wie beim Host).
             <View className="gap-2">
-              <Button
-                variant="ghost"
-                size="md"
-                fullWidth
-                loading={leave.isPending}
-                icon={
-                  <LogOut size={16} color={colors.danger} strokeWidth={2} />
-                }
-                onPress={() =>
-                  // Gleiche Copy und Optik (rot + LogOut) wie der „Leave session"-Swipe
-                  // im Chats-Tab (confirmLeave), damit die Handlung überall gleich wirkt.
-                  Alert.alert(
-                    "Leave session?",
-                    "You'll leave this session and its chat.",
-                    [
-                      { text: "Stay", style: "cancel" },
-                      {
-                        text: "Leave",
-                        style: "destructive",
-                        // Zurück zum Ausgangs-Tab (Sessions oder Chats) — s. o.
-                        onPress: () =>
-                          leave.mutate(session.id, {
-                            onSuccess: () => router.back(),
-                          }),
-                      },
-                    ],
-                  )
-                }
-              >
-                <Text className="font-sans-semibold text-[15px] text-danger">
-                  Leave session
-                </Text>
-              </Button>
+              {offFeed ? (
+                <Button
+                  variant="ghost"
+                  size="md"
+                  fullWidth
+                  loading={leaveChat.isPending}
+                  icon={
+                    <LogOut size={16} color={colors.danger} strokeWidth={2} />
+                  }
+                  onPress={confirmLeaveChat}
+                >
+                  <Text className="font-sans-semibold text-[15px] text-danger">
+                    Leave chat
+                  </Text>
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="md"
+                  fullWidth
+                  loading={leave.isPending}
+                  icon={
+                    <LogOut size={16} color={colors.danger} strokeWidth={2} />
+                  }
+                  onPress={() =>
+                    // Gleiche Copy und Optik (rot + LogOut) wie der „Leave session"-Swipe
+                    // im Chats-Tab (confirmLeave), damit die Handlung überall gleich wirkt.
+                    Alert.alert(
+                      "Leave session?",
+                      "You'll leave this session and its chat.",
+                      [
+                        { text: "Stay", style: "cancel" },
+                        {
+                          text: "Leave",
+                          style: "destructive",
+                          // Zurück zum Ausgangs-Tab (Sessions oder Chats) — s. o.
+                          onPress: () =>
+                            leave.mutate(session.id, {
+                              onSuccess: () => router.back(),
+                            }),
+                        },
+                      ],
+                    )
+                  }
+                >
+                  <Text className="font-sans-semibold text-[15px] text-danger">
+                    Leave session
+                  </Text>
+                </Button>
+              )}
             </View>
           ) : (
             <>

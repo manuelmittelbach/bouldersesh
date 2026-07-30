@@ -387,3 +387,26 @@ export function useLeaveSession() {
     },
   });
 }
+
+// Nur den Gruppenchat verlassen — die Aktion, sobald die Session vom Feed gefallen ist
+// (hasLeftFeed): Delete/Leave session weichen dann diesem stillen Austritt. Anders als
+// leave_session ändert die RPC (0023) NICHTS an match_requests/Plätzen und löscht die
+// Session nicht; sie entfernt nur die eigene chat_members-Zeile und sagt „X left" an.
+// Die Zeile fällt danach aus Hosting/Joined, weil beide Sektionen an die Chat-
+// Mitgliedschaft (useMyChats) gekoppelt sind → invalidate ["chats"] treibt das.
+export function useLeaveChat() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (sessionId: string) => {
+      const { error } = await supabase.rpc("leave_chat", {
+        p_session_id: sessionId,
+      });
+      if (error) throw error;
+      return sessionId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+    },
+  });
+}
