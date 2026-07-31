@@ -73,6 +73,7 @@ function RootNavigator() {
             auf Login (ADR-0004). */}
         <Stack.Screen name="account" />
         <Stack.Screen name="delete-account" />
+        <Stack.Screen name="blocked" />
       </Stack.Protected>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="login" />

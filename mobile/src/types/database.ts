@@ -219,6 +219,22 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["profile_reports"]["Insert"]>;
         Relationships: [];
       };
+      profile_blocks: {
+        Row: {
+          id: string;
+          blocker_id: string;
+          blocked_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          blocker_id: string;
+          blocked_id: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["profile_blocks"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -241,6 +257,28 @@ export interface Database {
         Args: { p_session_id: string };
         Returns: undefined;
       };
+      /**
+       * Die IDs aller Personen, mit denen ich in einer Block-Beziehung stehe
+       * (Migration 0025) — beide Richtungen zusammen. SECURITY DEFINER, damit auch
+       * Blocks gegen mich mitkommen, die die RLS mir sonst verbirgt.
+       */
+      my_block_ids: {
+        Args: Record<string, never>;
+        Returns: string[];
+      };
+      /**
+       * Ein fremdes Profil blocken (Migration 0025): legt die Block-Zeile an und kappt
+       * bestehenden Kontakt (Anfragen, gemeinsame Chats) in einer Transaktion.
+       */
+      block_profile: {
+        Args: { p_blocked_id: string };
+        Returns: undefined;
+      };
+      /** Einen Block zurücknehmen (Migration 0025). */
+      unblock_profile: {
+        Args: { p_blocked_id: string };
+        Returns: undefined;
+      };
     };
     Enums: {
       skill_level: SkillLevel;
@@ -260,3 +298,5 @@ export type Chat = Database["public"]["Tables"]["chats"]["Row"];
 export type Message = Database["public"]["Tables"]["messages"]["Row"];
 export type ProfileReport =
   Database["public"]["Tables"]["profile_reports"]["Row"];
+export type ProfileBlock =
+  Database["public"]["Tables"]["profile_blocks"]["Row"];
