@@ -21,7 +21,6 @@ const REASONS = [
   'Fake profile',
   'Inappropriate photos',
   'Spam',
-  'Underage',
   'Other',
 ] as const;
 
