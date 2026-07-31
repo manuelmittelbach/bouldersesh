@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FullImageViewer } from '@/components/FullImageViewer';
+import { ReportSheet } from '@/components/ReportSheet';
 import { Avatar, GradePill, ScreenHeader } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
@@ -27,28 +28,15 @@ function Eyebrow({ children }: { children: string }) {
   );
 }
 
-/** Melden eines fremden Profils. Bewusst ohne Grund-Eingabe: die Meldung soll
- *  keine Hürde haben, geprüft wird ohnehin von Hand. Lebt seit dem Verschieben
- *  hier im Profil-Screen (früher in der Session-Detail). */
+/** Melden eines fremden Profils. Der Tap öffnet einen Grund-Picker (ReportSheet) —
+ *  eine Kategorie hilft der Moderation zu triagieren, bleibt aber ein einziger Tap,
+ *  damit Melden keine Hürde wird. Lebt seit dem Verschieben hier im Profil-Screen
+ *  (früher in der Session-Detail). */
 function ReportButton({ profileId, name }: { profileId: string; name: string }) {
   const { data: alreadyReported } = useHasReported(profileId);
   const report = useReportProfile();
+  const [sheetOpen, setSheetOpen] = useState(false);
   const done = alreadyReported || report.isSuccess;
-
-  function confirm() {
-    Alert.alert(
-      `Report ${name}?`,
-      'We’ll take a look at this profile. Nothing happens to it right away, and they won’t be told who reported them.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Report',
-          style: 'destructive',
-          onPress: () => report.mutate({ reportedId: profileId }),
-        },
-      ],
-    );
-  }
 
   if (done) {
     return (
@@ -59,15 +47,29 @@ function ReportButton({ profileId, name }: { profileId: string; name: string }) 
   }
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Report ${name}`}
-      disabled={report.isPending}
-      onPress={confirm}
-      className="flex-row items-center gap-1.5 px-3 py-2 active:opacity-60">
-      <Flag size={13} color={colors.rock[400]} strokeWidth={2} />
-      <Text className="font-sans text-[13px] text-rock-400">Report profile</Text>
-    </Pressable>
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Report ${name}`}
+        onPress={() => setSheetOpen(true)}
+        className="flex-row items-center gap-1.5 px-3 py-2 active:opacity-60">
+        <Flag size={13} color={colors.rock[400]} strokeWidth={2} />
+        <Text className="font-sans text-[13px] text-rock-400">Report profile</Text>
+      </Pressable>
+      <ReportSheet
+        visible={sheetOpen}
+        name={name}
+        submitting={report.isPending}
+        error={report.isError}
+        onSubmit={(reason) =>
+          report.mutate(
+            { reportedId: profileId, reason },
+            { onSuccess: () => setSheetOpen(false) },
+          )
+        }
+        onClose={() => setSheetOpen(false)}
+      />
+    </>
   );
 }
 
