@@ -255,7 +255,7 @@ function confirmDissolve(onConfirm: () => void) {
 function confirmLeaveChat(onConfirm: () => void) {
   Alert.alert(
     'Leave chat?',
-    "You'll leave this group chat. The others keep it until it expires.",
+    "You'll leave this group chat.",
     [
       { text: 'Stay', style: 'cancel' },
       { text: 'Leave', style: 'destructive', onPress: onConfirm },

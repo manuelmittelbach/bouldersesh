@@ -228,7 +228,7 @@ export default function SessionDetail() {
   function confirmLeaveChat() {
     Alert.alert(
       "Leave chat?",
-      "You'll leave this group chat. The others keep it until it expires.",
+      "You'll leave this group chat.",
       [
         { text: "Stay", style: "cancel" },
         {
