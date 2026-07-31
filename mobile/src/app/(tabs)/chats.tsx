@@ -37,12 +37,14 @@ import {
 } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
-// Der „Chats"-Tab bündelt alles, was mit meinen Sessions zu tun hat — nach ROLLE
-// gruppiert, nicht als flache Chat-Liste: „Hosting Sessions" (selbst erstellt),
-// „Requested Sessions" (Beitritt angefragt, wartet) und „Joined Sessions" (aufgenommen).
-// Dieselben drei Wörter (Hosting/Joined/Requested) labeln die Karten im Feed. Jede
-// Session steht in genau einer Sektion; der Chat (falls schon vorhanden) sitzt inline
-// in der Zeile. Grund: ein Chat entsteht erst mit dem Match, pending hat also keinen.
+// Der „Chats"-Tab bündelt alles, was mit meinen Sessions zu tun hat — in ZWEI Sektionen,
+// nicht als flache Chat-Liste: „Requested Sessions" (Beitritt angefragt, wartet, noch kein
+// Chat) und „Your Sessions" (selbst erstellt ODER aufgenommen — beide haben einen Chat,
+// zeitlich gemischt). Die Trennlinie ist „noch offen" vs. „läuft schon", nicht Host vs.
+// Gast: die Rolle steht ohnehin pro Zeile (Krone vs. Gastgeber-Avatar, Delete vs. Leave).
+// Der Chat (falls schon vorhanden) sitzt inline in der Zeile; pending hat keinen, weil ein
+// Chat erst mit dem Match entsteht. Früher drei Rollen-Sektionen (Hosting/Joined getrennt);
+// zusammengelegt für eine ruhigere Liste, da die Zeile die Rolle schon selbst trägt.
 
 function Eyebrow({ children }: { children: string }) {
   return (
@@ -263,7 +265,7 @@ function confirmLeaveChat(onConfirm: () => void) {
   );
 }
 
-// Die EINE Session-Zeile für alle drei Sektionen (ADR-0012): linkes Glyph · Titel
+// Die EINE Session-Zeile für beide Sektionen (ADR-0012): linkes Glyph · Titel
 // (Halle · Tag · Zeit) · Meta (letzte Nachricht oder Status). Das linke Glyph rendert die
 // Aufrufstelle je Rolle (Krone / Avatar der Gastgeber:in / Uhr), damit die Zeile selbst
 // rollen-frei bleibt. `emphasized` hebt die Meta-Zeile bei ungelesener Nachricht hervor.
@@ -343,12 +345,6 @@ function Section({ title, rows }: { title: string; rows: Row[] }) {
   );
 }
 
-// Sortierschlüssel: nach Termin (früh → spät), damit die zeitlich nächste Session oben
-// steht — unabhängig von Chat-Aktivität. Gleicher Schlüssel wie die Requested-Sektion.
-function sortEntries(entries: Entry[]): Entry[] {
-  return [...entries].sort((a, b) => a.session.starts_at.localeCompare(b.session.starts_at));
-}
-
 export default function Chats() {
   const queryClient = useQueryClient();
   const created = useMySessions();
@@ -397,9 +393,9 @@ export default function Chats() {
   }, [chats.data]);
 
   // „Leave chat" (leave_chat, 0023) entfernt nur die eigene chat_members-Zeile — die
-  // Session bleibt in created/participations, soll aber aus Hosting/Joined verschwinden,
+  // Session bleibt in created/participations, soll aber aus „Your Sessions" verschwinden,
   // sobald ich kein Mitglied mehr bin. useMyChats spiegelt genau meine Mitgliedschaft
-  // (chatBySession), also gaten beide Sektionen darauf. Erst prüfen, wenn useMyChats
+  // (chatBySession), also gaten beide Quellen (mySessions/joined) darauf. Erst prüfen, wenn useMyChats
   // geladen ist (isSuccess) — sonst blitzten Zeilen beim Erstladen weg, bevor die
   // Mitgliedschaft bekannt ist (Host/Joined sind ab Erstellung/Zusage immer Mitglied).
   const stillMember = useCallback(
@@ -420,18 +416,16 @@ export default function Chats() {
   // „X joined"-Systemzeile (0017), eine nie-bespielte Session hat einen leeren Chat.
   const mySessions = useMemo<Entry[]>(() => {
     const emptyCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    return sortEntries(
-      (created.data ?? [])
-        .map((s) => ({ session: s, chat: chatBySession.get(s.id) }))
-        .filter(
-          (e) =>
-            // Nach „Leave chat" bin ich kein Mitglied mehr → Zeile fällt raus.
-            stillMember(e.session.id) &&
-            (e.session.accepted_count > 0 ||
-              e.chat?.lastMessage != null ||
-              e.session.starts_at >= emptyCutoff),
-        ),
-    );
+    return (created.data ?? [])
+      .map((s) => ({ session: s, chat: chatBySession.get(s.id) }))
+      .filter(
+        (e) =>
+          // Nach „Leave chat" bin ich kein Mitglied mehr → Zeile fällt raus.
+          stillMember(e.session.id) &&
+          (e.session.accepted_count > 0 ||
+            e.chat?.lastMessage != null ||
+            e.session.starts_at >= emptyCutoff),
+      );
   }, [created.data, chatBySession, stillMember]);
 
   // Requested = fremde Sessions, deren Beitritt ich angefragt habe (wartet auf Zusage).
@@ -447,18 +441,31 @@ export default function Chats() {
   // Joined = fremde Sessions, in die ich aufgenommen wurde (mit Chat).
   const joined = useMemo<Entry[]>(
     () =>
-      sortEntries(
-        (participations.data ?? [])
-          // Nach „Leave chat" bin ich kein Mitglied mehr → Zeile fällt raus.
-          .filter((p) => p.myStatus === 'accepted' && stillMember(p.session.id))
-          .map((p) => ({ session: p.session, chat: chatBySession.get(p.session.id) })),
-      ),
+      (participations.data ?? [])
+        // Nach „Leave chat" bin ich kein Mitglied mehr → Zeile fällt raus.
+        .filter((p) => p.myStatus === 'accepted' && stillMember(p.session.id))
+        .map((p) => ({ session: p.session, chat: chatBySession.get(p.session.id) })),
     [participations.data, chatBySession, stillMember],
+  );
+
+  // „Your Sessions" = eigene + beigetretene Sessions in EINER zeitlich sortierten Liste.
+  // Die Rolle reist als Tag mit, damit renderEntry weiter Krone/Avatar, Pill und Delete-vs-
+  // Leave rollenrichtig rendert — nur die Sektions-Überschrift entfällt. EINZIGE Sortierstelle
+  // für diese Zeilen (mySessions/joined kommen ungeordnet rein): nach Termin (früh → spät),
+  // damit die nächste Session oben steht, unabhängig von Rolle und Chat-Aktivität — gleicher
+  // Schlüssel wie die Requested-Liste.
+  const active = useMemo<{ entry: Entry; role: 'host' | 'joined' }[]>(
+    () =>
+      [
+        ...mySessions.map((entry) => ({ entry, role: 'host' as const })),
+        ...joined.map((entry) => ({ entry, role: 'joined' as const })),
+      ].sort((a, b) => a.entry.session.starts_at.localeCompare(b.entry.session.starts_at)),
+    [mySessions, joined],
   );
 
   const isLoading = created.isLoading || participations.isLoading;
   const error = (created.error ?? participations.error) as Error | null;
-  const isEmpty = mySessions.length === 0 && requested.length === 0 && joined.length === 0;
+  const isEmpty = active.length === 0 && requested.length === 0;
 
   // Eine einheitliche Session-Zeile für eine eigene/beigetretene Session (ADR-0012). Jede
   // Zeile ist wischbar — rollen-abhängig: als Gastgeber:in auflösen (rot), als
@@ -625,12 +632,11 @@ export default function Chats() {
             />
           ) : null}
 
-          {mySessions.length > 0 ? (
-            <Section title="Hosting Sessions" rows={mySessions.map((e) => renderEntry(e, 'host'))} />
-          ) : null}
-
-            {joined.length > 0 ? (
-              <Section title="Joined Sessions" rows={joined.map((e) => renderEntry(e, 'joined'))} />
+            {active.length > 0 ? (
+              <Section
+                title="Your Sessions"
+                rows={active.map(({ entry, role }) => renderEntry(entry, role))}
+              />
             ) : null}
 
             {/* Housekeeping-Hinweis ans Listen-Ende (nicht an den Kopf): leise Meta-Info
