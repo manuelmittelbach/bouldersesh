@@ -196,7 +196,9 @@ export default function ProfileDetail() {
             der Ausnahmefall, nicht die angebotene Handlung. Früher in der Session-Detail,
             seit dem Verschieben hier. */}
         {!isOwn ? (
-          <View className="mt-10 items-center gap-1">
+          // In die beiden unteren Ecken statt mittig gestapelt: so sind die Ausnahme-
+          // Aktionen präsent, aber nicht prominent (Block links, Report rechts).
+          <View className="mt-10 flex-row items-start justify-between">
             <BlockButton profileId={profile.id} name={name} />
             <ReportButton profileId={profile.id} name={name} />
           </View>
