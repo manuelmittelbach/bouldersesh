@@ -47,10 +47,9 @@ export function useBlockedProfiles() {
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Cast über unknown: die handgeschriebenen DB-Typen kennen die FK-Relation nicht
-      // (Relationships: []), der Embed-Name ist aber der Postgres-Default und greift zur
-      // Laufzeit. Regeneriert man die Typen, fällt der Cast weg.
-      return ((data ?? []) as unknown as { blocked: BlockedProfile | null }[])
+      // Der FK-Embed ist über die Relationships von profile_blocks (database.ts) typisiert
+      // — kein Cast mehr nötig.
+      return (data ?? [])
         .map((row) => row.blocked)
         .filter((p): p is BlockedProfile => p != null);
     },
