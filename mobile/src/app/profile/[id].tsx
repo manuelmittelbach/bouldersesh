@@ -1,9 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ban, Flag } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BlockSheet } from '@/components/BlockSheet';
 import { FullImageViewer } from '@/components/FullImageViewer';
 import { ReportSheet } from '@/components/ReportSheet';
 import { Avatar, GradePill, ScreenHeader } from '@/components/ui';
@@ -81,36 +82,35 @@ function ReportButton({ profileId, name }: { profileId: string; name: string }) 
  *  Account unter „Blocked climbers". */
 function BlockButton({ profileId, name }: { profileId: string; name: string }) {
   const block = useBlockProfile();
-
-  function confirm() {
-    Alert.alert(
-      `Block ${name}?`,
-      'You won’t see each other in the feed or chats, and you won’t be able to join the same sessions. They won’t be told. You can undo this in Account → Blocked climbers.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Block',
-          style: 'destructive',
-          onPress: () =>
-            block.mutate(
-              { blockedId: profileId },
-              { onSuccess: () => router.back() },
-            ),
-        },
-      ],
-    );
-  }
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Block ${name}`}
-      disabled={block.isPending}
-      onPress={confirm}
-      className="flex-row items-center gap-1.5 px-3 py-2 active:opacity-60">
-      <Ban size={13} color={colors.rock[400]} strokeWidth={2} />
-      <Text className="font-sans text-[13px] text-rock-400">Block user</Text>
-    </Pressable>
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Block ${name}`}
+        onPress={() => setSheetOpen(true)}
+        className="flex-row items-center gap-1.5 px-3 py-2 active:opacity-60">
+        <Ban size={13} color={colors.rock[400]} strokeWidth={2} />
+        <Text className="font-sans text-[13px] text-rock-400">Block user</Text>
+      </Pressable>
+      <BlockSheet
+        visible={sheetOpen}
+        name={name}
+        submitting={block.isPending}
+        error={block.isError}
+        onConfirm={() =>
+          block.mutate(
+            { blockedId: profileId },
+            // Nach dem Blocken ist das Profil unerreichbar (getProfile → null) — zurück,
+            // statt in den „doesn't exist"-Zustand zu kippen. Kein Sheet-Schließen nötig,
+            // der Screen ist eh weg.
+            { onSuccess: () => router.back() },
+          )
+        }
+        onClose={() => setSheetOpen(false)}
+      />
+    </>
   );
 }
 
