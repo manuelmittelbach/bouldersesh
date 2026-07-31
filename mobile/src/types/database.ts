@@ -233,7 +233,25 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["profile_blocks"]["Insert"]>;
-        Relationships: [];
+        // Anders als der Rest der Tabellen hier trägt profile_blocks seine FK-Relationen
+        // aus: nur so kann supabase-js den `profiles!..._fkey ( … )`-Embed in
+        // useBlockedProfiles (blocks.ts) typisieren, ohne `as unknown as`-Cast.
+        Relationships: [
+          {
+            foreignKeyName: "profile_blocks_blocker_id_fkey";
+            columns: ["blocker_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profile_blocks_blocked_id_fkey";
+            columns: ["blocked_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: Record<string, never>;
