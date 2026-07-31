@@ -10,6 +10,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import type { Session } from "@/types/database";
 
+import { fetchMyBlockIds } from "./blocks";
+
 // Der Feed lädt nicht mehr nur offene Sessions, sondern auch volle (`matched`) des
 // Tages (ADR-0011) — daher `feed`- statt `open`-Semantik im Symbolnamen. Der Cache-Key-
 // WERT bleibt aber bewusst `["sessions", "open", …]`: bestehende Invalidierungen
@@ -104,19 +106,29 @@ const SESSION_SELECT = `
   climbers:match_requests ( requester:profiles!match_requests_requester_id_fkey ( id, display_name, avatar_path ) )
 `;
 
-/** Den `climbers`-Embed zu einer flachen Profilliste + `accepted_count` normalisieren. */
-function withClimbers(row: unknown): SessionWithMeta {
+/** Den `climbers`-Embed zu einer flachen Profilliste + `accepted_count` normalisieren.
+ *  Geblockte Mitkletternde (in beide Richtungen, siehe blocks.ts) fallen aus dem Stack
+ *  UND aus dem Zähler — für mich existieren sie nicht. `accepted_count` bleibt dadurch
+ *  konsistent mit dem, was ich sehe (belegte/freie Plätze rechnen sich clientseitig aus
+ *  dieser Länge, ADR-0007). */
+function withClimbers(row: unknown, blocked: Set<string>): SessionWithMeta {
   const { climbers, ...rest } = row as Record<string, unknown> & {
     climbers?: { requester: SessionClimber | null }[];
   };
   const list = (climbers ?? [])
     .map((c) => c.requester)
-    .filter((r): r is SessionClimber => r != null);
+    .filter((r): r is SessionClimber => r != null && !blocked.has(r.id));
   return {
     ...(rest as unknown as SessionWithMeta),
     climbers: list,
     accepted_count: list.length,
   };
+}
+
+/** Ob die Ersteller:in einer Feed-Zeile geblockt ist (dann fällt die ganze Session
+ *  aus meiner Sicht — nicht bloß der Avatar). `creator_id` liegt via `*` auf der Zeile. */
+function creatorBlocked(row: unknown, blocked: Set<string>): boolean {
+  return blocked.has((row as { creator_id: string }).creator_id);
 }
 
 async function getFeedSessions(
@@ -136,9 +148,14 @@ async function getFeedSessions(
   if (params.from) query = query.gte("starts_at", params.from);
   if (params.to) query = query.lte("starts_at", params.to);
 
-  const { data, error } = await query;
+  const [blocked, { data, error }] = await Promise.all([
+    fetchMyBlockIds(),
+    query,
+  ]);
   if (error) throw error;
-  return (data ?? []).map(withClimbers);
+  return (data ?? [])
+    .filter((row) => !creatorBlocked(row, blocked))
+    .map((row) => withClimbers(row, blocked));
 }
 
 export function useFeedSessions(params: FeedSessionsParams = {}) {
@@ -155,14 +172,21 @@ export function useFeedSessions(params: FeedSessionsParams = {}) {
 }
 
 async function getSession(id: string): Promise<SessionWithMeta | null> {
-  const { data, error } = await supabase
-    .from("sessions")
-    .select(SESSION_SELECT)
-    .eq("id", id)
-    .eq("climbers.status", "accepted")
-    .maybeSingle();
+  const [blocked, { data, error }] = await Promise.all([
+    fetchMyBlockIds(),
+    supabase
+      .from("sessions")
+      .select(SESSION_SELECT)
+      .eq("id", id)
+      .eq("climbers.status", "accepted")
+      .maybeSingle(),
+  ]);
   if (error) throw error;
-  return data ? withClimbers(data) : null;
+  if (!data) return null;
+  // Habe ich die Ersteller:in geblockt, ist die ganze Session für mich weg — nicht
+  // bloß der Name (sonst bliebe eine „Anonymous"-Runde als toter Einstieg stehen).
+  if (creatorBlocked(data, blocked)) return null;
+  return withClimbers(data, blocked);
 }
 
 export function useSession(id: string | undefined) {
@@ -192,7 +216,10 @@ async function getMySessions(userId: string): Promise<SessionWithMeta[]> {
   // Nie-bespielte Sessions (niemand beigetreten UND kein Chat-Verlauf) blendet die
   // Chats-Liste 1h nach Start aus (siehe chats.tsx) — das braucht die Chat-Daten und
   // lebt daher dort, nicht hier. Der pg_cron-Job 0021/0022 löscht sie DB-seitig.
-  return (data ?? []).map(withClimbers);
+  // Die Ersteller:in bin hier immer ich — kein Creator-Filter nötig, nur geblockte
+  // Mitkletternde fallen aus dem Roster (withClimbers).
+  const blocked = await fetchMyBlockIds();
+  return (data ?? []).map((row) => withClimbers(row, blocked));
 }
 
 export function useMySessions() {
@@ -236,21 +263,27 @@ async function getMyParticipations(userId: string): Promise<MyParticipation[]> {
   const ids = [...statusBySession.keys()];
   if (ids.length === 0) return [];
 
-  const { data, error } = await supabase
-    .from("sessions")
-    .select(SESSION_SELECT)
-    .in("id", ids)
-    .eq("climbers.status", "accepted")
-    .gte("starts_at", chatRetentionCutoff())
-    .order("starts_at", { ascending: true });
+  const [blocked, { data, error }] = await Promise.all([
+    fetchMyBlockIds(),
+    supabase
+      .from("sessions")
+      .select(SESSION_SELECT)
+      .in("id", ids)
+      .eq("climbers.status", "accepted")
+      .gte("starts_at", chatRetentionCutoff())
+      .order("starts_at", { ascending: true }),
+  ]);
   if (error) throw error;
 
   // pending fällt schon ab `starts_at + 1h` raus (Requested-Sektion, siehe
   // REQUEST_RETENTION_MS); accepted bleibt bis `+ 24h` sichtbar (Chat-Fenster).
+  // Habe ich die Ersteller:in geblockt, fällt die Session ganz raus (block_profile
+  // hat mich ohnehin schon ausgetragen — dies fängt den Übergang read-side ab).
   const requestCutoff = requestRetentionCutoff();
   return (data ?? [])
+    .filter((row) => !creatorBlocked(row, blocked))
     .map((row) => {
-      const session = withClimbers(row);
+      const session = withClimbers(row, blocked);
       return { session, myStatus: statusBySession.get(session.id)! };
     })
     .filter(

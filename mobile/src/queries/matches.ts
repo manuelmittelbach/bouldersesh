@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import type { MatchRequest } from "@/types/database";
 
+import { fetchMyBlockIds } from "./blocks";
+
 const REQUESTS_FOR_SESSION_KEY = (sessionId: string) =>
   ["matches", "session", sessionId] as const;
 // Meine ausgehenden Anfragen. Alles darunter (…, "session", id / …, "all", uid)
@@ -46,7 +48,13 @@ async function getRequestsForSession(
     .neq("status", "cancelled")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as unknown as MatchRequestWithRequester[];
+  // Geblockte Anfragende ausblenden. block_profile lehnt ihre Anfrage an meine Session
+  // ohnehin schon ab; dies fängt den Übergang read-side ab, damit kein geblockter Name
+  // in der Anfragen-Liste stehen bleibt.
+  const blocked = await fetchMyBlockIds();
+  return ((data ?? []) as unknown as MatchRequestWithRequester[]).filter(
+    (r) => !r.requester || !blocked.has(r.requester.id),
+  );
 }
 
 export function useRequestsForSession(sessionId: string | undefined) {
@@ -184,7 +192,11 @@ async function getClimbersForSession(
     // Aufsteigend: frühe Zusagen zuerst — die Liste liest sich wie eine Beitrittsreihe.
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as unknown as MatchRequestWithRequester[];
+  // Geblockte aus dem öffentlichen Kader ausblenden (beide Richtungen, siehe blocks.ts).
+  const blocked = await fetchMyBlockIds();
+  return ((data ?? []) as unknown as MatchRequestWithRequester[]).filter(
+    (r) => !r.requester || !blocked.has(r.requester.id),
+  );
 }
 
 /**

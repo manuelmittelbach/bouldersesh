@@ -7,15 +7,20 @@ import {
 import { supabase } from "@/lib/supabase";
 import type { Profile } from "@/types/database";
 
+import { fetchMyBlockIds } from "./blocks";
+
 const PROFILE_KEY = (id: string) => ["profiles", id] as const;
 
 async function getProfile(id: string): Promise<Profile | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+  const [blocked, { data, error }] = await Promise.all([
+    fetchMyBlockIds(),
+    supabase.from("profiles").select("*").eq("id", id).maybeSingle(),
+  ]);
   if (error) throw error;
+  // Geblockte Profile (beide Richtungen) verschwinden — profile/[id] zeigt dann
+  // seinen bestehenden „This climber doesn't exist (anymore)"-Zustand. Mein eigenes
+  // Profil ist nie in der Menge (kein Self-Block), der Profil-Tab bleibt also heil.
+  if (data && blocked.has(data.id)) return null;
   return data;
 }
 

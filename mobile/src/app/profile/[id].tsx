@@ -1,5 +1,5 @@
-import { useLocalSearchParams } from 'expo-router';
-import { Flag } from 'lucide-react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Ban, Flag } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { Avatar, GradePill, ScreenHeader } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, gradeBand, skillLabel } from '@/lib/utils';
+import { useBlockProfile } from '@/queries/blocks';
 import { useProfile } from '@/queries/profiles';
 import { useHasReported, useReportProfile } from '@/queries/reports';
 import { colors } from '@/theme/colors';
@@ -66,6 +67,47 @@ function ReportButton({ profileId, name }: { profileId: string; name: string }) 
       className="flex-row items-center gap-1.5 px-3 py-2 active:opacity-60">
       <Flag size={13} color={colors.rock[400]} strokeWidth={2} />
       <Text className="font-sans text-[13px] text-rock-400">Report profile</Text>
+    </Pressable>
+  );
+}
+
+/** Blocken eines fremden Profils — der persönliche, sofort wirkende Schutz (getrennt
+ *  von „Report", ADR-Entscheidung): ihr seht euch nicht mehr und könnt nicht mehr
+ *  gemeinsam klettern. Kein Review, kein „wir sehen es uns an" — das ist Melden. Nach
+ *  dem Blocken verschwindet das Profil (getProfile → null), darum gehen wir gleich
+ *  zurück, statt in den „doesn't exist"-Zustand zu kippen. Zurücknehmen geht im
+ *  Account unter „Blocked climbers". */
+function BlockButton({ profileId, name }: { profileId: string; name: string }) {
+  const block = useBlockProfile();
+
+  function confirm() {
+    Alert.alert(
+      `Block ${name}?`,
+      'You won’t see each other in the feed or chats, and you won’t be able to join the same sessions. They won’t be told. You can undo this in Account → Blocked climbers.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: () =>
+            block.mutate(
+              { blockedId: profileId },
+              { onSuccess: () => router.back() },
+            ),
+        },
+      ],
+    );
+  }
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Block ${name}`}
+      disabled={block.isPending}
+      onPress={confirm}
+      className="flex-row items-center gap-1.5 px-3 py-2 active:opacity-60">
+      <Ban size={13} color={colors.rock[400]} strokeWidth={2} />
+      <Text className="font-sans text-[13px] text-rock-400">Block user</Text>
     </Pressable>
   );
 }
@@ -147,11 +189,13 @@ export default function ProfileDetail() {
           </View>
         ) : null}
 
-        {/* Melden — nur bei fremden Profilen, und unauffällig am Fuß: die Meldung
-            ist der Ausnahmefall, nicht die angebotene Handlung. Früher in der
-            Session-Detail, seit dem Verschieben hier. */}
+        {/* Blocken + Melden — nur bei fremden Profilen, unauffällig am Fuß: getrennte
+            Aktionen (Block = persönlicher Sofortschutz, Report = Moderation). Beides ist
+            der Ausnahmefall, nicht die angebotene Handlung. Früher in der Session-Detail,
+            seit dem Verschieben hier. */}
         {!isOwn ? (
-          <View className="mt-10 items-center">
+          <View className="mt-10 items-center gap-1">
+            <BlockButton profileId={profile.id} name={name} />
             <ReportButton profileId={profile.id} name={name} />
           </View>
         ) : null}

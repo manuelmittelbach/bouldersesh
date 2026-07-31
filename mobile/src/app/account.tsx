@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Lock, LogOut, Mail } from "lucide-react-native";
+import { Ban, Lock, LogOut, Mail } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
@@ -279,6 +279,20 @@ export default function Account() {
               </Text>
             ) : null}
           </View>
+        </View>
+
+        {/* Sicherheit */}
+        <View className="mt-9 border-t border-rock-100 pt-8">
+          <SectionHeader>Safety</SectionHeader>
+          <Button
+            variant="outline"
+            size="lg"
+            fullWidth
+            icon={<Ban size={18} color={colors.rock[700]} strokeWidth={2} />}
+            onPress={() => router.push("/blocked")}
+          >
+            Blocked climbers
+          </Button>
         </View>
 
         {/* Account-Aktionen */}
