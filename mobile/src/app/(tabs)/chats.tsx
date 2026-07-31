@@ -448,20 +448,33 @@ export default function Chats() {
     [participations.data, chatBySession, stillMember],
   );
 
-  // „Your Sessions" = eigene + beigetretene Sessions in EINER zeitlich sortierten Liste.
-  // Die Rolle reist als Tag mit, damit renderEntry weiter Krone/Avatar, Pill und Delete-vs-
-  // Leave rollenrichtig rendert — nur die Sektions-Überschrift entfällt. EINZIGE Sortierstelle
-  // für diese Zeilen (mySessions/joined kommen ungeordnet rein): nach Termin (früh → spät),
-  // damit die nächste Session oben steht, unabhängig von Rolle und Chat-Aktivität — gleicher
-  // Schlüssel wie die Requested-Liste.
-  const active = useMemo<{ entry: Entry; role: 'host' | 'joined' }[]>(
-    () =>
-      [
-        ...mySessions.map((entry) => ({ entry, role: 'host' as const })),
-        ...joined.map((entry) => ({ entry, role: 'joined' as const })),
-      ].sort((a, b) => a.entry.session.starts_at.localeCompare(b.entry.session.starts_at)),
-    [mySessions, joined],
-  );
+  // „Your Sessions" = eigene + beigetretene Sessions in EINER Liste, in zwei Blöcken
+  // sortiert (EINZIGE Sortierstelle für diese Zeilen; mySessions/joined kommen ungeordnet
+  // rein). Die Rolle reist als Tag mit, damit renderEntry weiter Krone/Avatar, Pill und
+  // Delete-vs-Leave rollenrichtig rendert — nur die Sektions-Überschrift entfällt.
+  //   1. Upcoming (Termin noch nicht vorbei): nach Termin früh → spät, die nächste Session
+  //      oben — da zählt die Logistik-Absprache, nicht wer zuletzt „👍" schrieb.
+  //   2. Past/After-Chat (Termin vorbei): kein sinnvoller Termin-Anker mehr, also nach
+  //      letzter Chat-Aktivität neu → alt (lastMessage.sent_at, sonst createdAt — gleicher
+  //      Anker wie getMyChats). So verhält sich der After-Chat wie ein normaler Messenger.
+  //   3. Alle Upcoming vor allen Past.
+  const active = useMemo<{ entry: Entry; role: 'host' | 'joined' }[]>(() => {
+    const now = new Date().toISOString();
+    // Aktivitäts-Anker eines Eintrags für den Past-Block; Session-Termin als letzter
+    // Fallback, falls (noch) kein Chat geladen ist.
+    const activityAt = (e: Entry) =>
+      e.chat?.lastMessage?.sent_at ?? e.chat?.createdAt ?? e.session.starts_at;
+    return [
+      ...mySessions.map((entry) => ({ entry, role: 'host' as const })),
+      ...joined.map((entry) => ({ entry, role: 'joined' as const })),
+    ].sort((a, b) => {
+      const aPast = a.entry.session.starts_at < now;
+      const bPast = b.entry.session.starts_at < now;
+      if (aPast !== bPast) return aPast ? 1 : -1; // Upcoming vor Past.
+      if (!aPast) return a.entry.session.starts_at.localeCompare(b.entry.session.starts_at);
+      return activityAt(b.entry).localeCompare(activityAt(a.entry));
+    });
+  }, [mySessions, joined]);
 
   const isLoading = created.isLoading || participations.isLoading;
   const error = (created.error ?? participations.error) as Error | null;
