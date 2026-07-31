@@ -190,20 +190,21 @@ export default function ProfileDetail() {
             </Text>
           </View>
         ) : null}
+      </ScrollView>
 
-        {/* Blocken + Melden — nur bei fremden Profilen, unauffällig am Fuß: getrennte
-            Aktionen (Block = persönlicher Sofortschutz, Report = Moderation). Beides ist
-            der Ausnahmefall, nicht die angebotene Handlung. Früher in der Session-Detail,
-            seit dem Verschieben hier. */}
-        {!isOwn ? (
-          // In die beiden unteren Ecken statt mittig gestapelt: so sind die Ausnahme-
-          // Aktionen präsent, aber nicht prominent (Block links, Report rechts).
-          <View className="mt-10 flex-row items-start justify-between">
+      {/* Blocken + Melden — nur bei fremden Profilen, getrennte Aktionen (Block =
+          persönlicher Sofortschutz, Report = Moderation). Bewusst AUSSERHALB der ScrollView:
+          eine fixe Fußzeile in den unteren Ecken (Block links, Report rechts), damit die
+          Ausnahme-Aktionen immer am Bildschirmrand sitzen — auch bei leerem Profil rutschen
+          sie nicht mit dem Inhalt hoch. Der flex-1-ScrollView darüber gibt den Platz frei. */}
+      {!isOwn ? (
+        <SafeAreaView edges={['bottom']}>
+          <View className="flex-row items-start justify-between px-5 pb-1 pt-2">
             <BlockButton profileId={profile.id} name={name} />
             <ReportButton profileId={profile.id} name={name} />
           </View>
-        ) : null}
-      </ScrollView>
+        </SafeAreaView>
+      ) : null}
 
       <FullImageViewer uri={viewerUri} onClose={() => setViewerUri(null)} shape="circle" />
     </SafeAreaView>
