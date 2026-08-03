@@ -32,6 +32,29 @@ Session findet immer in einer Halle statt, nie „irgendwo in der Stadt".
 
 Hallen sind derzeit kuratiert. Nutzer:innen dürfen sie (noch) nicht anlegen.
 
+## Anzeigename (Display Name)
+
+Der Name, unter dem eine Person in der App **erscheint** — im Feed, im Chat, am
+Session-Detail, am Profil. **Frei gewählt, jederzeit änderbar, und ausdrücklich
+nicht eindeutig**: zwei Leute dürfen „Max M." heißen; auseinandergehalten werden
+sie über [Avatar](#avatar) und Kontext (Halle, Session), nicht über den Namen.
+
+Der Anzeigename ist **Pflicht** — er wird beim ersten Login abgefragt, bevor man
+die App betritt. Eine Person ohne Anzeigenamen gibt es nicht.
+
+Abzugrenzen von zwei Dingen, mit denen er gern verwechselt wird:
+
+- **Anmelde-Identität (Login):** Womit man sich einloggt — **Email oder ein
+  Social-Konto (Apple/Google)**, nie der Anzeigename. Die Identität ist stabil
+  und hat einen Wiederherstellungs-Kanal (Reset an die Email); der Anzeigename
+  hat das bewusst nicht.
+- **Username / Handle:** Ein *eindeutiger* Bezeichner, über den Leute einander
+  **suchen oder erwähnen**. Boulder Buddy hat **keinen** — Leute finden sich über
+  [Sessions](#session), nicht über Namenssuche. Fällt erst an, wenn es je eine
+  Nutzersuche gäbe.
+
+_Avoid_: Username (als Synonym), „Login-Name", eindeutiger Name
+
 ## Avatar
 
 Das Bild, das eine Person überall dort vertritt, wo sie nur beiläufig vorkommt —

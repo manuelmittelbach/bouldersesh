@@ -14,14 +14,17 @@ import {
   useChangePassword,
 } from "@/queries/account";
 import { useUpdateProfile } from "@/queries/profiles";
+import { mapAuthError } from "@/lib/authErrors";
+import { MIN_PASSWORD } from "@/lib/password";
 import { colors } from "@/theme/colors";
 
 // „Persönliche Daten" — die auth-nahen Felder (Name, E-Mail, Passwort), die
 // bewusst NICHT auf dem Profile-Tab liegen: der Tab dreht sich um die
 // Kletter-Identität, dieser Screen um den Account. Abmelden und Löschen sitzen
 // unten, weil sie hierher gehören, nicht in den Feed-nahen Tab.
-
-const MIN_PASSWORD = 6;
+//
+// Die Passwort-Mindestlänge kommt aus @/lib/password (MIN_PASSWORD) — dieselbe
+// Grenze wie im Signup/Reset-Flow (ADR-0016), damit sie nicht auseinanderdriftet.
 
 function SectionHeader({ children }: { children: string }) {
   return (
@@ -189,7 +192,7 @@ export default function Account() {
             </Button>
             {emailError ? (
               <Text className="text-center font-sans text-sm text-danger">
-                {emailError.message}
+                {mapAuthError(emailError)}
               </Text>
             ) : null}
             {changeEmail.isSuccess && pendingEmail ? (
@@ -270,7 +273,7 @@ export default function Account() {
             </Button>
             {pwOtherError ? (
               <Text className="text-center font-sans text-sm text-danger">
-                {pwOtherError.message}
+                {mapAuthError(pwOtherError)}
               </Text>
             ) : null}
             {changePassword.isSuccess ? (

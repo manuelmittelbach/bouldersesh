@@ -1,11 +1,10 @@
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Lock, Mail, Mountain } from 'lucide-react-native';
-import { useState } from 'react';
+import { Apple, Mail, Mountain } from 'lucide-react-native';
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,54 +13,37 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { Button, Input } from '@/components/ui';
-import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui';
+import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal';
 import { colors } from '@/theme/colors';
 
-type Mode = 'signin' | 'signup';
+// Screen 1 des Auth-Flows (ADR-0016): die Wahl der Anmelde-METHODE, noch kein
+// Formular. Apple/Google nativ (oben, App-Store-Konvention) — oder Email als
+// Fallback, die zu Screen 2 (`auth/email`) führt. KEIN Signin/Signup-Toggle mehr:
+// derselbe Einstieg für neue wie wiederkehrende Nutzer:innen.
+//
+// Apple/Google sind hier bewusst DEAKTIVIERTE Platzhalter: die nativen SDKs
+// (signInWithIdToken) brauchen Apple-Developer- + Google-OAuth-Credentials und
+// einen frischen Dev-Build; beides wird separat nachgezogen. Bis dahin steht der
+// Email-Weg voll funktionsfähig, die Social-Buttons zeigen ihren Zielzustand.
+//
+// Aufbau: ein Foto einer Boulderhalle als „Wand" (Front-Tür-Moment), davor steigt
+// die helle Fläche auf. Ein dunkler SVG-Scrim über dem Foto hält Text + Akzent
+// lesbar. Das Hero-Bild ist ein lizenzfreies Stock-Foto (Pexels) —
+// `assets/images/gym-hero.jpg` ersetzen für ein eigenes Hallen-Foto.
 
-// Login-first-Einstieg. E-Mail/Passwort (kein Magic-Link → kein Deep-Linking nötig).
-// Bei Erfolg setzt supabase die Session; das Root-Gate (Stack.Protected) leitet dann
-// automatisch in die App um — hier ist keine Navigation nötig.
-//
-// Aufbau: ein Foto einer Boulderhalle als „Wand" (Front-Tür-Moment), davor steigt die
-// helle Formular-Fläche auf (rock-25 = der Grund jeder App-Seite danach). Ein dunkler
-// Farbverlauf (SVG-Scrim) über dem Foto hält den weißen Text + den Send-Orange-Akzent
-// lesbar — egal wie hell das Bild an einer Stelle ist. Der Primär-Button ist der einzige
-// weitere Orange-Hit im Screen (DS: ein Akzent pro View).
-//
-// Das Hero-Bild ist ein lizenzfreies Stock-Foto (Pexels). Zum Austauschen gegen ein
-// eigenes Hallen-Foto einfach `assets/images/gym-hero.jpg` ersetzen.
+function OrDivider() {
+  return (
+    <View className="my-5 flex-row items-center gap-3">
+      <View className="h-px flex-1 bg-rock-200" />
+      <Text className="font-sans text-[13px] text-rock-400">or</Text>
+      <View className="h-px flex-1 bg-rock-200" />
+    </View>
+  );
+}
 
 export default function Login() {
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<Mode>('signin');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [confirmSent, setConfirmSent] = useState(false);
-
-  async function submit() {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
-        if (error) throw error;
-        // Ist E-Mail-Bestätigung serverseitig an, kommt keine Session zurück → Hinweis.
-        if (!data.session) setConfirmSent(true);
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-        if (error) throw error;
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <View className="flex-1 bg-rock-25">
@@ -86,11 +68,7 @@ export default function Login() {
               style={StyleSheet.absoluteFill}
             />
             {/* Scrim: NUR die Text-Zonen schützen — oben (Statusbar/Wortmarke) und unten
-                (Headline). Die Mitte bleibt klar, damit das Foto so lebendig wirkt wie das
-                Original (bunte Griffe + Kletterin). */}
-            {/* viewBox + preserveAspectRatio="none" → das 0..100-Koordinatensystem wird auf
-                die volle Hero-Fläche gestreckt. Prozentwerte in react-native-svg lösen gegen
-                den Container NICHT zuverlässig auf (ergaben eine sichtbare Box statt Full-Bleed). */}
+                (Headline). Die Mitte bleibt klar, damit das Foto lebendig wirkt. */}
             <Svg
               style={StyleSheet.absoluteFill}
               preserveAspectRatio="none"
@@ -125,85 +103,60 @@ export default function Login() {
             </Text>
           </View>
 
-          {/* ── Der Grund ── helle Formular-Fläche, steigt vor der Wand auf (-mt + Radius). */}
+          {/* ── Der Grund ── helle Fläche, steigt vor der Wand auf (-mt + Radius). */}
           <View
             className="-mt-4 flex-1 rounded-t-[20px] bg-rock-25 px-6 pt-7"
             style={{ paddingBottom: insets.bottom + 20 }}>
-            <View>
-              <Text className="font-display-bold text-[22px] leading-7 text-rock-900">
-                {mode === 'signup' ? 'Create your account' : 'Welcome back'}
+            <Text className="font-display-bold text-[22px] leading-7 text-rock-900">
+              Get climbing
+            </Text>
+            <Text className="mt-1.5 font-sans text-[15px] leading-5 text-rock-500">
+              Sign in or create an account to see who’s climbing near you.
+            </Text>
+
+            <View className="mt-6 gap-3">
+              {/* Social — Zielzustand sichtbar, bis Credentials + Dev-Build stehen
+                  deaktiviert. Apple oben (App-Store-Konvention, sobald irgendein
+                  Social-Login angeboten wird, ist Apple Pflicht). */}
+              <Button
+                variant="secondary"
+                size="lg"
+                fullWidth
+                disabled
+                icon={<Apple size={19} color={colors.rock[0]} strokeWidth={2} />}>
+                Continue with Apple
+              </Button>
+              <Button variant="outline" size="lg" fullWidth disabled>
+                Continue with Google
+              </Button>
+              <Text className="text-center font-sans text-xs text-rock-400">
+                Apple & Google sign-in are coming soon.
               </Text>
-              <Text className="mt-1.5 font-sans text-[15px] leading-5 text-rock-500">
-                {mode === 'signup'
-                  ? "Email and a password — that's it."
-                  : "Sign in to see who's climbing."}
-              </Text>
+
+              <OrDivider />
+
+              {/* Email — der voll funktionsfähige Weg. Führt zu Screen 2. */}
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                onPress={() => router.push('/auth/email')}
+                icon={<Mail size={19} color={colors.rock[0]} strokeWidth={2} />}>
+                Continue with email
+              </Button>
             </View>
 
-            {confirmSent ? (
-              <View className="mt-7 rounded-lg bg-success-surface p-5">
-                <Text className="font-display text-base text-success">Check your inbox</Text>
-                <Text className="mt-1 font-sans text-sm leading-5 text-rock-700">
-                  We sent a confirmation link to {email}. Tap it, then you can sign in.
-                </Text>
-              </View>
-            ) : (
-              <View className="mt-6 gap-3">
-                {/* Modus-Umschalter */}
-                <View className="mb-1 flex-row gap-1 rounded-md bg-rock-100 p-1">
-                  {(['signin', 'signup'] as Mode[]).map((m) => (
-                    <Pressable
-                      key={m}
-                      onPress={() => {
-                        setMode(m);
-                        setError(null);
-                      }}
-                      className={`flex-1 items-center rounded-sm py-2 ${mode === m ? 'bg-rock-0 shadow-xs' : ''}`}>
-                      <Text
-                        className={`font-sans-semibold text-sm ${mode === m ? 'text-rock-900' : 'text-rock-500'}`}>
-                        {m === 'signin' ? 'Sign in' : 'Sign up'}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                <Input
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="you@example.com"
-                  icon={<Mail size={18} color={colors.rock[400]} strokeWidth={2} />}
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  inputMode="email"
-                />
-                <Input
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Password (min. 6 characters)"
-                  icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
-                  secureTextEntry
-                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                />
-
-                {/* Fehler als eigene Zeile — nicht an ein einzelnes Feld gebunden, da die
-                    Meldung Mail ODER Passwort ODER allgemein betreffen kann. */}
-                {error ? <Text className="font-sans text-sm text-danger">{error}</Text> : null}
-
-                <Button
-                  onPress={submit}
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  loading={busy}
-                  className="mt-1">
-                  {mode === 'signup' ? 'Create account' : 'Sign in'}
-                </Button>
-              </View>
-            )}
-
-            <Text className="mt-auto pt-8 text-center font-sans text-xs text-rock-400">
-              By signing in you accept our privacy policy.
+            {/* Inline-ToS — Platzhalter-URLs, im In-App-Browser (kein Deep-Link). */}
+            <Text className="mt-auto pt-8 text-center font-sans text-xs leading-5 text-rock-400">
+              By continuing you agree to our{' '}
+              <Text className="text-rock-600 underline" onPress={() => openLegal(TERMS_URL)}>
+                Terms
+              </Text>{' '}
+              and{' '}
+              <Text className="text-rock-600 underline" onPress={() => openLegal(PRIVACY_URL)}>
+                Privacy Policy
+              </Text>
+              .
             </Text>
           </View>
         </ScrollView>

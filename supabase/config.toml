@@ -23,10 +23,25 @@ port = 54323
 [auth]
 enabled = true
 site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173/auth/callback"]
+# Bewusst KEINE Redirect-URLs: Verify & Reset laufen über OTP-Codes, nicht über
+# Links — es gibt keinen Web-OAuth-/Magic-Link-Rücklauf zu erlauben (ADR-0016).
+additional_redirect_urls = []
 jwt_expiry = 3600
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = false  # for dev only — turn on in prod
+# Email-Bestätigung ist AN (ADR-0016): unbestätigte, potenziell gefälschte Accounts
+# dürfen bei einer Kontakt-App nicht schon anfragen/schreiben. Verifiziert wird per
+# 6-stelligem OTP-Code (verifyOtp), NICHT per Link → kein Deep-Linking nötig.
+enable_confirmations = true
+
+# WICHTIG — nur am LIVE-Projekt (Dashboard), nicht in dieser lokalen config:
+#   1. Email-Templates „Confirm signup" und „Reset password" auf {{ .Token }}
+#      umstellen (statt {{ .ConfirmationURL }}), damit die Mails den CODE tragen.
+#   2. Leaked-Password-Protection aktivieren
+#      (Authentication → Policies → „Prevent use of leaked passwords").
+#   3. Kein Site-URL/Redirect fürs Deep-Linking einrichten — bewusst nicht gebraucht.
+# Externe Voraussetzungen für Social-Login (Apple Dev Account, Google OAuth
+# Client-IDs) werden separat nachgezogen; die App zeigt die Buttons bis dahin
+# deaktiviert.
