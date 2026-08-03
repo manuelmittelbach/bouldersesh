@@ -41,7 +41,7 @@ export default function AuthForgot() {
   return (
     <AuthScaffold
       title="Reset your password"
-      subtitle="Enter your email and we’ll send you a 6-digit code to set a new password.">
+      subtitle="Enter your email and we’ll send you an 8-digit code to set a new password.">
       <Input
         value={email}
         onChangeText={setEmail}

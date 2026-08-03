@@ -33,13 +33,14 @@ enable_signup = true
 double_confirm_changes = true
 # Email-Bestätigung ist AN (ADR-0016): unbestätigte, potenziell gefälschte Accounts
 # dürfen bei einer Kontakt-App nicht schon anfragen/schreiben. Verifiziert wird per
-# 6-stelligem OTP-Code (verifyOtp), NICHT per Link → kein Deep-Linking nötig.
+# 8-stelligem OTP-Code (verifyOtp), NICHT per Link → kein Deep-Linking nötig.
 enable_confirmations = true
 
-# OTP-Länge = 6, MUSS zur App passen: der Verify-Screen (auth/verify.tsx,
-# CODE_LENGTH = 6) und OtpInput haben genau 6 Felder. Steht das Projekt auf 8,
-# trägt die Mail einen 8-stelligen Code, den der 6-Felder-Screen nie annimmt.
-otp_length = 6
+# OTP-Länge = 8, MUSS zur App passen: der Verify-Screen (auth/verify.tsx,
+# CODE_LENGTH = 8) und OtpInput haben genau 8 Felder. Das Live-Projekt steht auf 8
+# (Default) — dieser Wert hält die lokale Config damit deckungsgleich, damit ein
+# 'config push' die Länge nicht versehentlich auf etwas anderes zieht.
+otp_length = 8
 
 # WICHTIG — nur am LIVE-Projekt (Dashboard), nicht in dieser lokalen config:
 #   1. Email-Templates „Confirm signup" und „Reset password" auf {{ .Token }}

@@ -3,21 +3,23 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { cn } from '@/lib/utils';
 
-// 6-stelliges Code-Feld für Email-Verify UND Passwort-Reset (ADR-0016).
+// 8-stelliges Code-Feld für Email-Verify UND Passwort-Reset (ADR-0016).
+// Länge = Supabase-OTP-Länge des Projekts (mailer_otp_length = 8); muss exakt
+// passen, sonst nimmt der Screen den Code aus der Mail nie an.
 //
 // Ein EINZIGES (unsichtbares) TextInput fängt die Eingabe ab; darüber liegen
-// sechs sichtbare Kästchen. So bekommen wir iOS-SMS/Email-Autofill
-// (`textContentType="oneTimeCode"`) und ein sauberes number-pad, ohne sechs
+// acht sichtbare Kästchen. So bekommen wir iOS-SMS/Email-Autofill
+// (`textContentType="oneTimeCode"`) und ein sauberes number-pad, ohne acht
 // Felder mit fragilem Fokus-Weiterreichen zu bauen. Die aktive Umrandung läuft
 // über ein getoggeltes border-className (wie im DS-`Input`) — Schatten werden
 // hier bewusst NICHT getoggelt (NativeWind-Shadow-Toggle-Crash).
 
-const LENGTH = 6;
+const LENGTH = 8;
 
 export type OtpInputProps = {
   value: string;
   onChangeText: (next: string) => void;
-  /** Feuert, sobald alle sechs Stellen stehen — gut für Auto-Submit. */
+  /** Feuert, sobald alle acht Stellen stehen — gut für Auto-Submit. */
   onComplete?: (code: string) => void;
   autoFocus?: boolean;
   editable?: boolean;
@@ -60,10 +62,10 @@ export function OtpInput({
             <View
               key={i}
               className={cn(
-                'h-14 w-[46px] items-center justify-center rounded-md border bg-rock-0',
+                'h-14 w-9 items-center justify-center rounded-md border bg-rock-0',
                 border,
               )}>
-              <Text className="font-display-bold text-[22px] text-rock-900">{char}</Text>
+              <Text className="font-display-bold text-[20px] text-rock-900">{char}</Text>
             </View>
           );
         })}
