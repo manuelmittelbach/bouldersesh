@@ -33,7 +33,7 @@ function Eyebrow({ children }: { children: string }) {
 }
 
 export default function Onboarding() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const update = useUpdateProfile();
   const setAvatar = useSetAvatar();
 
@@ -148,6 +148,19 @@ export default function Onboarding() {
           disabled={!canContinue}>
           Continue
         </Button>
+
+        {/* Ausweg aus dem Identitäts-Gate: ohne das säße man hier fest, falls die
+            Session zu keinem (existierenden) Profil passt — etwa eine verwaiste
+            Session nach einem Account-Löschen. Abmelden flippt den Session-Guard
+            und führt zurück auf Login. */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={signOut}
+          className="items-center py-2 active:opacity-60">
+          <Text className="font-sans-medium text-[15px] text-rock-500">
+            Not you? Log out
+          </Text>
+        </Pressable>
       </View>
     </AuthScaffold>
   );
