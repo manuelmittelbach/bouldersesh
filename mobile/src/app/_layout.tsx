@@ -70,12 +70,6 @@ function RootNavigator() {
               <Stack.Screen name="sessions/[id]" />
               <Stack.Screen name="chats/[id]" />
               <Stack.Screen name="profile/[id]" />
-              {/* Eigener Bild-Zuschnitt (Avatar). Vollbild-Modal, damit die
-                  Maske die runde Form zeigt statt der eckigen OS-Crop-UI. */}
-              <Stack.Screen
-                name="crop-image"
-                options={{ presentation: "fullScreenModal", animation: "fade" }}
-              />
             </Stack.Protected>
             <Stack.Screen name="city" />
             {/* Aus dem Profil erreichbare Account-Screens. Bei delete-account gilt:
@@ -87,6 +81,15 @@ function RootNavigator() {
           </Stack.Protected>
           {/* Identitäts-Gate: ohne Anzeigenamen nur das Onboarding. */}
           <Stack.Screen name="onboarding" />
+          {/* Eigener Bild-Zuschnitt (Avatar). BEWUSST außerhalb des Stadt- und
+              display_name-Gates: der Avatar kann schon im Onboarding (vor Stadt
+              und vor gesetztem Namen) gewählt werden, und pickAndUploadProfileImage
+              wartet auf genau diesen Screen — läge er im Stadt-Gate, hinge der
+              Upload im Onboarding ewig. Vollbild-Modal für die runde Crop-Maske. */}
+          <Stack.Screen
+            name="crop-image"
+            options={{ presentation: "fullScreenModal", animation: "fade" }}
+          />
         </Stack.Protected>
       </Stack.Protected>
       <Stack.Protected guard={!session}>
