@@ -10,6 +10,22 @@ import type { Profile } from "@/types/database";
 import { fetchMyBlockIds } from "./blocks";
 
 const PROFILE_KEY = (id: string) => ["profiles", id] as const;
+// Muss zeichengleich mit dem Key in useAuth sein: das Onboarding-Gate in
+// _layout.tsx liest `profile.display_name` aus GENAU diesem Cache. Schreiben wir
+// die Mutation nur in PROFILE_KEY (profile/[id]-Screen), sieht das Gate die
+// Änderung erst nach einem Refetch — und flippt im Zweifel gar nicht. Deshalb
+// wird das frische Profil unten direkt auch hier hineingelegt.
+const AUTH_PROFILE_KEY = (id: string) => ["auth", "profile", id] as const;
+
+// Frisches Profil in BEIDE Caches legen (profile/[id] UND das Auth-Gate), damit
+// Navigations-Gates sofort und synchron reagieren, ohne auf einen Refetch zu warten.
+function primeProfileCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  data: Profile,
+) {
+  queryClient.setQueryData(PROFILE_KEY(data.id), data);
+  queryClient.setQueryData(AUTH_PROFILE_KEY(data.id), data);
+}
 
 async function getProfile(id: string): Promise<Profile | null> {
   const [blocked, { data, error }] = await Promise.all([
@@ -46,7 +62,7 @@ export function useUpdateProfile() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(PROFILE_KEY(data.id), data);
+      primeProfileCaches(queryClient, data);
       queryClient.invalidateQueries({ queryKey: ["auth", "profile"] });
     },
   });
@@ -108,7 +124,7 @@ export function useRemoveAvatar() {
 function syncProfileCaches(queryClient: ReturnType<typeof useQueryClient>) {
   return (data: Profile | null) => {
     if (!data) return;
-    queryClient.setQueryData(PROFILE_KEY(data.id), data);
+    primeProfileCaches(queryClient, data);
     queryClient.invalidateQueries({ queryKey: ["auth", "profile"] });
     // Avatare hängen im Feed und in der Chat-Liste mit drin.
     queryClient.invalidateQueries({ queryKey: ["sessions"] });
