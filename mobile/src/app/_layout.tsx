@@ -79,8 +79,16 @@ function RootNavigator() {
             <Stack.Screen name="delete-account" />
             <Stack.Screen name="blocked" />
           </Stack.Protected>
-          {/* Identitäts-Gate: ohne Anzeigenamen nur das Onboarding. */}
-          <Stack.Screen name="onboarding" />
+          {/* Identitäts-Gate: ohne Anzeigenamen nur das Onboarding. Das Onboarding
+              MUSS selbst hinter einem Guard liegen (nicht als freier Screen daneben):
+              expo-router leitet nur bei true→false automatisch um. Läge es frei,
+              würde das Speichern des Namens zwar (tabs)/city freischalten, den
+              Nutzer aber NICHT vom Onboarding wegschieben — er säße fest. Mit
+              `guard={!display_name}` kippt der Guard beim Speichern auf false und
+              die dokumentierte Auto-Umleitung greift. */}
+          <Stack.Protected guard={!profile?.display_name}>
+            <Stack.Screen name="onboarding" />
+          </Stack.Protected>
           {/* Eigener Bild-Zuschnitt (Avatar). BEWUSST außerhalb des Stadt- und
               display_name-Gates: der Avatar kann schon im Onboarding (vor Stadt
               und vor gesetztem Namen) gewählt werden, und pickAndUploadProfileImage
