@@ -21,6 +21,7 @@ import {
   gradeBand,
   skillLabel,
   startOfDay,
+  toDateKey,
 } from '@/lib/utils';
 import { useCities } from '@/queries/cities';
 import { useGyms, type GymWithCity } from '@/queries/gyms';
@@ -392,7 +393,15 @@ export default function Dashboard() {
           size="lg"
           className="rounded-full shadow-brand"
           icon={<Plus size={22} color={colors.rock[0]} strokeWidth={2.5} />}
-          onPress={() => router.push(`/sessions/new${gymId ? `?gym=${gymId}` : ''}`)}>
+          // Der im Feed gewählte Tag (und ggf. der Hallen-Filter) reist als Vorauswahl
+          // mit — die Create-Seite belegt „When" damit vor, sofern der Tag noch ins
+          // Tagfenster fällt (sonst Today). So bleibt „Tag im Feed wählen → gleicher Tag
+          // in der neuen Session" durchgängig.
+          onPress={() =>
+            router.push(
+              `/sessions/new?date=${toDateKey(selectedDate)}${gymId ? `&gym=${gymId}` : ''}`,
+            )
+          }>
           Create session
         </Button>
       </View>
