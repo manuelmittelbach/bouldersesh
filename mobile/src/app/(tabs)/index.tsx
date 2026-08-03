@@ -10,6 +10,7 @@ import { GymPickerSheet } from '@/components/GymPickerSheet';
 import { SessionActionSheet, type SessionActionTarget } from '@/components/SessionActionSheet';
 import { SessionCard, type SessionLabel } from '@/components/SessionCard';
 import { Button, Chip } from '@/components/ui';
+import { isFull, roleFor, spotsLabel } from '@/domain/session';
 import { useActiveCity } from '@/hooks/useActiveCity';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
@@ -313,26 +314,18 @@ export default function Dashboard() {
         }
         renderItem={({ item }) => {
           const name = item.creator?.display_name ?? 'Anonymous';
-          // Plätze zählen NUR die Mitkletternden, nicht die Ersteller:in — die ist
-          // Gastgeber:in, kein Platz (ADR-0007). Also: capacity − 1 Plätze, minus die
-          // schon angenommenen.
-          const spotsTotal = item.capacity - 1;
-          const spotsLeft = Math.max(0, spotsTotal - item.accepted_count);
-          // Präzises Voll-Signal: eine `open`-Session hat konstruktiv immer ≥ 1 Platz
-          // frei; erst mit dem letzten Platz kippt sie auf `matched` (Trigger 0014). Volle
-          // Karten bleiben im Feed, nur gedimmt und mit „Full" statt Plätzen (ADR-0011).
-          const isFull = item.status === 'matched';
-          // Meine Rolle an dieser Session → höchstens ein Streifen (ADR-0010). Priorität
-          // ist zugleich Ausschluss: Ersteller:in kann nicht anfragen, und eine Anfrage
-          // ist accepted ODER pending — die Zweige überschneiden sich also nie.
-          const label: SessionLabel | null =
-            userId && item.creator?.id === userId
-              ? 'hosting'
-              : acceptedIds?.has(item.id)
-                ? 'joined'
-                : requestedIds?.has(item.id)
-                  ? 'requested'
-                  : null;
+          // Voll-Signal, Plätze und Rolle fragt jetzt das Session-Modul (domain/session)
+          // — die Kapazitäts-Mathematik (ADR-0007) und die EINE „Full"-Regel (ADR-0011)
+          // leben dort, statt in jedem Screen neu (und früher uneinig) gerechnet zu werden.
+          const full = isFull(item);
+          // Meine Rolle an dieser Session → höchstens ein Streifen (ADR-0010). Die
+          // Ausschlussleiter (hosting > joined > requested) steckt in roleFor; „pending"/
+          // „accepted" liegen nicht auf der Zeile, darum als Membership-Hinweis rein.
+          const role = roleFor(item, userId, {
+            accepted: acceptedIds?.has(item.id) ?? false,
+            requested: requestedIds?.has(item.id) ?? false,
+          });
+          const label: SessionLabel | null = role === 'none' ? null : role;
           return (
             <SessionCard
               name={name}
@@ -349,9 +342,7 @@ export default function Dashboard() {
               gym={item.gym?.name}
               // Nur die freien Plätze (wie im Detail): „N spots left" / „Full" — die
               // belegten zeigen die Kader-Avatare daneben, kein „N of M" mehr.
-              spots={
-                isFull ? 'Full' : `${spotsLeft} ${spotsLeft === 1 ? 'spot' : 'spots'} left`
-              }
+              spots={spotsLabel(item)}
               // Kader-Stack: die schon Beigetretenen (ohne Host, der links groß steht) als
               // namenlose, zum Profil tippbare Avatare. Bild-URL + Ton hier fertig gerechnet,
               // die Karte bleibt dumm.
@@ -362,18 +353,18 @@ export default function Dashboard() {
                 src: publicImageUrl(c.avatar_path),
               }))}
               onPressClimber={(id) => router.push(`/profile/${id}`)}
-              full={isFull}
+              full={full}
               note={item.note}
               label={label}
-              // Tap → Aktions-Sheet (nicht mehr Detail-Screen). `label ?? 'open'` bildet
-              // meine Rolle auf die eine passende Handlung ab. AUSNAHME: eine volle
-              // Fremd-Session (kein Label + full) hat keine Handlung — sie bleibt gedimmt
+              // Tap → Aktions-Sheet (nicht mehr Detail-Screen). Die Rolle bildet die eine
+              // passende Handlung ab (availableAction im Sheet). AUSNAHME: eine volle
+              // Fremd-Session (Rolle „none" + full) hat keine Handlung — sie bleibt gedimmt
               // und schlicht nicht tippbar (kein onPress = kein Sheet, kein Ripple), statt
               // ein Sheet nur für „No spots left" aufzuziehen (ADR-0013).
               onPress={
-                !label && isFull
+                role === 'none' && full
                   ? undefined
-                  : () => setActionTarget({ id: item.id, relationship: label ?? 'open' })
+                  : () => setActionTarget({ id: item.id, role })
               }
               onPressAuthor={
                 item.creator?.id

@@ -17,6 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MessageBubble } from '@/components/MessageBubble';
 import { RequestRow } from '@/components/RequestRow';
 import { Avatar, IconButton, ScreenHeader } from '@/components/ui';
+import { isFull, isHostedBy } from '@/domain/session';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, formatClock, formatSessionTime } from '@/lib/utils';
@@ -58,14 +59,13 @@ export default function Chat() {
   // statt in die Session-Detailseite abzuspringen.
   const { data: sessionId } = useSessionIdForChat(id);
   const { data: session } = useSession(sessionId ?? undefined);
-  const isHost = !!session && !!user?.id && session.creator_id === user.id;
+  const isHost = !!session && isHostedBy(session, user?.id);
   const { data: requests } = useRequestsForSession(isHost && sessionId ? sessionId : undefined);
   const pendingRequests = (requests ?? []).filter((r) => r.status === 'pending');
-  // Voll: keine freien Plätze mehr (capacity − 1 Mitkletternde) oder Trigger hat auf
-  // „matched" gekippt — dann ist Annehmen gesperrt (ADR-0007).
-  const spotsTotal = session ? session.capacity - 1 : 0;
-  const full =
-    !!session && (session.status === 'matched' || session.accepted_count >= spotsTotal);
+  // Voll: kein freier Platz mehr oder Trigger hat auf „matched" gekippt — dann ist
+  // Annehmen gesperrt (ADR-0007). Die EINE „Full"-Regel liegt im Session-Modul
+  // (domain/session), identisch zu Feed und Detail.
+  const full = !!session && isFull(session);
 
   const memberById = new Map((members ?? []).map((m) => [m.id, m]));
   // Der Kopf zeigt die *anderen* Mitglieder (ADR-0007) als Avatar+Name-Leiste — jede
