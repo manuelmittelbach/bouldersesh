@@ -4,23 +4,19 @@ import { Alert, Modal, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui';
+import { availableAction, type SessionRole } from '@/domain/session';
 import { useCreateMatchRequest, useWithdrawRequest } from '@/queries/matches';
 import { useDeleteSession, useLeaveSession } from '@/queries/sessions';
 import { colors } from '@/theme/colors';
 
-// Meine Beziehung zu einer Session, aus Feed-Sicht — bestimmt die EINE Aktion im Sheet.
-// `open` ist der vierte, streifenlose Fall (weder Ersteller:in noch angefragt/dabei),
-// die drei anderen decken sich mit dem Rollen-Streifen der Karte (SessionLabel).
-export type SessionRelationship = 'hosting' | 'joined' | 'requested' | 'open';
-
 /** Worauf das Sheet gerade wirkt — vom Feed beim Antippen einer Karte gesetzt. Das Sheet
  *  zeigt bewusst KEINEN Kopf (Name/Zeit stehen schon auf der Karte), nur die eine Aktion —
- *  `relationship` bestimmt sie, `id` sagt der Mutation, welche Session gemeint ist. Eine
- *  volle Fremd-Session öffnet das Sheet gar nicht erst (der Feed macht sie nicht tippbar),
- *  darum gibt es hier keinen „voll"-Fall mehr. */
+ *  die `role` bestimmt sie (via availableAction), `id` sagt der Mutation, welche Session
+ *  gemeint ist. Eine volle Fremd-Session öffnet das Sheet gar nicht erst (der Feed macht
+ *  sie nicht tippbar), darum kommt der „none"-Fall hier nur als „Climb together?" vor. */
 export type SessionActionTarget = {
   id: string;
-  relationship: SessionRelationship;
+  role: SessionRole;
 };
 
 // Statt die Feed-Karte mit Buttons zu überladen, öffnet ein Tap dieses Bottom-Sheet mit
@@ -115,8 +111,10 @@ export function SessionActionSheet({
   // damit sie auf dieselben Mutations-/Handler-Closures zugreift, ohne eine instabile
   // verschachtelte Komponente zu erzeugen.
   function renderAction(target: SessionActionTarget) {
-    switch (target.relationship) {
-      case 'hosting':
+    // Die Rolle → die eine Handlung (domain/session). Das Sheet öffnet nur für Sessions
+    // auf dem Feed, darum ohne `offFeed` — „leave-chat" kommt hier nie vor.
+    switch (availableAction(target.role)) {
+      case 'delete':
         return (
           <Button
             variant="ghost"
@@ -128,7 +126,7 @@ export function SessionActionSheet({
             <Text className="font-sans-semibold text-[15px] text-danger">Delete session</Text>
           </Button>
         );
-      case 'joined':
+      case 'leave':
         return (
           <Button
             variant="ghost"
@@ -140,13 +138,13 @@ export function SessionActionSheet({
             <Text className="font-sans-semibold text-[15px] text-danger">Leave session</Text>
           </Button>
         );
-      case 'requested':
+      case 'withdraw':
         // Bereits angefragt (aus dem Feed betreten) — derselbe Bestätigungs-Block wie
         // direkt nach dem Antippen von „Climb together?".
         return renderRequested(target.id);
       default:
-        // Offene Session: beitreten. (Volle Fremd-Sessions kommen hier nie an — der Feed
-        // macht sie nicht tippbar, siehe SessionActionTarget.) Nach erfolgreichem Anfragen
+        // 'join' — offene Session: beitreten. (Volle Fremd-Sessions kommen hier nie an —
+        // der Feed macht sie nicht tippbar, siehe SessionActionTarget.) Nach erfolgreichem Anfragen
         // schließt das Sheet NICHT — es kippt an Ort und Stelle in den Bestätigungs-Block,
         // damit klar wird, was passiert ist; geschlossen wird per Tap auf den Backdrop.
         if (request.isSuccess) return renderRequested(target.id);

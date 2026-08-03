@@ -24,6 +24,7 @@ import {
 } from "react-native-safe-area-context";
 
 import { Avatar, Button, Card, GradePill, ScreenHeader } from "@/components/ui";
+import { isHostedBy, spotsLabel } from "@/domain/session";
 import { useAuth } from "@/hooks/useAuth";
 import { publicImageUrl } from "@/lib/images";
 import {
@@ -122,7 +123,7 @@ export default function SessionDetail() {
 
   // Ist die Session meine? Vor den frühen Returns berechnet (session evtl. noch
   // undefined → false), damit die folgenden Hooks unbedingt laufen (Hook-Regeln).
-  const isMine = !!session && user?.id === session.creator_id;
+  const isMine = !!session && isHostedBy(session, user?.id);
 
   // Mein eigener Anfrage-Status an dieser fremden Session (ADR-0006). Realtime
   // lässt „Request sent" live zu „Leave session" umschlagen, wenn angenommen wird.
@@ -166,17 +167,11 @@ export default function SessionDetail() {
     avatarPath: c.requester?.avatar_path ?? null,
   }));
 
-  // Plätze (ADR-0007): die Ersteller:in ist Gastgeber:in, kein Platz — es gibt also
-  // capacity − 1 Plätze für Mitkletternde, jede angenommene Anfrage belegt einen. Voll,
-  // wenn keiner frei ist — oder der Trigger die Session schon auf `matched` (= voll) kippt.
-  const spotsTotal = session.capacity - 1;
-  const spotsLeft = Math.max(0, spotsTotal - session.accepted_count);
-  const full = spotsLeft === 0 || session.status === "matched";
-  // Kompakt, weil er:sie jetzt hinter den Climbers-Avataren steht (keine eigene Zeile
-  // mehr): nur „N spots left" bzw. „Full" — die belegten Plätze zeigen ja die Avatare.
-  const spotsLabel = full
-    ? "Full"
-    : `${spotsLeft} ${spotsLeft === 1 ? "spot" : "spots"} left`;
+  // Plätze und „Full"-Label fragt jetzt das Session-Modul (domain/session): capacity − 1
+  // Plätze (die Ersteller:in ist Gastgeber:in, kein Platz, ADR-0007), voll bei 0 freien
+  // ODER `matched` — dieselbe eine Regel wie Feed und Chat. Kompakt hinter den Climbers-
+  // Avataren: nur „N spots left" bzw. „Full", die belegten Plätze zeigen ja die Avatare.
+  const spots = spotsLabel(session);
 
   // Der eine untere Aktions-Platz wechselt seinen Inhalt je nach eigenem Anfrage-
   // Zustand (ADR-0006). Der geladene Status GEWINNT immer — so schlägt ein
@@ -332,7 +327,7 @@ export default function SessionDetail() {
               die freien Plätze (spotsLabel). Wächst per Realtime live
               (useSessionClimbers). Steht immer, damit „N spots left" auch dann sichtbar
               bleibt, wenn noch niemand beigetreten ist. */}
-          <BuddiesRow people={roster} spotsLabel={spotsLabel} />
+          <BuddiesRow people={roster} spotsLabel={spots} />
         </Card>
 
         {/* Beitritts-Anfragen leben seit 0017 allein im Chat (oben angeheftet), nicht

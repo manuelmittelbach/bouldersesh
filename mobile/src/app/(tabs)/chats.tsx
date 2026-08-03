@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { Avatar } from '@/components/ui';
+import { availableAction } from '@/domain/session';
 import { publicImageUrl } from '@/lib/images';
 import { avatarTone, cn, formatSessionTime, hasLeftFeed } from '@/lib/utils';
 import {
@@ -458,14 +459,14 @@ export default function Chats() {
   //      letzter Chat-Aktivität neu → alt (lastMessage.sent_at, sonst createdAt — gleicher
   //      Anker wie getMyChats). So verhält sich der After-Chat wie ein normaler Messenger.
   //   3. Alle Upcoming vor allen Past.
-  const active = useMemo<{ entry: Entry; role: 'host' | 'joined' }[]>(() => {
+  const active = useMemo<{ entry: Entry; role: 'hosting' | 'joined' }[]>(() => {
     const now = new Date().toISOString();
     // Aktivitäts-Anker eines Eintrags für den Past-Block; Session-Termin als letzter
     // Fallback, falls (noch) kein Chat geladen ist.
     const activityAt = (e: Entry) =>
       e.chat?.lastMessage?.sent_at ?? e.chat?.createdAt ?? e.session.starts_at;
     return [
-      ...mySessions.map((entry) => ({ entry, role: 'host' as const })),
+      ...mySessions.map((entry) => ({ entry, role: 'hosting' as const })),
       ...joined.map((entry) => ({ entry, role: 'joined' as const })),
     ].sort((a, b) => {
       const aPast = a.entry.session.starts_at < now;
@@ -483,8 +484,8 @@ export default function Chats() {
   // Eine einheitliche Session-Zeile für eine eigene/beigetretene Session (ADR-0012). Jede
   // Zeile ist wischbar — rollen-abhängig: als Gastgeber:in auflösen (rot), als
   // Beigetretene:r verlassen (neutral).
-  function renderEntry({ session, chat }: Entry, role: 'host' | 'joined'): Row {
-    const hosting = role === 'host';
+  function renderEntry({ session, chat }: Entry, role: 'hosting' | 'joined'): Row {
+    const hosting = role === 'hosting';
     const pendingCount = pendingCounts.data?.[session.id] ?? 0;
     const unread = chat?.unread ?? false;
 
@@ -550,30 +551,34 @@ export default function Chats() {
     );
 
     // Vom Feed gefallen (>1h nach Start)? Dann für BEIDE Rollen nur noch „Leave chat" —
-    // absagen (Delete/Leave session) ergibt nach dem Termin keinen Sinn mehr.
+    // absagen (Delete/Leave session) ergibt nach dem Termin keinen Sinn mehr. Welche
+    // Aktion die Rolle (+ „schon vom Feed?") ergibt, entscheidet das Session-Modul
+    // (domain/session), statt die Ausschlussleiter hier erneut inline zu kodieren.
     const offFeed = hasLeftFeed(session.starts_at);
-    const action = offFeed ? (
-      <SwipeAction
-        label="Leave chat"
-        tone="danger"
-        icon={<LogOut size={22} color={colors.rock[0]} strokeWidth={2} />}
-        onPress={() => confirmLeaveChat(() => leaveChat.mutate(session.id))}
-      />
-    ) : hosting ? (
-      <SwipeAction
-        label="Delete session"
-        tone="danger"
-        icon={<Trash2 size={22} color={colors.rock[0]} strokeWidth={2} />}
-        onPress={() => confirmDissolve(() => dissolve.mutate(session.id))}
-      />
-    ) : (
-      <SwipeAction
-        label="Leave session"
-        tone="danger"
-        icon={<LogOut size={22} color={colors.rock[0]} strokeWidth={2} />}
-        onPress={() => confirmLeave(() => leave.mutate(session.id))}
-      />
-    );
+    const swipeAction = availableAction(role, { offFeed });
+    const action =
+      swipeAction === 'leave-chat' ? (
+        <SwipeAction
+          label="Leave chat"
+          tone="danger"
+          icon={<LogOut size={22} color={colors.rock[0]} strokeWidth={2} />}
+          onPress={() => confirmLeaveChat(() => leaveChat.mutate(session.id))}
+        />
+      ) : swipeAction === 'delete' ? (
+        <SwipeAction
+          label="Delete session"
+          tone="danger"
+          icon={<Trash2 size={22} color={colors.rock[0]} strokeWidth={2} />}
+          onPress={() => confirmDissolve(() => dissolve.mutate(session.id))}
+        />
+      ) : (
+        <SwipeAction
+          label="Leave session"
+          tone="danger"
+          icon={<LogOut size={22} color={colors.rock[0]} strokeWidth={2} />}
+          onPress={() => confirmLeave(() => leave.mutate(session.id))}
+        />
+      );
 
     return { key: chat?.id ?? session.id, node: <SwipeRow action={action}>{inner}</SwipeRow> };
   }

@@ -2,6 +2,15 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    // tsc dient hier NUR dem Typecheck — gebaut wird über Metro/Babel. `noEmit` sagt das
+    // aus und schaltet zugleich `allowImportingTsExtensions` frei: die node:test-Dateien
+    // importieren das Modul mit `.ts`-Endung (die Nodes Type-Stripping zur Laufzeit
+    // braucht), was tsc sonst ablehnt. `types: ["node"]` zieht die Typen für `node:test`/
+    // `node:assert` ein (das erste Test-Setup läuft über Nodes eingebauten Runner, siehe
+    // domain/session.test.ts) — Reacts JSX-Typen kommen ohnehin über `jsx: react-jsx`.
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node"],
     "paths": {
       "@/*": [
         "./src/*"
