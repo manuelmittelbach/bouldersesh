@@ -118,6 +118,14 @@ export default function Login() {
               {/* Social — Zielzustand sichtbar, bis Credentials + Dev-Build stehen
                   deaktiviert. Apple oben (App-Store-Konvention, sobald irgendein
                   Social-Login angeboten wird, ist Apple Pflicht). */}
+              {/* TODO(apple-login): Dieser Button ist nur ein Platzhalter. Der Text
+                  „Continue with Apple" ist korrekt (eine von Apples erlaubten
+                  Beschriftungen), aber die Optik NICHT: Apple verlangt für echten
+                  Sign-in-with-Apple seinen EIGENEN Button
+                  (AppleAuthentication.AppleAuthenticationButton aus
+                  expo-apple-authentication, Apple-Logo + Apple-Styling). Ein
+                  selbstgebauter Button wie dieser ist ein App-Store-Ablehnungsgrund.
+                  Beim Nachziehen des nativen Social-Logins ersetzen. */}
               <Button
                 variant="secondary"
                 size="lg"
