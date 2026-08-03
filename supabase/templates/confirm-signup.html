@@ -1,0 +1,49 @@
+<!--
+  Email-Template „Confirm signup" (ADR-0016) — CODE-basiert, kein Link.
+  Die Email-Bestätigung nach dem Signup verifiziert per 6-stelligem OTP
+  ({{ .Token }}), NICHT über {{ .ConfirmationURL }}. Diese Datei ist die Quelle
+  der Wahrheit; einpflegen im Supabase-Dashboard → Authentication → Emails →
+  „Confirm signup". Anatomie identisch zu reset-password.html, nur Text angepasst.
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f4;padding:32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#ffffff;border-radius:16px;overflow:hidden;">
+        <tr>
+          <td style="padding:32px 32px 8px 32px;">
+            <div style="font-size:18px;font-weight:700;color:#1c1917;">Boulder Buddy</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 32px 0 32px;">
+            <h1 style="margin:0;font-size:22px;line-height:28px;font-weight:700;color:#1c1917;">Confirm your email</h1>
+            <p style="margin:12px 0 0 0;font-size:15px;line-height:22px;color:#57534e;">
+              Enter this code in the app to verify your email address and finish signing up.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 32px;">
+            <div style="background:#f5f5f4;border-radius:12px;padding:20px;text-align:center;font-size:32px;font-weight:700;letter-spacing:8px;color:#1c1917;">
+              {{ .Token }}
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 8px 32px;">
+            <p style="margin:0;font-size:13px;line-height:20px;color:#78716c;">
+              This code expires in 1 hour. Don&rsquo;t share it with anyone.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px 32px 32px;border-top:1px solid #e7e5e4;">
+            <p style="margin:16px 0 0 0;font-size:13px;line-height:20px;color:#a8a29e;">
+              If you didn&rsquo;t create a Boulder Buddy account, you can safely ignore this email.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
