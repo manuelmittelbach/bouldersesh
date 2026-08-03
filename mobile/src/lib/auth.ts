@@ -1,6 +1,6 @@
 // Dünne Wrapper um die supabase-auth-Aufrufe des Signup/Login-Flows (ADR-0016).
 // Kein OAuth-Redirect, kein Magic-Link — Email-Verify und Passwort-Reset laufen
-// über 6-stellige OTP-Codes (verifyOtp), also komplett ohne Deep-Linking.
+// über 8-stellige OTP-Codes (verifyOtp), also komplett ohne Deep-Linking.
 //
 // Die Funktionen werfen den ROHEN supabase-Fehler weiter; die aufrufende Seite
 // übersetzt ihn über `mapAuthError()`/`authErrorCode()`. So bleibt hier die
@@ -27,7 +27,7 @@ export async function signUp(
   return { needsVerification: !data.session };
 }
 
-/** Email-Bestätigung nach dem Signup — der 6-stellige Code aus der Mail. */
+/** Email-Bestätigung nach dem Signup — der 8-stellige Code aus der Mail. */
 export async function verifyEmailCode(email: string, token: string): Promise<void> {
   const { error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' });
   if (error) throw error;

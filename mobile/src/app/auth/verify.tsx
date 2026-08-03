@@ -21,7 +21,7 @@ import { useRecovery } from '@/hooks/useRecovery';
 //   • recovery → recoveryPending setzen, dann verifyOtp → Session → das
 //                Recovery-Gate zeigt den Neues-Passwort-Screen.
 
-const CODE_LENGTH = 6;
+const CODE_LENGTH = 8;
 const RESEND_COOLDOWN = 30;
 
 export default function AuthVerify() {
@@ -89,7 +89,7 @@ export default function AuthVerify() {
   return (
     <AuthScaffold
       title="Enter the code"
-      subtitle={`We sent a 6-digit code to ${email || 'your email'}. It expires shortly.`}>
+      subtitle={`We sent an 8-digit code to ${email || 'your email'}. It expires shortly.`}>
       <OtpInput
         value={code}
         onChangeText={(next) => {
