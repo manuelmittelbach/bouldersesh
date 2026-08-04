@@ -21,12 +21,10 @@ Setup nach dem ersten Push (einmalig):
 3. Beim Domain-Registrar: `A`-Records der Apex-Domain auf GitHub-Pages-IPs
    (185.199.108.153 … 111.153) + `www` als `CNAME` auf `<user>.github.io`.
 
-Offene Platzhalter (gelb markiert, vor Launch ersetzen):
-- `[VOR- UND NACHNAME]`, `[STRASSE HAUSNUMMER]`, `[PLZ ORT]` in
-  `impressum.html`, `privacy.html`, `terms.html`
-- `[DATUM DER VERÖFFENTLICHUNG]` in `privacy.html`, `terms.html`
-- E-Mail `hello@bouldersesh.com` muss beim Registrar als Weiterleitung
-  eingerichtet werden (oder gegen eine echte Adresse tauschen).
+Impressums-Daten und Stand-Datum sind eingetragen (2026-08-04);
+`hello@bouldersesh.com` ist bei Porkbun als Weiterleitung eingerichtet.
+Bei Adress- oder Datumsänderungen: alle drei Rechtsseiten anfassen
+(„Stand:" nur in privacy/terms).
 
 Die App verlinkt auf `/terms` und `/privacy` (`mobile/src/lib/legal.ts`) —
 GitHub Pages löst extensionslose Pfade auf die `.html`-Dateien auf.
