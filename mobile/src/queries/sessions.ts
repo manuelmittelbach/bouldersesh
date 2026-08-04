@@ -368,7 +368,14 @@ export function useCreateSession() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sessions", "open"] });
+      // Nicht nur den Feed (`["sessions", "open"]`) invalidieren: die frisch erstellte
+      // Runde erscheint sonst nicht sofort im Chats-Tab, weil dessen useMySessions
+      // (MY_SESSIONS_KEY = ["sessions", "mine", userId]) vom `"open"`-Prefix nicht
+      // getroffen wird und bei staleTime 5min erst beim nächsten Fokus refetcht. Der
+      // breite `["sessions"]`-Prefix trifft Feed UND „mine"; `["chats"]` bringt den
+      // gleich mitangelegten Gruppenchat in die Host-Sektion (useMyChats).
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
     },
   });
 }
