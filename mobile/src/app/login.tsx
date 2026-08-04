@@ -1,7 +1,9 @@
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Apple, Mail, Mountain } from 'lucide-react-native';
+import { Mail, Mountain } from 'lucide-react-native';
+import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -14,7 +16,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { Button } from '@/components/ui';
+import { mapAuthError } from '@/lib/authErrors';
 import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal';
+import {
+  isGoogleSignInConfigured,
+  signInWithApple,
+  signInWithGoogle,
+} from '@/lib/socialAuth';
 import { colors } from '@/theme/colors';
 
 // Screen 1 des Auth-Flows (ADR-0016): die Wahl der Anmelde-METHODE, noch kein
@@ -22,10 +30,12 @@ import { colors } from '@/theme/colors';
 // Fallback, die zu Screen 2 (`auth/email`) führt. KEIN Signin/Signup-Toggle mehr:
 // derselbe Einstieg für neue wie wiederkehrende Nutzer:innen.
 //
-// Apple/Google sind hier bewusst DEAKTIVIERTE Platzhalter: die nativen SDKs
-// (signInWithIdToken) brauchen Apple-Developer- + Google-OAuth-Credentials und
-// einen frischen Dev-Build; beides wird separat nachgezogen. Bis dahin steht der
-// Email-Weg voll funktionsfähig, die Social-Buttons zeigen ihren Zielzustand.
+// Apple/Google laufen über die nativen SDKs + signInWithIdToken (socialAuth.ts);
+// nach Erfolg navigieren die Session-Gates im Root-Layout von selbst. Abbruch im
+// System-Sheet ist kein Fehler und bleibt still. Der Apple-Button ist Apples
+// EIGENER (AppleAuthenticationButton) — ein selbstgebauter wäre ein
+// App-Store-Ablehnungsgrund. Er erscheint nur auf iOS; der Google-Button bleibt
+// deaktiviert, bis die OAuth-Client-IDs in der .env stehen (socialAuth.ts).
 //
 // Aufbau: ein Foto einer Boulderhalle als „Wand" (Front-Tür-Moment), davor steigt
 // die helle Fläche auf. Ein dunkler SVG-Scrim über dem Foto hält Text + Akzent
@@ -44,6 +54,24 @@ function OrDivider() {
 
 export default function Login() {
   const insets = useSafeAreaInsets();
+  const [pending, setPending] = useState<'apple' | 'google' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSocial(provider: 'apple' | 'google') {
+    if (pending) return;
+    setPending(provider);
+    setError(null);
+    try {
+      const signIn = provider === 'apple' ? signInWithApple : signInWithGoogle;
+      await signIn();
+      // Erfolg braucht keine Navigation — das Session-Gate übernimmt.
+      // Abbruch ({ cancelled: true }) bleibt bewusst still.
+    } catch (e) {
+      setError(mapAuthError(e));
+    } finally {
+      setPending(null);
+    }
+  }
 
   return (
     <View className="flex-1 bg-rock-25">
@@ -115,31 +143,41 @@ export default function Login() {
             </Text>
 
             <View className="mt-6 gap-3">
-              {/* Social — Zielzustand sichtbar, bis Credentials + Dev-Build stehen
-                  deaktiviert. Apple oben (App-Store-Konvention, sobald irgendein
-                  Social-Login angeboten wird, ist Apple Pflicht). */}
-              {/* TODO(apple-login): Dieser Button ist nur ein Platzhalter. Der Text
-                  „Continue with Apple" ist korrekt (eine von Apples erlaubten
-                  Beschriftungen), aber die Optik NICHT: Apple verlangt für echten
-                  Sign-in-with-Apple seinen EIGENEN Button
-                  (AppleAuthentication.AppleAuthenticationButton aus
-                  expo-apple-authentication, Apple-Logo + Apple-Styling). Ein
-                  selbstgebauter Button wie dieser ist ein App-Store-Ablehnungsgrund.
-                  Beim Nachziehen des nativen Social-Logins ersetzen. */}
+              {/* Social — Apple oben (App-Store-Konvention: sobald irgendein
+                  Social-Login angeboten wird, ist Apple Pflicht und erwartet
+                  Prominenz). Nur auf iOS; Android bekommt nur Google + Email. */}
+              {Platform.OS === 'ios' ? (
+                <View pointerEvents={pending ? 'none' : 'auto'}>
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={
+                      AppleAuthentication.AppleAuthenticationButtonType.CONTINUE
+                    }
+                    buttonStyle={
+                      AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                    }
+                    cornerRadius={12}
+                    style={styles.appleButton}
+                    onPress={() => handleSocial('apple')}
+                  />
+                </View>
+              ) : null}
               <Button
-                variant="secondary"
+                variant="outline"
                 size="lg"
                 fullWidth
-                disabled
-                icon={<Apple size={19} color={colors.rock[0]} strokeWidth={2} />}>
-                Continue with Apple
-              </Button>
-              <Button variant="outline" size="lg" fullWidth disabled>
+                disabled={!isGoogleSignInConfigured || pending !== null}
+                loading={pending === 'google'}
+                onPress={() => handleSocial('google')}>
                 Continue with Google
               </Button>
-              <Text className="text-center font-sans text-xs text-rock-400">
-                Apple & Google sign-in are coming soon.
-              </Text>
+              {!isGoogleSignInConfigured ? (
+                <Text className="text-center font-sans text-xs text-rock-400">
+                  Google sign-in is coming soon.
+                </Text>
+              ) : null}
+              {error ? (
+                <Text className="text-center font-sans text-sm text-danger">{error}</Text>
+              ) : null}
 
               <OrDivider />
 
@@ -172,3 +210,9 @@ export default function Login() {
     </View>
   );
 }
+
+// Der native Apple-Button ist kein DS-Button und nimmt kein className —
+// Höhe/Breite hier per style an size="lg" (52px, volle Breite) angeglichen.
+const styles = StyleSheet.create({
+  appleButton: { height: 52, width: '100%' },
+});
