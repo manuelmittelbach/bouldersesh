@@ -76,6 +76,7 @@ function RootNavigator() {
                 verwirft die Löschung die Session, flippt der Session-Guard und
                 leitet selbst auf Login (ADR-0004). */}
             <Stack.Screen name="account" />
+            <Stack.Screen name="verify-email-change" />
             <Stack.Screen name="delete-account" />
             <Stack.Screen name="blocked" />
           </Stack.Protected>
