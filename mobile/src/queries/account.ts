@@ -18,22 +18,38 @@ export class ReauthFailedError extends Error {
 
 // E-Mail und Passwort leben in Supabase Auth, nicht in `profiles`.
 //
-// E-Mail-Wechsel braucht KEINE erneute Passworteingabe: Supabase schützt ihn
-// schon durch „Secure email change" — der Wechsel gilt erst nach Bestätigung
-// über BEIDE Adressen (alte und neue). Wer am offenen Gerät sitzt, kann die
-// E-Mail also ohnehin nicht heimlich übernehmen. Das ist der Konsumenten-App-
-// Standard und erspart das iOS-Strong-Password-Feld am Screen.
+// E-Mail-Wechsel ist re-auth-pflichtig und bestätigt nur die NEUE Adresse — der
+// Industrie-Standard (Google/GitHub/Apple): wer das Passwort kennt UND das neue
+// Postfach kontrolliert, darf wechseln; die alte Adresse muss NICHT zustimmen.
+// „Secure email change" ist dafür bewusst AUS (config.toml
+// double_confirm_changes = false), sonst kämen zwei Codes und der Wechsel bräche,
+// sobald jemand den Zugriff aufs alte Postfach verloren hat.
 //
-// Passwort-Wechsel dagegen bleibt re-auth-pflichtig (signInWithPassword
-// bestätigt, dass am Gerät wirklich diese Person sitzt); ReauthFailedError
-// zeigt die UI als falsches Passwort direkt am Feld.
+// Wie beim Passwort-Wechsel bestätigt signInWithPassword, dass am Gerät wirklich
+// diese Person sitzt; ReauthFailedError zeigt die UI als falsches Passwort direkt
+// am Feld. Der eigentliche Wechsel greift erst nach dem Code aus der neuen Mail
+// (verifyEmailChangeCode, siehe lib/auth.ts) — updateUser stößt ihn nur an.
 
-/** E-Mail ändern. Supabase schickt einen Bestätigungslink an die alte UND neue
- *  Adresse („Secure email change") — die E-Mail wechselt erst nach dem Klick,
- *  nicht sofort. */
+/** E-Mail ändern. Erst re-auth (falsches Passwort → ReauthFailedError), dann
+ *  updateUser({ email }): Supabase schickt einen 8-stelligen Code an die NEUE
+ *  Adresse. Die E-Mail wechselt erst, wenn dieser Code bestätigt ist. */
 export function useChangeEmail() {
   return useMutation({
-    mutationFn: async ({ newEmail }: { newEmail: string }) => {
+    mutationFn: async ({
+      email,
+      currentPassword,
+      newEmail,
+    }: {
+      email: string;
+      currentPassword: string;
+      newEmail: string;
+    }) => {
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword,
+      });
+      if (reauthError) throw new ReauthFailedError();
+
       const { error } = await supabase.auth.updateUser({ email: newEmail });
       if (error) throw error;
     },

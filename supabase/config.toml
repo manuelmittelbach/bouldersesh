@@ -30,7 +30,15 @@ jwt_expiry = 3600
 
 [auth.email]
 enable_signup = true
-double_confirm_changes = true
+# Secure Email Change ist AUS (Industrie-Standard, wie Google/GitHub/Apple): der
+# Email-Wechsel wird über eine Passwort-Re-Auth abgesichert und nur die NEUE Adresse
+# bestätigt einen Code — die alte muss NICHT zustimmen. Bei `true` würde Supabase ZWEI
+# Codes erzeugen (alte + neue Adresse); das verlangt Zugriff aufs alte Postfach und
+# bricht den häufigsten Wechselgrund („komme ans alte Postfach nicht mehr ran"). Die
+# Re-Auth (signInWithPassword vor updateUser, siehe queries/account.ts → useChangeEmail)
+# hält die Sicherheit: nur wer das Passwort kennt UND das neue Postfach kontrolliert,
+# kann wechseln.
+double_confirm_changes = false
 # Email-Bestätigung ist AN (ADR-0016): unbestätigte, potenziell gefälschte Accounts
 # dürfen bei einer Kontakt-App nicht schon anfragen/schreiben. Verifiziert wird per
 # 8-stelligem OTP-Code (verifyOtp), NICHT per Link → kein Deep-Linking nötig.
@@ -43,11 +51,14 @@ enable_confirmations = true
 otp_length = 8
 
 # WICHTIG — nur am LIVE-Projekt (Dashboard), nicht in dieser lokalen config:
-#   1. Email-Templates „Confirm signup" und „Reset password" auf {{ .Token }}
-#      umstellen (statt {{ .ConfirmationURL }}), damit die Mails den CODE tragen.
+#   1. Email-Templates „Confirm signup", „Reset password" UND „Change Email Address"
+#      auf {{ .Token }} umstellen (statt {{ .ConfirmationURL }}), damit die Mails den
+#      CODE tragen — der In-App-Verify-Screen nimmt einen Code, keinen Link.
 #   2. Leaked-Password-Protection aktivieren
 #      (Authentication → Policies → „Prevent use of leaked passwords").
 #   3. Kein Site-URL/Redirect fürs Deep-Linking einrichten — bewusst nicht gebraucht.
+#   4. „Secure email change" AUS (Authentication → Providers → Email) — spiegelt das
+#      double_confirm_changes = false oben; sonst kämen ZWEI Codes statt einem.
 # Externe Voraussetzungen für Social-Login (Apple Dev Account, Google OAuth
 # Client-IDs) werden separat nachgezogen; die App zeigt die Buttons bis dahin
 # deaktiviert.

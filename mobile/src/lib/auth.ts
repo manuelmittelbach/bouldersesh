@@ -59,6 +59,27 @@ export async function resendEmailCode(email: string): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * Email-Wechsel bestätigen — der 8-stellige Code aus der Mail an die NEUE Adresse.
+ * `newEmail` ist die Zieladresse, an die updateUser({ email }) den Code geschickt hat;
+ * verifyOtp prüft ihn genau gegen diese Adresse. Erfolgreich → GoTrue tauscht die Email
+ * und feuert USER_UPDATED, useAuth zieht die neue `user.email` automatisch nach.
+ *
+ * Gilt nur bei ausgeschaltetem „Secure email change" (config.toml
+ * double_confirm_changes = false): dann kommt EIN Code an die neue Adresse. Wäre es an,
+ * kämen zwei Codes (alte + neue) und beide müssten bestätigt werden.
+ */
+export async function verifyEmailChangeCode(newEmail: string, token: string): Promise<void> {
+  const { error } = await supabase.auth.verifyOtp({ email: newEmail, token, type: 'email_change' });
+  if (error) throw error;
+}
+
+/** Email-Wechsel-Code neu anfordern (Resend-Button). Geht an die neue Adresse. */
+export async function resendEmailChangeCode(newEmail: string): Promise<void> {
+  const { error } = await supabase.auth.resend({ type: 'email_change', email: newEmail });
+  if (error) throw error;
+}
+
 /** Neues Passwort setzen — nutzt die aktuelle (Recovery-)Session, keine Email nötig. */
 export async function updatePassword(newPassword: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password: newPassword });

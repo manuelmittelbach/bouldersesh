@@ -56,10 +56,16 @@ export default function Account() {
   const nameDirty =
     !!profile && displayName.trim() !== (profile.display_name ?? "");
 
-  // E-Mail
+  // E-Mail — der Wechsel ist re-auth-pflichtig (aktuelles Passwort), gespiegelt zur
+  // Passwort-Sektion: falsches Passwort (ReauthFailedError) zeigt die UI am Feld,
+  // alles andere als eigene Zeile unter dem Button.
   const [newEmail, setNewEmail] = useState("");
-  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
-  const emailError = changeEmail.error ? (changeEmail.error as Error) : null;
+  const [emailPassword, setEmailPassword] = useState("");
+  const emailWrongPassword = changeEmail.error instanceof ReauthFailedError;
+  const emailOtherError =
+    changeEmail.error && !emailWrongPassword
+      ? (changeEmail.error as Error)
+      : null;
 
   // Passwort
   const [currentPassword, setCurrentPassword] = useState("");
@@ -88,14 +94,22 @@ export default function Account() {
   }
 
   function submitEmail() {
-    if (!user?.email || !newEmail.trim() || changeEmail.isPending) return;
+    if (!user?.email || !newEmail.trim() || !emailPassword || changeEmail.isPending)
+      return;
     const target = newEmail.trim();
     changeEmail.mutate(
-      { newEmail: target },
+      { email: user.email, currentPassword: emailPassword, newEmail: target },
       {
         onSuccess: () => {
-          setPendingEmail(target);
           setNewEmail("");
+          setEmailPassword("");
+          // Der Wechsel ist noch nicht durch — updateUser hat nur den Code an die
+          // neue Adresse geschickt. Weiter zum Code-Screen; user.email bleibt bis
+          // zur Bestätigung die alte.
+          router.push({
+            pathname: "/verify-email-change",
+            params: { email: target },
+          });
         },
       },
     );
@@ -160,11 +174,16 @@ export default function Account() {
                 {(updateProfile.error as Error).message}
               </Text>
             ) : null}
+            {updateProfile.isSuccess ? (
+              <Text className="text-center font-sans text-sm text-success">
+                Name updated.
+              </Text>
+            ) : null}
           </View>
         </View>
 
         {/* E-Mail */}
-        <View className="mt-9 border-t border-rock-100 pt-8">
+        <View className="mt-10">
           <SectionHeader>Email</SectionHeader>
           <Text className="mb-3 font-sans text-[13px] text-rock-400">
             Currently {user?.email}
@@ -180,38 +199,45 @@ export default function Account() {
               keyboardType="email-address"
               inputMode="email"
             />
+            {/* Aktuelles Passwort zur Re-Auth (Industrie-Standard). oneTimeCode aus
+                demselben Grund wie in der Passwort-Sektion unten (iOS-AutoFill-Nuke):
+                stünde hier ein „current-password"-Feld neben den drei oneTimeCode-
+                Feldern, klebte das Strong-Password-Sheet wieder am ersten Secure-Feld. */}
+            <Input
+              value={emailPassword}
+              onChangeText={setEmailPassword}
+              placeholder="Current password"
+              icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
+              secureTextEntry
+              autoCapitalize="none"
+              autoComplete="off"
+              textContentType="oneTimeCode"
+              error={
+                emailWrongPassword
+                  ? (changeEmail.error as Error).message
+                  : undefined
+              }
+            />
             <Button
               variant="outline"
               size="lg"
               fullWidth
-              disabled={!newEmail.trim()}
+              disabled={!newEmail.trim() || !emailPassword}
               loading={changeEmail.isPending}
               onPress={submitEmail}
             >
               Update email
             </Button>
-            {emailError ? (
+            {emailOtherError ? (
               <Text className="text-center font-sans text-sm text-danger">
-                {mapAuthError(emailError)}
+                {mapAuthError(emailOtherError)}
               </Text>
-            ) : null}
-            {changeEmail.isSuccess && pendingEmail ? (
-              <View className="rounded-lg bg-success-surface p-4">
-                <Text className="font-display text-[15px] text-success">
-                  Check your inbox
-                </Text>
-                <Text className="mt-1 font-sans text-[13px] leading-5 text-rock-700">
-                  We sent a confirmation link to {pendingEmail} and to your
-                  current address. Your email changes once you’ve confirmed from
-                  both.
-                </Text>
-              </View>
             ) : null}
           </View>
         </View>
 
         {/* Passwort */}
-        <View className="mt-9 border-t border-rock-100 pt-8">
+        <View className="mt-10">
           <SectionHeader>Password</SectionHeader>
           <View className="gap-3">
             {/* textContentType="oneTimeCode" ist hier Absicht (AutoFill-Nuke), KEIN
@@ -290,7 +316,7 @@ export default function Account() {
         </View>
 
         {/* Sicherheit */}
-        <View className="mt-9 border-t border-rock-100 pt-8">
+        <View className="mt-10">
           <SectionHeader>Safety</SectionHeader>
           <Button
             variant="outline"
@@ -304,7 +330,7 @@ export default function Account() {
         </View>
 
         {/* Account-Aktionen */}
-        <View className="mt-10 border-t border-rock-100 pt-8 gap-3">
+        <View className="mt-10 gap-3">
           <Button
             variant="outline"
             size="lg"
