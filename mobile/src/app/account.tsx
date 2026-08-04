@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ban, Lock, LogOut, Mail } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -66,6 +66,18 @@ export default function Account() {
     changeEmail.error && !emailWrongPassword
       ? (changeEmail.error as Error)
       : null;
+
+  // Der eigentliche Wechsel wird auf verify-email-change bestätigt; dieser Screen
+  // erfährt vom Erfolg nur über den emailUpdated-Param, den wir sofort wieder
+  // löschen (sonst zeigte die Meldung nach jedem Zurück-Navigieren erneut).
+  const params = useLocalSearchParams<{ emailUpdated?: string }>();
+  const [emailUpdated, setEmailUpdated] = useState(false);
+  useEffect(() => {
+    if (params.emailUpdated === "1") {
+      setEmailUpdated(true);
+      router.setParams({ emailUpdated: undefined });
+    }
+  }, [params.emailUpdated]);
 
   // Passwort
   const [currentPassword, setCurrentPassword] = useState("");
@@ -191,7 +203,10 @@ export default function Account() {
           <View className="gap-3">
             <Input
               value={newEmail}
-              onChangeText={setNewEmail}
+              onChangeText={(next) => {
+                setNewEmail(next);
+                if (emailUpdated) setEmailUpdated(false);
+              }}
               placeholder="New email address"
               icon={<Mail size={18} color={colors.rock[400]} strokeWidth={2} />}
               autoCapitalize="none"
@@ -231,6 +246,11 @@ export default function Account() {
             {emailOtherError ? (
               <Text className="text-center font-sans text-sm text-danger">
                 {mapAuthError(emailOtherError)}
+              </Text>
+            ) : null}
+            {emailUpdated ? (
+              <Text className="text-center font-sans text-sm text-success">
+                Email updated.
               </Text>
             ) : null}
           </View>
