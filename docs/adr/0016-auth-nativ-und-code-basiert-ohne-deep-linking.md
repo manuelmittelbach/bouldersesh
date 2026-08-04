@@ -31,9 +31,15 @@ Deep-Linking komplett:
   (App-Store-Richtlinie).
 - **Email/Passwort** bleibt als **Fallback** (nicht jeder hat/will Apple/Google),
   min. 8 Zeichen, Leaked-Password-Protection an, kein Komplexitäts-Zwang.
-- **Email-Verify & Passwort-Reset per 6-stelligem OTP-Code** statt Link:
+- **Email-Verify & Passwort-Reset per 8-stelligem OTP-Code** statt Link:
   Email-Template auf `{{ .Token }}`, kein `emailRedirectTo`; verifiziert über
-  `verifyOtp()`. Bleibt in der App, kein Deep-Link.
+  `verifyOtp()`. Bleibt in der App, kein Deep-Link. (`otp_length = 8`, gespiegelt
+  in `OtpInput`/`CODE_LENGTH`.)
+- **Email-Wechsel im selben Muster** (`verifyOtp` `type: 'email_change'`): re-auth
+  per Passwort, dann 8-stelliger Code nur an die **neue** Adresse — Industrie-
+  Standard (Google/GitHub/Apple), die alte Adresse muss nicht zustimmen. Dafür ist
+  **Secure email change aus** (`double_confirm_changes = false`), sonst kämen zwei
+  Codes und der Wechsel bräche, sobald der Zugriff aufs alte Postfach fehlt.
 - **Anmelde-Identität ist Email oder Social — nie ein Anzeigename.** Es gibt
   keinen eindeutigen Username (siehe `CONTEXT.md`, „Anzeigename"): Leute finden
   sich über Sessions, nicht über Namenssuche. `display_name` ist Pflicht beim
