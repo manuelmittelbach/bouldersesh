@@ -13,7 +13,8 @@
     ],
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "de.manumittelbach.boulderbuddy"
+      "bundleIdentifier": "de.manumittelbach.boulderbuddy",
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -53,6 +54,13 @@
           "icon": "./assets/images/android-icon-monochrome.png",
           "color": "#208AEF",
           "defaultChannel": "default"
+        }
+      ],
+      "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.REPLACE-WITH-IOS-CLIENT-ID"
         }
       ]
     ],
