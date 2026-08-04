@@ -47,8 +47,10 @@ export default function VerifyEmailChange() {
     setError(null);
     try {
       await verifyEmailChangeCode(newEmail, value);
-      // Erfolg → USER_UPDATED aktualisiert user.email; zurück zum Account.
-      router.back();
+      // Erfolg → USER_UPDATED aktualisiert user.email; zurück zum Account, dort
+      // signalisiert emailUpdated die grüne „Email updated."-Meldung (analog zu
+      // Name/Passwort, die aber direkt auf dem Account-Screen bestätigt werden).
+      router.dismissTo({ pathname: '/account', params: { emailUpdated: '1' } });
     } catch (e) {
       setError(mapAuthError(e));
       setCode('');
