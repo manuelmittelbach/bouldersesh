@@ -214,12 +214,13 @@ export default function Account() {
         <View className="mt-9 border-t border-rock-100 pt-8">
           <SectionHeader>Password</SectionHeader>
           <View className="gap-3">
-            {/* AutoFill/Strong-Password bewusst komplett abgeschaltet: iOS' „Use Strong
-                  Password"-Sheet landete unkontrollierbar am ersten Passwortfeld (Current)
-                  statt an den new-Feldern und ließ sich ohne erkanntes Username-Feld nicht
-                  gezielt steuern. Daher alle drei Felder auf textContentType="none" +
-                  autoComplete="off" — kein Sheet, kein Vorschlag; der Nutzer tippt selbst.
-                  Maskierung bleibt über secureTextEntry. */}
+            {/* AutoFill NICHT per textContentType="none" abschalten: iOS ignoriert das
+                  Opt-out, sobald mehrere secureTextEntry-Felder auf dem Screen stehen,
+                  stuft das Formular per Heuristik als „Passwort ändern" ein und legt das
+                  „Use Strong Password"-Sheet aufs erste fokussierte Feld — also auf
+                  Current. Stattdessen die Felder semantisch labeln (current-/new-password,
+                  wie in delete-account und auth/email): dann bietet iOS am Current-Feld
+                  den Keychain-Fill an und Strong Password nur an den New-Feldern. */}
             <Input
               value={currentPassword}
               onChangeText={setCurrentPassword}
@@ -227,8 +228,7 @@ export default function Account() {
               icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
               secureTextEntry
               autoCapitalize="none"
-              autoComplete="off"
-              textContentType="none"
+              autoComplete="current-password"
               error={
                 pwWrongCurrent
                   ? (changePassword.error as Error).message
@@ -242,8 +242,7 @@ export default function Account() {
               icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
               secureTextEntry
               autoCapitalize="none"
-              autoComplete="off"
-              textContentType="none"
+              autoComplete="new-password"
               error={
                 pwTooShort
                   ? `Use at least ${MIN_PASSWORD} characters.`
@@ -257,8 +256,7 @@ export default function Account() {
               icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
               secureTextEntry
               autoCapitalize="none"
-              autoComplete="off"
-              textContentType="none"
+              autoComplete="new-password"
               error={pwMismatch ? "Passwords don’t match." : undefined}
             />
             <Button
