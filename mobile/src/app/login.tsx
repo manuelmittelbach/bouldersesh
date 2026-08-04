@@ -118,7 +118,7 @@ export default function Login() {
               <View className="h-10 w-10 items-center justify-center rounded-md bg-brand-500">
                 <Mountain size={22} color={colors.rock[0]} strokeWidth={2} />
               </View>
-              <Text className="font-display-bold text-lg text-rock-0">Boulder Buddy</Text>
+              <Text className="font-display-bold text-lg text-rock-0">BoulderSesh</Text>
             </View>
 
             {/* Freiraum, damit das Foto zwischen Wortmarke und Headline sichtbar bleibt. */}

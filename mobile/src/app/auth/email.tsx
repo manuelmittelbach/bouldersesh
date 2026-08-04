@@ -128,7 +128,7 @@ export default function AuthEmail() {
       {/* Text-Switch statt Toggle-Pill (ADR-0016). */}
       <View className="mt-6 flex-row justify-center gap-1.5">
         <Text className="font-sans text-sm text-rock-500">
-          {mode === 'signup' ? 'Already have an account?' : 'New to Boulder Buddy?'}
+          {mode === 'signup' ? 'Already have an account?' : 'New to BoulderSesh?'}
         </Text>
         <Pressable
           accessibilityRole="button"

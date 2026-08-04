@@ -1,11 +1,9 @@
 import * as WebBrowser from 'expo-web-browser';
 
-// PLATZHALTER — echte, gehostete Rechtstexte kommen mit der eigenen Domain
-// (ADR-0016: App-Store-Pflicht, aber NICHT fürs Deep-Linking). Bis dahin zeigen
-// die Login-Links hierauf. Nur diese zwei Konstanten austauschen, wenn die
-// Seiten stehen.
-export const TERMS_URL = 'https://boulderbuddy.example/terms';
-export const PRIVACY_URL = 'https://boulderbuddy.example/privacy';
+// Gehostet via GitHub Pages aus dem Repo-Ordner website/ (siehe dortiges
+// README für Deploy + DNS). Extensionslose Pfade → terms.html/privacy.html.
+export const TERMS_URL = 'https://bouldersesh.app/terms';
+export const PRIVACY_URL = 'https://bouldersesh.app/privacy';
 
 /** Rechtstext im In-App-Browser öffnen (kein Verlassen der App). */
 export function openLegal(url: string): void {

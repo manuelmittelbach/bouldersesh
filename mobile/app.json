@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Boulder Buddy",
+    "name": "BoulderSesh",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -31,7 +31,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Boulder Buddy uses your photos so you can pick a profile picture and gallery photos.",
+          "photosPermission": "BoulderSesh uses your photos so you can pick a profile picture and gallery photos.",
           "cameraPermission": false,
           "microphonePermission": false
         }
