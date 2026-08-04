@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { AuthScaffold } from '@/components/AuthScaffold';
-import { Avatar, Button, Chip, Input } from '@/components/ui';
+import { SkillLevelPicker } from '@/components/SkillLevelPicker';
+import { Avatar, Button, Input } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
-import { avatarTone, gradeBand, SKILL_LABEL, SKILL_LEVELS } from '@/lib/utils';
+import { avatarTone } from '@/lib/utils';
 import { useSetAvatar, useUpdateProfile } from '@/queries/profiles';
 import type { SkillLevel } from '@/types/database';
 import { colors } from '@/theme/colors';
@@ -110,6 +111,8 @@ export default function Onboarding() {
       <View className="mt-8 gap-6">
         <View>
           <Eyebrow>Display name</Eyebrow>
+          {/* autoFocus: das einzige Pflichtfeld führt — Tastatur ist sofort offen,
+              „Done" speichert direkt (Skill/Avatar bleiben überspringbar). */}
           <Input
             value={name}
             onChangeText={setName}
@@ -117,22 +120,14 @@ export default function Onboarding() {
             autoCapitalize="words"
             maxLength={40}
             returnKeyType="done"
+            autoFocus
+            onSubmitEditing={save}
           />
         </View>
 
         <View>
           <Eyebrow>Skill level (optional)</Eyebrow>
-          <View className="flex-row flex-wrap gap-2">
-            {SKILL_LEVELS.map((lvl) => (
-              <Chip
-                key={lvl}
-                active={skill === lvl}
-                band={gradeBand(lvl)}
-                onPress={() => setSkill((cur) => (cur === lvl ? null : lvl))}>
-                {SKILL_LABEL[lvl]}
-              </Chip>
-            ))}
-          </View>
+          <SkillLevelPicker value={skill} onChange={setSkill} allowDeselect />
         </View>
 
         {update.isError ? (

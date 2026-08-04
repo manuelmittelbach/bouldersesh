@@ -8,11 +8,12 @@ import {
 } from "react-native-keyboard-controller";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Avatar, Button, Chip, Input } from "@/components/ui";
+import { SkillLevelPicker } from "@/components/SkillLevelPicker";
+import { Avatar, Button, Input } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 import { useKeyboardAwareField } from "@/hooks/useKeyboardAwareField";
 import { publicImageUrl } from "@/lib/images";
-import { avatarTone, gradeBand, SKILL_LABEL, SKILL_LEVELS } from "@/lib/utils";
+import { avatarTone } from "@/lib/utils";
 import {
   useRemoveAvatar,
   useSetAvatar,
@@ -155,18 +156,7 @@ export default function Profile() {
         <View className="mt-8 border-t border-rock-100 pt-8 gap-6">
           <View>
             <Eyebrow>Skill level</Eyebrow>
-            <View className="flex-row flex-wrap gap-2">
-              {SKILL_LEVELS.map((lvl) => (
-                <Chip
-                  key={lvl}
-                  active={skill === lvl}
-                  band={gradeBand(lvl)}
-                  onPress={() => setSkill(lvl)}
-                >
-                  {SKILL_LABEL[lvl]}
-                </Chip>
-              ))}
-            </View>
+            <SkillLevelPicker value={skill} onChange={setSkill} />
           </View>
 
           <Input
