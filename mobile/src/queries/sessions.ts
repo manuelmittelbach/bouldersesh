@@ -346,8 +346,8 @@ export type CreateSessionInput = {
   gym_id: string;
   starts_at: string;
   ends_at?: string | null;
-  /** Pflicht (nicht-leer) — trägt „was ich klettern will", siehe ADR-0005. */
-  note: string;
+  /** Optional — trägt „was ich klettern will", siehe ADR-0005 (0026 nahm die Pflicht zurück). */
+  note?: string | null;
   /** Party-Größe inkl. Ersteller:in, 2–4 (ADR-0007). Von der Ersteller:in gewählt. */
   capacity: number;
   visibility?: "public" | "friends";

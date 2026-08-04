@@ -166,16 +166,13 @@ export default function SessionCreate() {
       setError("That time is in the past — pick a later one.");
       return;
     }
-    if (!note.trim()) {
-      setError("Say what you’re climbing.");
-      return;
-    }
     setError(null);
     try {
       await createSession.mutateAsync({
         gym_id: gymId,
         starts_at: dt.toISOString(),
-        note: note.trim(),
+        // Leere Notiz → null (nicht ""), die Spalte ist seit 0026 nullable.
+        note: note.trim() || null,
         // DB-Kapazität = Plätze für andere + Gastgeber:in (ADR-0007).
         capacity: spots + 1,
       });
@@ -326,9 +323,9 @@ export default function SessionCreate() {
           </Text>
         </View>
 
-        {/* Notiz — trägt jetzt „was ich klettern will" und ist Pflicht: hallen-relativ
-              formuliert (die Session hat eine Halle), statt eines strukturierten Grades.
-              Siehe ADR-0005. */}
+        {/* Notiz — trägt „was ich klettern will", hallen-relativ formuliert (die Session
+              hat eine Halle) statt eines strukturierten Grades (ADR-0005). Optional: leer
+              lassen ist erlaubt, der `hint` sagt aber, dass es beim Zusagen hilft. */}
         <Input
           label="What are you climbing?"
           value={note}
@@ -337,6 +334,7 @@ export default function SessionCreate() {
           multiline
           maxLength={80}
           showCount
+          hint="Optional, but it helps people decide."
           placeholder="e.g. “trying to crack some reds”"
         />
 
@@ -357,7 +355,6 @@ export default function SessionCreate() {
             variant="primary"
             size="lg"
             fullWidth
-            disabled={!note.trim()}
             loading={createSession.isPending}
             icon={<Send size={18} color={colors.rock[0]} strokeWidth={2} />}
             onPress={submit}

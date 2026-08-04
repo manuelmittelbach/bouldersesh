@@ -29,9 +29,16 @@ Zwei Beobachtungen entscheiden die Sache:
 **Entscheidung:**
 
 - **`sessions.level` entfällt.** Was jemand klettern will, steht in der
-  Session-**Notiz** (`sessions.note`), die dafür zum **Pflichtfeld** wird
-  (nicht-leer). Der Create-Screen rahmt sie level-vorwärts („What are you
-  climbing?", Beispiel „e.g. trying to crack some reds").
+  Session-**Notiz** (`sessions.note`). Der Create-Screen rahmt sie level-vorwärts
+  („What are you climbing?", Beispiel „e.g. trying to crack some reds").
+  **Nachtrag 2026-08-04 (Migration 0026):** Die Notiz ist wieder **optional**.
+  Ursprünglich (0011) wurde sie zur Pflicht — begründet damit, dass „was ich
+  klettern will" garantiert an der Session stehen soll. In der Praxis ist die
+  Notiz aber ein **Kontext-Signal, kein Filter** (siehe Punkt 2 oben): Halle und
+  Zeit genügen zum Verabreden, und der Zwang bremst genau die Leute, die nur
+  schnell „los geht's" wollen — dieselbe Reibungs-Abwägung, die das Profil-Niveau
+  optional hält. Die Notiz bleibt prominent angeboten (Hint „Optional, but it
+  helps people decide."), aber freiwillig. `level` bleibt entfernt.
 - **`profiles.skill_level` bleibt** — grob, gym-unabhängig, **optional**. Es ist
   das einzige Level-Signal, das ohne Grade-Wissen und ohne Hallen-Kontext
   funktioniert.
@@ -39,9 +46,10 @@ Zwei Beobachtungen entscheiden die Sache:
   **Niveau der Ersteller:in** (Band-Label, gefärbt) statt eines Session-Grades.
   Hat die Person kein Niveau gesetzt, wird **kein Pill** gezeigt.
 
-Migration: `sessions.level` droppen, `sessions.note` auf `NOT NULL` + Nicht-leer.
-Zum Zeitpunkt der Entscheidung existieren 2 Sessions, beide mit Notiz — kein
-Backfill nötig.
+Migration 0011: `sessions.level` droppen, `sessions.note` auf `NOT NULL` +
+Nicht-leer. Zum Zeitpunkt der Entscheidung existieren 2 Sessions, beide mit
+Notiz — kein Backfill nötig. **Migration 0026** nimmt die note-Pflicht wieder
+zurück (nullable, Constraint weg) — siehe Nachtrag oben.
 
 ## Betrachtete Alternativen (und warum verworfen)
 
