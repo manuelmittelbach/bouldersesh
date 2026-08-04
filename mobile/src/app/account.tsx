@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { Ban, Lock, LogOut, Mail } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -214,13 +214,28 @@ export default function Account() {
         <View className="mt-9 border-t border-rock-100 pt-8">
           <SectionHeader>Password</SectionHeader>
           <View className="gap-3">
-            {/* AutoFill NICHT per textContentType="none" abschalten: iOS ignoriert das
-                  Opt-out, sobald mehrere secureTextEntry-Felder auf dem Screen stehen,
-                  stuft das Formular per Heuristik als „Passwort ändern" ein und legt das
-                  „Use Strong Password"-Sheet aufs erste fokussierte Feld — also auf
-                  Current. Stattdessen die Felder semantisch labeln (current-/new-password,
-                  wie in delete-account und auth/email): dann bietet iOS am Current-Feld
-                  den Keychain-Fill an und Strong Password nur an den New-Feldern. */}
+            {/* iOS' AutoFill-Heuristik braucht ein Username-Feld als Anker, sonst legt
+                  sie das „Use Strong Password"-Sheet stur aufs ERSTE Secure-Feld (also
+                  Current) — egal ob die Felder per textContentType abgeschaltet (none)
+                  oder semantisch gelabelt (password/newPassword) sind; beides wurde
+                  probiert. Apples dokumentierte Struktur für Change-Password-Formulare:
+                  username + password + newPassword, wobei das Username-Feld direkt über
+                  den Passwortfeldern stehen muss. Daher hier ein unsichtbares, mit der
+                  Account-E-Mail vorbefülltes Username-Feld: winzig + transparent statt
+                  display:none/editable:false, weil iOS ausgeblendete oder deaktivierte
+                  Felder bei der Formular-Erkennung ignoriert. */}
+            <TextInput
+              defaultValue={user?.email ?? ""}
+              autoComplete="username"
+              textContentType="username"
+              caretHidden
+              contextMenuHidden
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              pointerEvents="none"
+              focusable={false}
+              style={{ position: "absolute", height: 1, width: 1, opacity: 0 }}
+            />
             <Input
               value={currentPassword}
               onChangeText={setCurrentPassword}
@@ -229,6 +244,7 @@ export default function Account() {
               secureTextEntry
               autoCapitalize="none"
               autoComplete="current-password"
+              textContentType="password"
               error={
                 pwWrongCurrent
                   ? (changePassword.error as Error).message
@@ -243,6 +259,8 @@ export default function Account() {
               secureTextEntry
               autoCapitalize="none"
               autoComplete="new-password"
+              textContentType="newPassword"
+              passwordRules={`minlength: ${MIN_PASSWORD};`}
               error={
                 pwTooShort
                   ? `Use at least ${MIN_PASSWORD} characters.`
@@ -257,6 +275,7 @@ export default function Account() {
               secureTextEntry
               autoCapitalize="none"
               autoComplete="new-password"
+              textContentType="newPassword"
               error={pwMismatch ? "Passwords don’t match." : undefined}
             />
             <Button
