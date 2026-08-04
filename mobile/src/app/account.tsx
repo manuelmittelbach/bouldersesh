@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { Ban, Lock, LogOut, Mail } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -214,28 +214,17 @@ export default function Account() {
         <View className="mt-9 border-t border-rock-100 pt-8">
           <SectionHeader>Password</SectionHeader>
           <View className="gap-3">
-            {/* iOS' AutoFill-Heuristik braucht ein Username-Feld als Anker, sonst legt
-                  sie das „Use Strong Password"-Sheet stur aufs ERSTE Secure-Feld (also
-                  Current) — egal ob die Felder per textContentType abgeschaltet (none)
-                  oder semantisch gelabelt (password/newPassword) sind; beides wurde
-                  probiert. Apples dokumentierte Struktur für Change-Password-Formulare:
-                  username + password + newPassword, wobei das Username-Feld direkt über
-                  den Passwortfeldern stehen muss. Daher hier ein unsichtbares, mit der
-                  Account-E-Mail vorbefülltes Username-Feld: winzig + transparent statt
-                  display:none/editable:false, weil iOS ausgeblendete oder deaktivierte
-                  Felder bei der Formular-Erkennung ignoriert. */}
-            <TextInput
-              defaultValue={user?.email ?? ""}
-              autoComplete="username"
-              textContentType="username"
-              caretHidden
-              contextMenuHidden
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-              pointerEvents="none"
-              focusable={false}
-              style={{ position: "absolute", height: 1, width: 1, opacity: 0 }}
-            />
+            {/* textContentType="oneTimeCode" ist hier Absicht (AutoFill-Nuke), KEIN
+                  Copy-Paste-Fehler. iOS legt das „Use Strong Password"-Sheet sonst stur
+                  aufs erste Secure-Feld (Current). Alles andere wurde probiert und
+                  scheitert auf aktuellem iOS: (1) Opt-out per textContentType="none" +
+                  autoComplete="off" — wird ignoriert, sobald mehrere secureTextEntry-
+                  Felder auf dem Screen stehen; (2) semantische Labels (password/
+                  newPassword) — Sheet bleibt am ersten Feld kleben; (3) Apples
+                  dokumentierte Struktur mit unsichtbarem Username-Anker direkt über den
+                  Passwortfeldern — ebenfalls wirkungslos. Für OTP-Felder rendert iOS
+                  weder Keychain-Fill noch Strong Password, daher alle drei Felder als
+                  oneTimeCode; der Nutzer tippt selbst, Maskierung über secureTextEntry. */}
             <Input
               value={currentPassword}
               onChangeText={setCurrentPassword}
@@ -243,8 +232,8 @@ export default function Account() {
               icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
               secureTextEntry
               autoCapitalize="none"
-              autoComplete="current-password"
-              textContentType="password"
+              autoComplete="off"
+              textContentType="oneTimeCode"
               error={
                 pwWrongCurrent
                   ? (changePassword.error as Error).message
@@ -258,9 +247,8 @@ export default function Account() {
               icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
               secureTextEntry
               autoCapitalize="none"
-              autoComplete="new-password"
-              textContentType="newPassword"
-              passwordRules={`minlength: ${MIN_PASSWORD};`}
+              autoComplete="off"
+              textContentType="oneTimeCode"
               error={
                 pwTooShort
                   ? `Use at least ${MIN_PASSWORD} characters.`
@@ -274,8 +262,8 @@ export default function Account() {
               icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
               secureTextEntry
               autoCapitalize="none"
-              autoComplete="new-password"
-              textContentType="newPassword"
+              autoComplete="off"
+              textContentType="oneTimeCode"
               error={pwMismatch ? "Passwords don’t match." : undefined}
             />
             <Button
