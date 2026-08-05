@@ -2,7 +2,7 @@
 # Run `supabase init` once if you want the full file with all sections,
 # or just use this skeleton + `supabase link --project-ref <ref>` for cloud-only work.
 
-project_id = "boulder-buddy"
+project_id = "bouldersesh"
 
 [api]
 enabled = true

@@ -11,7 +11,7 @@ Zweites Terminal:
 
 ```bash
 open -a Simulator                                          # nur falls keiner läuft
-xcrun simctl launch booted de.manumittelbach.boulderbuddy
+xcrun simctl launch booted de.manumittelbach.bouldersesh
 ```
 
 `xcrun simctl launch` umgeht den AppleScript-Pfad der Expo-CLI und damit den
@@ -45,7 +45,7 @@ gleiches WLAN wie der Mac.
   Terminal → „System Events"; nötig ist er mit `simctl launch` aber nicht.
 - **Nicht Expo Go öffnen.** Kann SDK 57 nicht laden (die SDK-57-Fassung hängt in Apples
   Review). Die eigene App heißt auf dem Homescreen „mobile",
-  Bundle-ID `de.manumittelbach.boulderbuddy`; Expo Go ist `host.exp.Exponent` und sieht
+  Bundle-ID `de.manumittelbach.bouldersesh`; Expo Go ist `host.exp.Exponent` und sieht
   im Simulator fast gleich aus.
 - **`npm run ios` / `run:ios` nur bei nativen Änderungen** (neues Native-Modul, `app.json`,
   Plugins). Sonst reicht Metro — JS-Änderungen kommen per Fast Refresh von selbst an.

@@ -1,6 +1,6 @@
 # Glossar
 
-Gemeinsame Begriffe für Boulder Buddy. Ziel: **ein Konzept, ein Name** — Drift
+Gemeinsame Begriffe für BoulderSesh. Ziel: **ein Konzept, ein Name** — Drift
 zwischen Code, UI und Gesprächen hier auflösen.
 
 ## Anfrage (match request)

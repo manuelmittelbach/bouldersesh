@@ -12,8 +12,8 @@ BoulderSesh ist eine native iOS/Android-App zum spontanen Finden von Kletterpart
 | [`supabase/`](supabase/) | Backend: Postgres-Migrationen, RLS-Policies, Realtime, E-Mail-Templates und die `delete-account` Edge Function. |
 | [`website/`](website/) | Gehostete Rechtstexte für [bouldersesh.com](https://bouldersesh.com) (Impressum, Datenschutz, AGB) als statische Seiten. |
 | [`docs/`](docs/) | Architekturentscheidungen ([ADRs](docs/adr/)) und [Glossar](docs/glossary.md). |
-| `Boulder Buddy Design System/` | Design-System (Farben, Typo, Komponenten-Vorlagen). |
-| `Boulder-Buddy_Konzept.md` | Ursprüngliches Konzept & Produktplan. |
+| `BoulderSesh Design System/` | Design-System (Farben, Typo, Komponenten-Vorlagen). |
+| `BoulderSesh_Konzept.md` | Ursprüngliches Konzept & Produktplan. |
 
 ## Tech-Stack
 

@@ -3,7 +3,7 @@ status: accepted
 date: 2026-07-14
 ---
 
-# Boulder Buddy wird als native App mit React Native (Expo) gebaut, nicht als Web-App
+# BoulderSesh wird als native App mit React Native (Expo) gebaut, nicht als Web-App
 
 ## Kontext & Entscheidung
 

@@ -1,0 +1,76 @@
+<!-- @dsCard group="Components" viewport="700x320" name="Avatar · Grade · Badge · Card" subtitle="Identity, grade chips, status badges, base surface" -->
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../../styles.css" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="../../_ds_bundle.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    body { margin: 0; background: var(--surface-app); font-family: var(--font-ui); color: var(--text-strong); }
+    .wrap { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+    .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .label { font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: var(--tracking-caps); color: var(--text-muted); font-weight: 600; width: 70px; flex: 0 0 auto; }
+    .line { display: flex; align-items: center; gap: 16px; }
+    [data-lucide] { width: 13px; height: 13px; }
+  </style>
+</head>
+<body>
+  <div id="root" class="wrap"></div>
+  <script type="text/babel">
+    const { Avatar, GradePill, Badge, Card } = window.BoulderSeshDesignSystem_019e12;
+    const I = (n) => <i data-lucide={n}></i>;
+
+    function Demo() {
+      return (
+        <>
+          <div className="line"><span className="label">Avatar</span>
+            <div className="row">
+              <Avatar name="Lina Kessler" tone="orange" size="lg" online />
+              <Avatar name="Tom Reiter" tone="slate" size="md" />
+              <Avatar name="Sami R" tone="moss" size="md" />
+              <Avatar name="Nora Pohl" tone="clay" size="sm" />
+              <Avatar initials="M" tone="rock" size="sm" />
+            </div>
+          </div>
+          <div className="line"><span className="label">Grade</span>
+            <div className="row">
+              <GradePill grade="5+ – 6a" band="beginner" />
+              <GradePill grade="6a – 6c" band="intermediate" />
+              <GradePill grade="7a+" band="advanced" />
+              <GradePill grade="8a" band="pro" />
+              <GradePill grade="egal" band="neutral" />
+            </div>
+          </div>
+          <div className="line"><span className="label">Badge</span>
+            <div className="row">
+              <Badge tone="success" icon={I("check-circle-2")}>Verifiziert</Badge>
+              <Badge tone="warning" icon={I("clock")}>Wartet</Badge>
+              <Badge tone="brand">1 / 2 Plätze frei</Badge>
+              <Badge tone="neutral" icon={I("users")}>Gruppe</Badge>
+            </div>
+          </div>
+          <div className="line"><span className="label">Card</span>
+            <div className="row" style={{ flex: 1 }}>
+              <Card style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontFamily: "var(--font-display)", fontWeight: 600 }}>Standard-Fläche</div>
+                <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", marginTop: 4 }}>Hairline · 14px Radius · weicher Schatten</div>
+              </Card>
+              <Card interactive style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontFamily: "var(--font-display)", fontWeight: 600 }}>Interaktiv</div>
+                <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", marginTop: 4 }}>Drücken → Scale-down</div>
+              </Card>
+            </div>
+          </div>
+        </>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+    requestAnimationFrame(() => window.lucide && window.lucide.createIcons());
+  </script>
+</body>
+</html>

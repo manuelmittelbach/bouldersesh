@@ -1,4 +1,4 @@
-# Boulder Buddy — Ubiquitous Language
+# BoulderSesh — Ubiquitous Language
 
 Glossar der Domänenbegriffe. Keine Implementierungsdetails — Entscheidungen gehören
 nach `docs/adr/`.
@@ -49,7 +49,7 @@ Abzugrenzen von zwei Dingen, mit denen er gern verwechselt wird:
   und hat einen Wiederherstellungs-Kanal (Reset an die Email); der Anzeigename
   hat das bewusst nicht.
 - **Username / Handle:** Ein *eindeutiger* Bezeichner, über den Leute einander
-  **suchen oder erwähnen**. Boulder Buddy hat **keinen** — Leute finden sich über
+  **suchen oder erwähnen**. BoulderSesh hat **keinen** — Leute finden sich über
   [Sessions](#session), nicht über Namenssuche. Fällt erst an, wenn es je eine
   Nutzersuche gäbe.
 
