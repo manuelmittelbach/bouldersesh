@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "BoulderSesh",
-    "slug": "mobile",
+    "slug": "bouldersesh",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "bouldersesh",
     "userInterfaceStyle": "automatic",
     "platforms": [
       "ios",
@@ -67,6 +67,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "bb9d8323-6da7-4cc8-bccf-7c277e97ea7b"
+      }
+    },
+    "owner": "mmittelb"
   }
 }
