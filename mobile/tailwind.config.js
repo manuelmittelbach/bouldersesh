@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-// Token-Port aus dem Boulder Buddy Design System (../Boulder Buddy Design System/tokens)
+// Token-Port aus dem BoulderSesh Design System (../BoulderSesh Design System/tokens)
 // bzw. app/tailwind.config.ts. Richtung: cool, athletisch, sparsam — Send Orange als
 // EIN kräftiger Akzent pro View gegen eine kühle Graphit-"Rock"-Neutralskala; Grades
 // lesen als Daten (mono). Rohe Skalen 1:1 übernommen — die App nutzt genau diese Klassen

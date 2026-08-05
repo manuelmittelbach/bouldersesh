@@ -1,5 +1,5 @@
--- Boulder Buddy — initial schema
--- Maps 1:1 to the data model in Boulder-Buddy_Konzept.md §4.
+-- BoulderSesh — initial schema
+-- Maps 1:1 to the data model in BoulderSesh_Konzept.md §4.
 --
 -- Run with the Supabase CLI:
 --   supabase link --project-ref <ref>

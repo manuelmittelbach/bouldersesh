@@ -1,4 +1,4 @@
--- Row-Level Security for Boulder Buddy.
+-- Row-Level Security for BoulderSesh.
 --
 -- Principle: deny by default, then open up exactly what the MVP needs.
 -- Re-read these every time you add a feature — RLS is the entire security model.

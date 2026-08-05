@@ -13,7 +13,7 @@ import { useCallback } from "react";
  * pattern: one setter, and every consumer re-renders.
  */
 
-const STORAGE_KEY = "boulder-buddy.active-city-id";
+const STORAGE_KEY = "bouldersesh.active-city-id";
 const ACTIVE_CITY_KEY = ["activeCity"] as const;
 
 export function useActiveCity() {
