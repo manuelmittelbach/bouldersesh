@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/useAuth";
+import { syncPushToken } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import type { Session } from "@/types/database";
 
@@ -376,6 +377,9 @@ export function useCreateSession() {
       // gleich mitangelegten Gruppenchat in die Host-Sektion (useMyChats).
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       queryClient.invalidateQueries({ queryKey: ["chats"] });
+      // Erste Aktion mit klarem Push-Nutzen (Join-Requests verpassen) — hier
+      // darf der System-Permission-Prompt kommen (Strategie: lib/notifications.ts).
+      void syncPushToken({ askPermission: true });
     },
   });
 }

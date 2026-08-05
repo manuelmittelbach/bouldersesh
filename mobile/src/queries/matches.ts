@@ -1,6 +1,7 @@
 import { useEffect, useId } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { syncPushToken } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import type { MatchRequest } from "@/types/database";
@@ -282,6 +283,9 @@ export function useCreateMatchRequest() {
         queryKey: REQUESTS_FOR_SESSION_KEY(req.session_id),
       });
       queryClient.invalidateQueries({ queryKey: MY_OUTGOING_KEY });
+      // Erste Aktion mit klarem Push-Nutzen („wurde ich angenommen?") — hier
+      // darf der System-Permission-Prompt kommen (Strategie: lib/notifications.ts).
+      void syncPushToken({ askPermission: true });
     },
   });
 }

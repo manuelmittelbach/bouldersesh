@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session as SupabaseSession, User } from "@supabase/supabase-js";
 
+import { unregisterPushToken } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import type { Profile } from "@/types/database";
 
@@ -71,6 +72,9 @@ export function useAuth() {
     profile: profileQuery.data ?? null,
     isLoading: sessionQuery.isLoading || (!!user && profileQuery.isLoading),
     signOut: async () => {
+      // Vor dem signOut: Das Token-Delete braucht die noch aktive Session
+      // (RLS "delete own", Migration 0028). Fehler sind dort nicht fatal.
+      await unregisterPushToken();
       await supabase.auth.signOut();
     },
   };
