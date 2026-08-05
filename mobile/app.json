@@ -14,7 +14,10 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "de.manumittelbach.bouldersesh",
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
