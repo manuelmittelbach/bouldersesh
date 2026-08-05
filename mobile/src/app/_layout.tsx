@@ -23,12 +23,18 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useActiveCity } from "@/hooks/useActiveCity";
 import { useAuth } from "@/hooks/useAuth";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useRecovery } from "@/hooks/useRecovery";
+import { setupNotificationHandling } from "@/lib/notifications";
 import { queryClient } from "@/lib/queryClient";
 
 import "../global.css";
 
 SplashScreen.preventAutoHideAsync();
+
+// Vor dem ersten Render setzen, damit auch eine Notification, die die App
+// gerade öffnet, schon das konfigurierte Foreground-Verhalten bekommt.
+setupNotificationHandling();
 
 // Gestaffelte Gates über Stack.Protected — jedes tiefere Gate setzt das äußere
 // voraus. Fällt ein Guard auf false, wirft expo-router die History dieser Screens
@@ -45,6 +51,13 @@ function RootNavigator() {
   const { session, profile, isLoading } = useAuth();
   const { cityId, isLoading: cityLoading } = useActiveCity();
   const { recoveryPending } = useRecovery();
+
+  // Erst wenn alle Gates offen sind: vorher existieren die Deep-Link-Ziele
+  // ((tabs), chats/[id], sessions/[id]) im Stack nicht.
+  usePushNotifications({
+    enabled:
+      !!session && !recoveryPending && !!profile?.display_name && !!cityId,
+  });
 
   // Splash erst freigeben, wenn Session UND Stadt beantwortet sind — sonst flasht kurz
   // der Login bzw. der Stadt-Screen, bevor der gespeicherte Zustand geladen wurde.

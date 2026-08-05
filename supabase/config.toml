@@ -62,3 +62,15 @@ otp_length = 8
 # Externe Voraussetzungen für Social-Login (Apple Dev Account, Google OAuth
 # Client-IDs) werden separat nachgezogen; die App zeigt die Buttons bis dahin
 # deaktiviert.
+
+[functions.send-push]
+# KEIN User-JWT am Gateway: Aufrufer sind die DB-Trigger (Migration 0029), die
+# das Vault-Secret 'push_fn_secret' als Bearer schicken — das ist kein JWT, mit
+# Default-Verify käme jeder Trigger-Call als 401 zurück, bevor die Function ihren
+# eigenen Secret-Vergleich machen kann. Live gesetzt beim Deploy (2026-08-05).
+# Manuelle Voraussetzungen am LIVE-Projekt (beide erledigt 2026-08-05):
+#   1. Vault-Secret: select vault.create_secret('<secret>', 'push_fn_secret');
+#      — fehlt es, steigt notify_push still aus (kein Push, DML läuft weiter).
+#   2. Android-Pushes: FCM-V1-Service-Account-JSON in den EAS-Credentials
+#      (npx eas-cli credentials -p android → Google Service Account / FCM V1).
+verify_jwt = false

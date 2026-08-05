@@ -253,6 +253,28 @@ export interface Database {
           },
         ];
       };
+      push_tokens: {
+        Row: {
+          /** Expo-Push-Token — identifiziert genau eine App-Installation (0028). */
+          token: string;
+          user_id: string;
+          platform: "ios" | "android";
+          updated_at: string;
+        };
+        // Schreiben läuft über den RPC register_push_token (Besitzerwechsel-Fall,
+        // siehe Migration 0028); der Client selbst darf nur lesen und löschen.
+        Insert: never;
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "push_tokens_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -295,6 +317,15 @@ export interface Database {
       /** Einen Block zurücknehmen (Migration 0025). */
       unblock_profile: {
         Args: { p_blocked_id: string };
+        Returns: undefined;
+      };
+      /**
+       * Push-Token dieses Geräts registrieren bzw. dem aktuellen Account
+       * zuschlagen (Migration 0028). SECURITY DEFINER, weil die Zeile beim
+       * Account-Wechsel auf demselben Gerät noch dem alten User gehören kann.
+       */
+      register_push_token: {
+        Args: { p_token: string; p_platform: "ios" | "android" };
         Returns: undefined;
       };
     };
