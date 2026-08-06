@@ -26,6 +26,7 @@ const UPDATED_MESSAGE: Record<string, string> = {
   name: "Name updated.",
   email: "Email updated.",
   password: "Password updated.",
+  feedback: "Thanks for your feedback.",
 };
 
 function SectionHeader({ children }: { children: string }) {
@@ -138,6 +139,13 @@ export default function Account() {
           <SectionHeader>Safety</SectionHeader>
           <View className="overflow-hidden rounded-2xl border border-rock-100 bg-rock-0">
             <Row label="Blocked climbers" onPress={() => go("/blocked")} />
+          </View>
+        </View>
+
+        <View className="mt-10">
+          <SectionHeader>Support</SectionHeader>
+          <View className="overflow-hidden rounded-2xl border border-rock-100 bg-rock-0">
+            <Row label="Send feedback" onPress={() => go("/feedback")} />
           </View>
         </View>
 

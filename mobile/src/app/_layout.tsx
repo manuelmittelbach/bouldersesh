@@ -95,6 +95,7 @@ function RootNavigator() {
             <Stack.Screen name="verify-email-change" />
             <Stack.Screen name="delete-account" />
             <Stack.Screen name="blocked" />
+            <Stack.Screen name="feedback" />
           </Stack.Protected>
           {/* Identitäts-Gate: ohne Anzeigenamen nur das Onboarding. Das Onboarding
               MUSS selbst hinter einem Guard liegen (nicht als freier Screen daneben):
