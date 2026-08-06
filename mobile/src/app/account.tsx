@@ -142,7 +142,7 @@ export default function Account() {
         </View>
 
         {/* Account-Aktionen */}
-        <View className="mt-10 gap-3">
+        <View className="mt-10">
           <Button
             variant="outline"
             size="lg"
@@ -154,11 +154,12 @@ export default function Account() {
           </Button>
 
           {/* Löschen bleibt der zurückhaltende, gefährliche Weg — rot, ohne
-              eigenen Knopf, auf den Bestätigungs-Screen (ADR-0004). */}
+              eigenen Knopf, auf den Bestätigungs-Screen (ADR-0004). Deutlich
+              vom Sign-out abgesetzt, damit kein Fehl-Tap dort landet. */}
           <Pressable
             accessibilityRole="button"
             onPress={() => go("/delete-account")}
-            className="items-center py-2 active:opacity-60"
+            className="mt-8 items-center py-2 active:opacity-60"
           >
             <Text className="font-sans-medium text-[15px] text-danger">
               Delete account
