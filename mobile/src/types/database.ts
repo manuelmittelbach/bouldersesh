@@ -275,6 +275,28 @@ export interface Database {
           },
         ];
       };
+      feedback: {
+        Row: {
+          id: string;
+          /** `null`, sobald der Account gelöscht wurde (on delete set null, 0031). */
+          user_id: string | null;
+          message: string;
+          app_version: string | null;
+          platform: "ios" | "android" | null;
+          created_at: string;
+          handled_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          message: string;
+          app_version?: string | null;
+          platform?: "ios" | "android" | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["feedback"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
