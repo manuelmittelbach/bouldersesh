@@ -7,6 +7,7 @@ import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -192,18 +193,30 @@ export default function Login() {
               </Button>
             </View>
 
-            {/* Inline-ToS — Platzhalter-URLs, im In-App-Browser (kein Deep-Link). */}
-            <Text className="mt-auto pt-8 text-center font-sans text-xs leading-5 text-rock-400">
-              By continuing you agree to our{' '}
-              <Text className="text-rock-600 underline" onPress={() => openLegal(TERMS_URL)}>
-                Terms
-              </Text>{' '}
-              and{' '}
-              <Text className="text-rock-600 underline" onPress={() => openLegal(PRIVACY_URL)}>
-                Privacy Policy
+            {/* Inline-ToS — im In-App-Browser (kein Deep-Link). Links als Pressable
+                mit hitSlop: onPress auf verschachteltem Text trifft nur die Glyphen
+                selbst (18pt hoch, kein Slop) — mit dem Finger praktisch nicht treffbar. */}
+            <View className="mt-auto flex-row flex-wrap items-center justify-center pt-8">
+              <Text className="font-sans text-xs leading-5 text-rock-400">
+                By continuing you agree to our{' '}
               </Text>
-              .
-            </Text>
+              <Pressable
+                hitSlop={{ top: 14, bottom: 14, left: 4, right: 4 }}
+                onPress={() => openLegal(TERMS_URL)}>
+                <Text className="font-sans text-xs leading-5 text-rock-600 underline">
+                  Terms
+                </Text>
+              </Pressable>
+              <Text className="font-sans text-xs leading-5 text-rock-400"> and </Text>
+              <Pressable
+                hitSlop={{ top: 14, bottom: 14, left: 4, right: 4 }}
+                onPress={() => openLegal(PRIVACY_URL)}>
+                <Text className="font-sans text-xs leading-5 text-rock-600 underline">
+                  Privacy Policy
+                </Text>
+              </Pressable>
+              <Text className="font-sans text-xs leading-5 text-rock-400">.</Text>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
