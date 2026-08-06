@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "342384091905",
+    "project_id": "boulderbuddy-504512",
+    "storage_bucket": "boulderbuddy-504512.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:342384091905:android:c2f1687ff1291faf403100",
+        "android_client_info": {
+          "package_name": "de.manumittelbach.bouldersesh"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "342384091905-sl11puv964gg6ducge2gmq3guj70aafo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClcZpQ1L2_NWDa3vc1-6sjWGMJWeFWJqM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "342384091905-sl11puv964gg6ducge2gmq3guj70aafo.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "342384091905-7p5nuj9722ic4ots7129qmubdl1ti5cr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "de.manumittelbach.bouldersesh"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
