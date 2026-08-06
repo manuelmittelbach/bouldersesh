@@ -38,13 +38,13 @@ export function Chip({ active = false, band, icon, trailingIcon, className, chil
   return (
     <Pressable
       className={cn(
-        'h-9 flex-row items-center gap-1.5 rounded-full border px-3.5 active:scale-[0.97]',
+        'h-10 flex-row items-center gap-1.5 rounded-full border px-4 active:scale-[0.97]',
         active ? activeChip : 'border-rock-200 bg-rock-0',
         className,
       )}
       {...rest}>
       {icon}
-      <Text className={cn('font-sans-semibold text-[13px]', active ? activeText : 'text-rock-700')}>
+      <Text className={cn('font-sans-semibold text-[14px]', active ? activeText : 'text-rock-700')}>
         {children}
       </Text>
       {trailingIcon}
