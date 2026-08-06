@@ -94,7 +94,7 @@ function Header({
           nur zwei Chips: „All gyms" und ein Picker, der das Bottom-Sheet (GymPickerSheet)
           öffnet und die gewählte Halle als Label trägt. */}
       {gyms && gyms.length > 1 ? (
-        <View className="mt-2 flex-row gap-2">
+        <View className="mt-2.5 flex-row gap-2">
           <Chip active={gymId === null} onPress={() => onSelectGym(null)}>
             All gyms
           </Chip>

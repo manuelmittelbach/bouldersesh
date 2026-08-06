@@ -62,7 +62,7 @@ export function DateFilter({
         ) : null}
         <Chip
           active={false}
-          className="w-11 justify-center px-0"
+          className="w-12 justify-center px-0"
           onPress={() => setCalendarOpen(true)}
           icon={
             <CalendarIcon
