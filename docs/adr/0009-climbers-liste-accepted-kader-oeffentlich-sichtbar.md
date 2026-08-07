@@ -5,6 +5,11 @@ date: 2026-07-28
 
 # „Climbers"-Liste: bestätigter Kader öffentlich sichtbar
 
+> **Update (ADR-0018, 2026-08-07):** Der Punkt „Realtime hält die Liste live"
+> ist abgelöst — die Detailseite ist seither ein Snapshot beim Öffnen
+> (`refetchOnMount: "always"`, kein Realtime-Abo mehr in `useSessionClimbers`).
+> Alle übrigen Entscheidungen gelten weiter.
+
 ## Kontext & Entscheidung
 
 ADR-0007 machte Sessions zu Gruppen (Kapazität 2–4). Die Session-Detailseite zeigte

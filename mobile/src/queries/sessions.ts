@@ -172,8 +172,9 @@ export function useFeedSessions(params: FeedSessionsParams = {}) {
     // Der Feed ist DER Live-Screen der App: Bei jeder Rückkehr aus dem Hintergrund
     // still neu laden, auch wenn die staleTime (5 min Default) noch läuft — spiegelt
     // den bedingungslosen Tab-Focus-Refetch im Dashboard (useFocusEffect, ADR-0006).
-    // Bedingungslos lädt sonst nur noch useSession (refetchOnMount: "always");
-    // alle anderen Queries bleiben staleTime-gesteuert.
+    // Bedingungslos laden sonst nur die Snapshot-Hooks des Session-Details bei
+    // jedem Öffnen (useSession, useSessionClimbers, useMyRequestForSession —
+    // refetchOnMount "always", ADR-0018); alle anderen bleiben staleTime-gesteuert.
     refetchOnWindowFocus: "always",
   });
 }
@@ -476,8 +477,9 @@ export function useLeaveSession() {
       queryClient.invalidateQueries({ queryKey: ["chats"] });
       // Der Austritt setzt die eigene Anfrage auf `cancelled`. Ohne dies hinge der
       // Session-Detail-Screen (useMyRequestForSession) noch auf `accepted` und zeigte
-      // „Open chat / Leave session", bis zufällig ein Realtime-Event kommt — genau der
-      // stale Zustand, den useWithdrawRequest per MY_OUTGOING_KEY vermeidet.
+      // „Open chat / Leave session", bis der Screen neu geöffnet wird (ADR-0018:
+      // kein Realtime mehr auf dem Detail) — genau der stale Zustand, den
+      // useWithdrawRequest per MY_OUTGOING_KEY vermeidet.
       queryClient.invalidateQueries({ queryKey: ["matches"] });
     },
   });

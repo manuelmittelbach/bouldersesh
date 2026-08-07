@@ -204,57 +204,20 @@ async function getClimbersForSession(
  * Wer einer Session bereits beigetreten ist (accepted) — die „Climbers"-Liste auf
  * dem Session-Detail (ADR-0009). Anders als useRequestsForSession (Ersteller-Sicht,
  * alle Status) ist das die öffentliche Kader-Sicht: nur accepted, für jede:n lesbar
- * (0018). Realtime hält sie live: Das WACHSEN (jemand wird angenommen) sieht jede:r,
- * die neue Zeile ist `accepted` und damit sichtbar. Das SCHRUMPFEN (jemand verlässt
- * → `cancelled`, 0016) sieht nur Ersteller:in/Mitglieder live — für Außenstehende ist
- * die neue `cancelled`-Zeile unsichtbar (0018), und Realtime prüft RLS auf der neuen
- * Zeile, stellt das Event also nicht zu; sie ziehen beim nächsten Refetch (Focus/
- * Remount) nach. Bewusst in Kauf genommen (ADR-0009): geringe, selbstheilende
- * Staleness. Der useId-Suffix hält den Kanal-Topic pro Hook-Instanz eindeutig (sonst
- * Kollision in supabase-js, siehe queries/chat.ts).
+ * (0018). Bewusst OHNE Realtime: Die Detail-Seite ist ein Snapshot beim Öffnen und
+ * soll sich nicht unter den Augen der Betrachter:in verändern (Produktentscheidung,
+ * gleiche Linie wie useSession). Frische kommt vom bedingungslosen Mount-Refetch;
+ * Kader und „Spots left" laden so immer zusammen — kein Widerspruch zwischen beiden.
  */
 export function useSessionClimbers(sessionId: string | undefined) {
-  const queryClient = useQueryClient();
-  const channelId = useId();
-
-  const query = useQuery({
+  return useQuery({
     queryKey: CLIMBERS_FOR_SESSION_KEY(sessionId ?? ""),
     queryFn: () => getClimbersForSession(sessionId!),
     enabled: !!sessionId,
+    // Wie useSession (queries/sessions.ts): bei jedem Öffnen frisch laden — danach
+    // steht die Seite, bis sie neu geöffnet oder die App nach vorne geholt wird.
+    refetchOnMount: "always",
   });
-
-  useEffect(() => {
-    if (!sessionId) return;
-    const channel = supabase
-      .channel(`session-climbers:${sessionId}:${channelId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "match_requests",
-          filter: `session_id=eq.${sessionId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({
-            queryKey: CLIMBERS_FOR_SESSION_KEY(sessionId),
-          });
-          // Roster und „Spots left" sind zwei Sichten auf dieselben accepted-Zeilen —
-          // die Sessions mit-invalidieren, damit beide zusammen wandern statt sich zu
-          // widersprechen. Breiter `["sessions"]`-Prefix wie die Mutations-Hooks
-          // (useRespondToMatchRequest): trifft neben dem Detail (SESSION_KEY) auch den
-          // Feed-Count (["sessions","open"]), der denselben belegten Platz zeigt.
-          queryClient.invalidateQueries({ queryKey: ["sessions"] });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [sessionId, channelId, queryClient]);
-
-  return query;
 }
 
 export function useCreateMatchRequest() {
@@ -397,54 +360,28 @@ async function getMyRequestForSession(
 }
 
 /**
- * Meine eigene Anfrage an EINER Session (oder null) — mit Realtime, damit ein
- * „Request sent" live zu „accepted" umschlägt, wenn die Ersteller:in annimmt,
- * während der Detail-Screen offen ist. Der Realtime-Filter geht über
- * `session_id`; RLS beschränkt die zugestellten Zeilen ohnehin auf meine eigene.
+ * Meine eigene Anfrage an EINER Session (oder null) — steuert die Aktionsleiste
+ * auf dem Session-Detail („Request sent" / „Leave session"). Bewusst OHNE
+ * Realtime: die Detail-Seite ist ein Snapshot beim Öffnen (siehe
+ * useSessionClimbers) — eine Annahme zeigt sich hier erst beim nächsten Öffnen.
+ * Sofort informieren stattdessen der Push und der Chats-Tab, dessen Zeile per
+ * Realtime von Requested nach Joined wandert (useMyParticipations).
  */
 export function useMyRequestForSession(
   sessionId: string | undefined,
   enabled = true,
 ) {
-  const queryClient = useQueryClient();
-  const channelId = useId();
   const { user } = useAuth();
   const userId = user?.id;
   const on = !!sessionId && !!userId && enabled;
 
-  const query = useQuery({
+  return useQuery({
     queryKey: MY_REQUEST_KEY(sessionId ?? ""),
     queryFn: () => getMyRequestForSession(sessionId!, userId!),
     enabled: on,
+    // Wie useSession/useSessionClimbers: bei jedem Öffnen frisch, danach statisch.
+    refetchOnMount: "always",
   });
-
-  // channelId (useId) hält den Topic pro Hook-Instanz eindeutig — derselbe
-  // Detail-Screen kann doppelt im Navigationsstack liegen; zwei Kanäle mit
-  // gleichem Topic würden in supabase-js kollidieren (siehe queries/chat.ts).
-  useEffect(() => {
-    if (!on) return;
-    const channel = supabase
-      .channel(`my-request:${sessionId}:${channelId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "match_requests",
-          filter: `session_id=eq.${sessionId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: MY_REQUEST_KEY(sessionId) });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [on, sessionId, channelId, queryClient]);
-
-  return query;
 }
 
 async function getMyPendingSessionIds(userId: string): Promise<Set<string>> {

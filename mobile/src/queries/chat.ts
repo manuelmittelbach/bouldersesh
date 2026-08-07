@@ -5,7 +5,11 @@ import { isJoinLine, isUnreadFor } from "@/domain/chatUnread";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { usePendingCountsForSessions } from "@/queries/matches";
-import { useMyParticipations, useMySessions } from "@/queries/sessions";
+import {
+  SESSION_KEY,
+  useMyParticipations,
+  useMySessions,
+} from "@/queries/sessions";
 import type { Message, MessageKind } from "@/types/database";
 
 const MESSAGES_KEY = (chatId: string) => ["chat", chatId, "messages"] as const;
@@ -22,7 +26,7 @@ async function getMessages(chatId: string): Promise<Message[]> {
   return data ?? [];
 }
 
-export function useMessages(chatId: string | undefined) {
+export function useMessages(chatId: string | undefined, sessionId?: string) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
@@ -54,6 +58,16 @@ export function useMessages(chatId: string | undefined) {
               return [...prev, newMessage];
             },
           );
+          // Der Kopf des OFFENEN Chats (gym · Zeit, „Full", Krone) hängt am
+          // Session-Cache (useSession im Chat-Screen). Eine System-Zeile muss ihn
+          // sofort nachziehen, sonst steht sie neben einem alten Kopf (der
+          // Drift-Fix aus 5c89842). Das passiert bewusst HIER statt im globalen
+          // useMyChats-Handler: dieses Abo lebt nur, solange der Chat offen ist —
+          // das Session-Detail bleibt so ein Snapshot (ADR-0018) und springt
+          // nicht live um, wenn dieselbe System-Zeile eintrifft.
+          if (newMessage.kind === "system" && sessionId) {
+            queryClient.invalidateQueries({ queryKey: SESSION_KEY(sessionId) });
+          }
         },
       )
       .subscribe();
@@ -61,7 +75,7 @@ export function useMessages(chatId: string | undefined) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [chatId, queryClient]);
+  }, [chatId, sessionId, queryClient]);
 
   return query;
 }
@@ -406,15 +420,27 @@ export function useMyChats() {
           }
           // Eine System-Zeile IST eine Session-Zustandsänderung (joined/left →
           // Besetzung/Mitglieder, moved → Zeit/Halle, 0014/0016/0033) — ohne dies
-          // zeigten Feed, Session-Detail, Chat-Kopf und Mitglieder-Leiste bis zu
-          // 5 Minuten den alten Stand, direkt NEBEN der frischen Zeile („Ben
-          // joined", Leiste: ohne Ben). Der Drift ist nur für Mitglieder sichtbar
-          // (nur sie sehen den Chat), und genau die erreicht dieses RLS-gescopte
-          // Event. Aktiver Refetch gewollt (Screens sind ggf. gerade offen);
-          // selten genug, um breit zu invalidieren statt die session_id erst
-          // nachzuschlagen.
+          // zeigten Feed, Listen und Mitglieder-Leiste bis zu 5 Minuten den alten
+          // Stand, direkt NEBEN der frischen Zeile („Ben joined", Leiste: ohne
+          // Ben). Der Drift ist nur für Mitglieder sichtbar (nur sie sehen den
+          // Chat), und genau die erreicht dieses RLS-gescopte Event. Breit
+          // invalidieren statt die session_id nachzuschlagen: selten genug.
+          // ABER: SESSION_KEY refetcht hier bewusst NICHT sofort — das
+          // Session-Detail ist ein Snapshot und soll nicht unter den Augen der
+          // Betrachter:in umspringen (ADR-0018); es lädt beim nächsten Öffnen
+          // ohnehin frisch (refetchOnMount "always"). Deshalb erst alles nur
+          // stale markieren, dann gezielt die Listen-Keys aktiv refetchen. Den
+          // Kopf des OFFENEN Chats zieht dessen eigenes Abo nach (useMessages).
           if (message.kind === "system") {
-            queryClient.invalidateQueries({ queryKey: ["sessions"] });
+            queryClient.invalidateQueries({
+              queryKey: ["sessions"],
+              refetchType: "none",
+            });
+            queryClient.invalidateQueries({ queryKey: ["sessions", "open"] });
+            queryClient.invalidateQueries({ queryKey: ["sessions", "mine"] });
+            queryClient.invalidateQueries({
+              queryKey: ["sessions", "participations"],
+            });
             if (message.chat_id) {
               queryClient.invalidateQueries({
                 queryKey: CHAT_MEMBERS_KEY(message.chat_id),
