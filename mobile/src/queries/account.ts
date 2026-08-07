@@ -5,10 +5,11 @@ import { supabase } from "@/lib/supabase";
 // Account löschen (CONTEXT.md „Gelöschte Nutzer:in", ADR-0004). Der eigentliche
 // Löschvorgang lebt in der Edge Function `delete-account` — nur sie hat den
 // service_role-Key und kann die Bucket-Dateien anfassen. Hier steht der Flow
-// drumherum: erneut das Passwort prüfen, die Function rufen, lokal abmelden.
+// drumherum: die Function rufen, lokal abmelden.
 
-/** Falsches Passwort bei der Bestätigung. Eigener Typ, damit die UI „Passwort
- *  stimmt nicht" von einem echten Serverfehler unterscheiden kann. */
+/** Falsches Passwort bei der Bestätigung (E-Mail-Wechsel/Passwort-Wechsel).
+ *  Eigener Typ, damit die UI „Passwort stimmt nicht" von einem echten
+ *  Serverfehler unterscheiden kann. */
 export class ReauthFailedError extends Error {
   constructor() {
     super("That password doesn’t match. Try again.");
@@ -82,21 +83,9 @@ export function useChangePassword() {
 
 export function useDeleteAccount() {
   return useMutation({
-    mutationFn: async ({
-      email,
-      password,
-    }: {
-      email: string;
-      password: string;
-    }) => {
-      // Erneute Passworteingabe (ADR-0004): signInWithPassword bestätigt, dass am
-      // Gerät wirklich diese Person sitzt. Löschen ist endgültig, kein Undo.
-      const { error: reauthError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (reauthError) throw new ReauthFailedError();
-
+    mutationFn: async () => {
+      // Keine Passwort-Reauth mehr (ADR-0004-Update): Social-Konten HABEN kein
+      // Passwort — die bewusste Hürde ist das „DELETE"-Eintippen im Screen.
       // Die Function löscht zuerst die Bucket-Dateien, dann den Auth-User
       // (Reihenfolge ADR-0004). invoke hängt das aktuelle JWT automatisch an.
       const { error } = await supabase.functions.invoke("delete-account", {

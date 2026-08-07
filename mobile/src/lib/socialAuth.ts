@@ -83,6 +83,19 @@ export async function signInWithApple(): Promise<SocialSignInResult> {
     nonce: rawNonce,
   });
   if (error) throw error;
+
+  // Apples authorizationCode (~5 min gültig) serverseitig gegen einen
+  // Refresh-Token tauschen — den braucht delete-account später für die
+  // Token-Revocation (App-Store-Pflicht, ADR-0004-Update). Fire-and-forget:
+  // Der Login ist durch, ein Scheitern hier darf ihn nicht mehr anfassen.
+  if (credential.authorizationCode) {
+    void supabase.functions
+      .invoke('apple-token-exchange', {
+        body: { authorization_code: credential.authorizationCode },
+      })
+      .catch(() => {});
+  }
+
   return { cancelled: false };
 }
 

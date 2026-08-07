@@ -67,3 +67,29 @@ wechselt von `on delete cascade` auf `on delete set null`.
   den es nicht gibt — bewusst zurückgestellt.
 - Neues Deploy-Artefakt: `supabase functions deploy delete-account` gehört ab
   jetzt zum Ausrollen dazu. Der `service_role`-Key liegt ausschließlich dort.
+
+## Update 2026-08-07 — Bestätigung ohne Passwort + Apple-Token-Revocation
+
+Mit dem nativen Social-Login (ADR-0016) brach die ursprüngliche Bestätigung:
+Apple-/Google-Konten **haben kein Passwort** — sie konnten ihren Account gar
+nicht löschen (App-Store-Ablehnungsgrund, Richtlinie 5.1.1(v)). Zwei Änderungen:
+
+1. **Bestätigt wird jetzt für alle durch Eintippen von `DELETE`** statt per
+   Passwort. Die Passwort-Reauth schützte ohnehin weniger als gedacht (wer das
+   entsperrte Gerät hat, hat auch das Mail-Postfach für „Passwort vergessen");
+   die eigentliche Aufgabe der Hürde — impulsives/versehentliches Löschen
+   verhindern — erfüllt die Tipp-Bestätigung methodenunabhängig. Ein nativer
+   Re-Auth-Flow (Apple-Sheet erneut) wurde als Overkill verworfen.
+2. **Apple-Token-Revocation** (App-Store-Pflicht seit 2022): Beim Apple-Login
+   schickt die App Apples `authorizationCode` an die neue Edge Function
+   `apple-token-exchange`, die ihn gegen einen Refresh-Token tauscht und in
+   `apple_refresh_tokens` ablegt (Migration 0032; service_role-only, kein
+   Client-Zugriff). `delete-account` liest den Token vor dem `deleteUser`
+   (FK-Cascade!) und widerruft ihn **danach, Best-Effort**: Ein Apple-Ausfall
+   darf das Löschen nicht blockieren — schlimmstenfalls bleibt die App in den
+   Apple-ID-Einstellungen sichtbar und ist dort manuell entfernbar.
+
+Beides braucht die SIWA-Secrets `APPLE_TEAM_ID`, `APPLE_SIWA_KEY_ID`,
+`APPLE_SIWA_PRIVATE_KEY` (Function-Secrets; Key aus dem Apple Developer
+Portal). Fehlen sie, wird die Revocation still übersprungen — Löschen
+funktioniert immer.

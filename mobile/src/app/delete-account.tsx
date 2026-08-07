@@ -1,19 +1,22 @@
 import { router } from 'expo-router';
-import { Check, Lock, X } from 'lucide-react-native';
+import { Check, X } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Input, ScreenHeader } from '@/components/ui';
-import { useAuth } from '@/hooks/useAuth';
-import { ReauthFailedError, useDeleteAccount } from '@/queries/account';
+import { useDeleteAccount } from '@/queries/account';
 import { colors } from '@/theme/colors';
 
 // Eigener Bestätigungs-Screen fürs Account-Löschen (ADR-0004). Er sagt zuerst
 // klar, was verschwindet UND was bleibt (Nachrichten überleben anonymisiert,
-// CONTEXT.md „Gelöschte Nutzer:in"), und verlangt dann die erneute Eingabe des
-// Passworts, bevor der endgültige, nicht umkehrbare Schritt möglich ist.
+// CONTEXT.md „Gelöschte Nutzer:in"), und verlangt dann das Eintippen von
+// DELETE, bevor der endgültige, nicht umkehrbare Schritt möglich ist.
+// Bewusst KEINE Passwort-Reauth: Social-Konten (Apple/Google) haben gar kein
+// Passwort — die Hürde muss für alle Login-Methoden dieselbe sein.
+
+const CONFIRM_PHRASE = 'DELETE';
 
 function OutcomeRow({ tone, children }: { tone: 'gone' | 'stays'; children: ReactNode }) {
   const gone = tone === 'gone';
@@ -36,21 +39,17 @@ function OutcomeRow({ tone, children }: { tone: 'gone' | 'stays'; children: Reac
 }
 
 export default function DeleteAccount() {
-  const { user } = useAuth();
   const del = useDeleteAccount();
 
-  const [password, setPassword] = useState('');
-
-  // ReauthFailedError ist erwartbar (falsches Passwort) und wird am Feld gezeigt;
-  // alles andere ist ein echter Fehler und kommt als eigene Zeile über den Button.
-  const wrongPassword = del.error instanceof ReauthFailedError;
-  const otherError = del.error && !wrongPassword ? (del.error as Error) : null;
+  const [confirmText, setConfirmText] = useState('');
+  // trim fängt das unsichtbare Leerzeichen ab, das iOS-AutoCorrect gern anhängt.
+  const confirmed = confirmText.trim() === CONFIRM_PHRASE;
 
   function confirmDelete() {
-    if (!user?.email || !password || del.isPending) return;
+    if (!confirmed || del.isPending) return;
     // mutate, nicht mutateAsync: bei Erfolg verschwindet die Session und das
     // Root-Gate leitet selbst auf Login um — hier ist keine Navigation nötig.
-    del.mutate({ email: user.email, password });
+    del.mutate();
   }
 
   return (
@@ -82,17 +81,15 @@ export default function DeleteAccount() {
 
           <View className="mt-9 border-t border-rock-100 pt-8">
             <Text className="mb-3 font-sans text-[15px] leading-6 text-rock-700">
-              Enter your password to confirm.
+              Type {CONFIRM_PHRASE} to confirm.
             </Text>
             <Input
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Password"
-              icon={<Lock size={18} color={colors.rock[400]} strokeWidth={2} />}
-              secureTextEntry
-              autoCapitalize="none"
-              autoComplete="current-password"
-              error={wrongPassword ? (del.error as Error).message : undefined}
+              value={confirmText}
+              onChangeText={setConfirmText}
+              placeholder={CONFIRM_PHRASE}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              autoComplete="off"
             />
           </View>
 
@@ -101,15 +98,15 @@ export default function DeleteAccount() {
               variant="danger"
               size="lg"
               fullWidth
-              disabled={!password || del.isPending}
+              disabled={!confirmed || del.isPending}
               loading={del.isPending}
               onPress={confirmDelete}>
               Delete my account
             </Button>
 
-            {otherError ? (
+            {del.error ? (
               <Text className="text-center font-sans text-sm text-danger">
-                {otherError.message}
+                {(del.error as Error).message}
               </Text>
             ) : null}
 

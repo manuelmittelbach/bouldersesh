@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button, ScreenHeader } from "@/components/ui";
+import { signInMethod } from "@/domain/signInMethod";
 import { useAuth } from "@/hooks/useAuth";
 import { colors } from "@/theme/colors";
 
@@ -40,6 +41,8 @@ function SectionHeader({ children }: { children: string }) {
 // Eine Einstellungs-Zeile: Label links, aktueller Wert grau rechts, Chevron.
 // `divider` zieht eine Trennlinie nach unten (alle außer der letzten Zeile einer
 // Gruppe). Der Wert kann fehlen (z.B. „Blocked climbers" — reine Navigation).
+// Ohne `onPress` ist die Zeile read-only: kein Chevron, nicht antippbar —
+// Social-Konten zeigen E-Mail und Login-Methode nur an (verwaltet der Provider).
 function Row({
   label,
   value,
@@ -49,14 +52,16 @@ function Row({
   label: string;
   value?: string;
   divider?: boolean;
-  onPress: () => void;
+  onPress?: () => void;
 }) {
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={onPress ? "button" : "text"}
+      disabled={!onPress}
       onPress={onPress}
       className={
-        "flex-row items-center gap-3 px-4 py-3.5 active:bg-rock-50 " +
+        "flex-row items-center gap-3 px-4 py-3.5 " +
+        (onPress ? "active:bg-rock-50 " : "") +
         (divider ? "border-b border-rock-100" : "")
       }
     >
@@ -70,7 +75,9 @@ function Row({
             {value}
           </Text>
         ) : null}
-        <ChevronRight size={18} color={colors.rock[300]} strokeWidth={2} />
+        {onPress ? (
+          <ChevronRight size={18} color={colors.rock[300]} strokeWidth={2} />
+        ) : null}
       </View>
     </Pressable>
   );
@@ -78,6 +85,11 @@ function Row({
 
 export default function Account() {
   const { user, profile, signOut } = useAuth();
+
+  // Social-Konten (Apple/Google) haben kein App-Passwort, und ihre E-Mail
+  // verwaltet der Provider — statt Ändern-Zeilen gibt es dort nur Anzeige.
+  const method = signInMethod(user);
+  const providerName = method === "apple" ? "Apple" : "Google";
 
   // Der Erfolgs-Param kommt von einem Sub-Screen zurück. Sofort wieder löschen,
   // sonst zeigt die Meldung nach jedem Zurück-Navigieren erneut.
@@ -121,18 +133,32 @@ export default function Account() {
               divider
               onPress={() => go("/edit-name")}
             />
-            <Row
-              label="Email"
-              value={user?.email}
-              divider
-              onPress={() => go("/change-email")}
-            />
-            <Row
-              label="Password"
-              value="••••••"
-              onPress={() => go("/change-password")}
-            />
+            {method === "email" ? (
+              <>
+                <Row
+                  label="Email"
+                  value={user?.email}
+                  divider
+                  onPress={() => go("/change-email")}
+                />
+                <Row
+                  label="Password"
+                  value="••••••"
+                  onPress={() => go("/change-password")}
+                />
+              </>
+            ) : (
+              <>
+                <Row label="Email" value={user?.email} divider />
+                <Row label="Sign-in" value={providerName} />
+              </>
+            )}
           </View>
+          {method !== "email" ? (
+            <Text className="mt-2 px-4 font-sans text-[13px] leading-4 text-rock-400">
+              Email and sign-in are managed by your {providerName} account.
+            </Text>
+          ) : null}
         </View>
 
         <View className="mt-10">
