@@ -407,6 +407,7 @@ export function useMyRequestForSession(
   enabled = true,
 ) {
   const queryClient = useQueryClient();
+  const channelId = useId();
   const { user } = useAuth();
   const userId = user?.id;
   const on = !!sessionId && !!userId && enabled;
@@ -417,10 +418,13 @@ export function useMyRequestForSession(
     enabled: on,
   });
 
+  // channelId (useId) hält den Topic pro Hook-Instanz eindeutig — derselbe
+  // Detail-Screen kann doppelt im Navigationsstack liegen; zwei Kanäle mit
+  // gleichem Topic würden in supabase-js kollidieren (siehe queries/chat.ts).
   useEffect(() => {
     if (!on) return;
     const channel = supabase
-      .channel(`my-request:${sessionId}`)
+      .channel(`my-request:${sessionId}:${channelId}`)
       .on(
         "postgres_changes",
         {
@@ -438,7 +442,7 @@ export function useMyRequestForSession(
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [on, sessionId, queryClient]);
+  }, [on, sessionId, channelId, queryClient]);
 
   return query;
 }
