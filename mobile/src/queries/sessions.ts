@@ -384,6 +384,40 @@ export function useCreateSession() {
   });
 }
 
+export type UpdateSessionInput = {
+  id: string;
+  gym_id: string;
+  starts_at: string;
+  note: string | null;
+  capacity: number;
+};
+
+// Editiert eine eigene Session (ADR-0017) — dieselben vier Felder wie das Create-
+// Formular. Die `session update own`-RLS-Policy (0002) lässt nur die Ersteller:in
+// durch; die Folge-Effekte (matched↔open bei Kapazitäts-Änderung, System-Zeile +
+// Push bei Zeit/Halle) übernehmen DB-Trigger (0033). Invalidierung wie beim Create:
+// der breite `["sessions"]`-Prefix trifft Feed, Detail und „mine"; `["chats"]`
+// aktualisiert die Zeilen-Titel (Halle · Zeit) im Chats-Tab.
+export function useUpdateSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...fields }: UpdateSessionInput) => {
+      const { data, error } = await supabase
+        .from("sessions")
+        .update(fields)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+    },
+  });
+}
+
 // Löscht eine eigene Session. Der `session delete own`-RLS-Policy (0002) lässt nur die
 // Ersteller:in durch — der Client zeigt den Knopf ohnehin nur bei `isMine`. Der FK-Cascade
 // (0015) räumt match_requests und den Gruppenchat (Members + Nachrichten) gleich mit ab,

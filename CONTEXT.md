@@ -98,8 +98,15 @@ weiteren. Solange Plätze offen sind, nimmt die Session Anfragen; mit dem letzte
 Platz ist sie **voll** und nicht mehr anfragbar. Sie bleibt aber **gedimmt als
 „Full"-Beleg im Feed sichtbar** (ADR-0011) — nur offene Sessions sind anfragbar.
 
+Eine Session ist **änderbar, solange sie läuft**: die Ersteller:in kann Halle,
+Zeitpunkt, Kapazität und Notiz anpassen — im selben Fenster, in dem sie die
+Session auch löschen könnte. Sie bleibt dabei **dieselbe** Session: Mitglieder,
+Anfragen und der Chat wandern mit, auch über einen Hallen- (und damit
+Stadt-)Wechsel hinweg. Die Kapazität kann nie unter die schon besetzten Plätze
+fallen; wächst eine volle Session, ist sie wieder anfragbar.
+
 Eine Session trägt **keinen** strukturierten Kletter-Grade. Was jemand vorhat,
-steht in der (verpflichtenden) Notiz. Das Niveau, das an einer Session erscheint,
+steht in der (optionalen) Notiz. Das Niveau, das an einer Session erscheint,
 ist das **der Ersteller:in** — ein Merkmal der Person, nicht der Session.
 
 ## Kapazität (Capacity)
@@ -126,10 +133,10 @@ _Avoid_: Grade, Preferred level
 ## Session-Notiz (Note)
 
 Der Freitext an einer Session, der sagt, was jemand an diesem Tag klettern will
-(„trying to crack some reds"). **Pflicht** — eine Session ohne Notiz gibt es
-nicht. Sie ist der ehrliche, **hallen-relative** Ausdruck des Vorhabens: lesbar,
-weil die Session eine Halle hat. Ersetzt den früheren strukturierten
-Session-Grade.
+(„trying to crack some reds"). **Optional** — wer nichts sagen will, lässt sie
+weg (so seit Migration 0026; die frühere Pflicht wurde bewusst zurückgebaut).
+Sie ist der ehrliche, **hallen-relative** Ausdruck des Vorhabens: lesbar, weil
+die Session eine Halle hat. Ersetzt den früheren strukturierten Session-Grade.
 
 _Avoid_: Preferred level, Grade
 

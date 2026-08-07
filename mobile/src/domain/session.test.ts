@@ -8,8 +8,10 @@ import test from "node:test";
 
 import {
   availableAction,
+  canEditSession,
   isFull,
   isHostedBy,
+  minSpotsForOthers,
   roleFor,
   spotsLabel,
   spotsLeft,
@@ -114,4 +116,22 @@ test("availableAction: nach dem Feed-Ende weichen Host & Joined auf 'leave-chat'
   // Angefragt/offen sind vom Feed-Ende unberührt.
   assert.equal(availableAction("requested", { offFeed: true }), "withdraw");
   assert.equal(availableAction("none", { offFeed: true }), "join");
+});
+
+// Session-Edit (ADR-0017): Edit gibt es genau dort und solange, wie es Delete gibt —
+// nur als Host, nur solange die Session auf dem Feed ist.
+test("canEditSession: nur Host, nur solange auf dem Feed", () => {
+  assert.equal(canEditSession("hosting"), true);
+  assert.equal(canEditSession("hosting", { offFeed: true }), false);
+  assert.equal(canEditSession("joined"), false);
+  assert.equal(canEditSession("requested"), false);
+  assert.equal(canEditSession("none"), false);
+});
+
+// Kapazitäts-Untergrenze beim Editieren (ADR-0017): angenommene Anfragen sind
+// verbindlich — die Spots dürfen nie unter die schon Aufgenommenen fallen.
+test("minSpotsForOthers: besetzte Plätze sind die Untergrenze, mindestens 1", () => {
+  assert.equal(minSpotsForOthers({ accepted_count: 0 }), 1);
+  assert.equal(minSpotsForOthers({ accepted_count: 2 }), 2);
+  assert.equal(minSpotsForOthers({ accepted_count: 3 }), 3);
 });

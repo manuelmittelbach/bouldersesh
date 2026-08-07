@@ -1,4 +1,5 @@
-import { CheckCircle2, Hand, LogOut, Trash2 } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { CheckCircle2, Hand, LogOut, Pencil, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -115,16 +116,34 @@ export function SessionActionSheet({
     // auf dem Feed, darum ohne `offFeed` — „leave-chat" kommt hier nie vor.
     switch (availableAction(target.role)) {
       case 'delete':
+        // Eigene Session: Edit + Delete (ADR-0017 weicht ADR-0013s „genau eine
+        // Handlung" für die eigene Session auf). `delete` heißt bereits hosting UND
+        // auf dem Feed — genau das Edit-Fenster (canEditSession), kein weiterer
+        // Guard nötig. Edit navigiert zum vorausgefüllten Formular; das Sheet
+        // schließt dabei, damit es beim Zurückkommen nicht über dem Feed hängt.
         return (
-          <Button
-            variant="ghost"
-            size="md"
-            fullWidth
-            loading={del.isPending}
-            icon={<Trash2 size={16} color={colors.danger} strokeWidth={2} />}
-            onPress={() => confirmDelete(target.id)}>
-            <Text className="font-sans-semibold text-[15px] text-danger">Delete session</Text>
-          </Button>
+          <View className="gap-1">
+            <Button
+              variant="ghost"
+              size="md"
+              fullWidth
+              icon={<Pencil size={16} color={colors.rock[700]} strokeWidth={2} />}
+              onPress={() => {
+                onClose();
+                router.push(`/sessions/edit/${target.id}`);
+              }}>
+              <Text className="font-sans-semibold text-[15px] text-rock-900">Edit session</Text>
+            </Button>
+            <Button
+              variant="ghost"
+              size="md"
+              fullWidth
+              loading={del.isPending}
+              icon={<Trash2 size={16} color={colors.danger} strokeWidth={2} />}
+              onPress={() => confirmDelete(target.id)}>
+              <Text className="font-sans-semibold text-[15px] text-danger">Delete session</Text>
+            </Button>
+          </View>
         );
       case 'leave':
         return (

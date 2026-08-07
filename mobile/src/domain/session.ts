@@ -132,3 +132,27 @@ export function availableAction(
       return "join";
   }
 }
+
+/**
+ * Darf ich diese Session editieren? Edit gibt es genau dort und solange, wie es Delete
+ * gibt (ADR-0017): nur als Host, nur solange die Session auf dem Feed ist. Bewusst ein
+ * eigenes Prädikat NEBEN availableAction — Edit ist eine Zweit-Handlung zur destruktiven
+ * Haupt-Handlung, keine weitere Sprosse der Ausschlussleiter.
+ */
+export function canEditSession(
+  role: SessionRole,
+  opts: { offFeed?: boolean } = {},
+): boolean {
+  return role === "hosting" && !opts.offFeed;
+}
+
+/**
+ * Untergrenze der wählbaren Spots (für andere) beim Editieren: angenommene Anfragen
+ * sind verbindlich (ADR-0017) — die Kapazität darf nie unter die schon besetzten
+ * Plätze fallen. Mindestens 1, weil eine Session konstruktiv 2–4 Kletternde fasst.
+ */
+export function minSpotsForOthers(
+  session: Pick<SessionWithMeta, "accepted_count">,
+): number {
+  return Math.max(1, session.accepted_count);
+}

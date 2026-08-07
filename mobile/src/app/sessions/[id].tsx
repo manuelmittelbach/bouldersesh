@@ -6,6 +6,7 @@ import {
   Hand,
   LogOut,
   MapPin,
+  Pencil,
   Trash2,
   UsersRound,
 } from "lucide-react-native";
@@ -360,18 +361,34 @@ export default function SessionDetail() {
               </Text>
             </Button>
           ) : (
-            <Button
-              variant="ghost"
-              size="md"
-              fullWidth
-              loading={del.isPending}
-              icon={<Trash2 size={16} color={colors.danger} strokeWidth={2} />}
-              onPress={confirmDelete}
-            >
-              <Text className="font-sans-semibold text-[15px] text-danger">
-                Delete session
-              </Text>
-            </Button>
+            // Edit + Delete (ADR-0017): Edit ist die konstruktive Zweit-Handlung im
+            // selben Zeitfenster wie Delete — vorausgefülltes Formular, gleiche Route
+            // wie aus Feed-Sheet und Chats-Swipe.
+            <View className="gap-1">
+              <Button
+                variant="ghost"
+                size="md"
+                fullWidth
+                icon={<Pencil size={16} color={colors.rock[700]} strokeWidth={2} />}
+                onPress={() => router.push(`/sessions/edit/${session.id}`)}
+              >
+                <Text className="font-sans-semibold text-[15px] text-rock-900">
+                  Edit session
+                </Text>
+              </Button>
+              <Button
+                variant="ghost"
+                size="md"
+                fullWidth
+                loading={del.isPending}
+                icon={<Trash2 size={16} color={colors.danger} strokeWidth={2} />}
+                onPress={confirmDelete}
+              >
+                <Text className="font-sans-semibold text-[15px] text-danger">
+                  Delete session
+                </Text>
+              </Button>
+            </View>
           )}
         </View>
       ) : !declined ? (
