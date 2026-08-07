@@ -397,12 +397,23 @@ export function useMyChats() {
           // nur stale markieren, KEIN sofortiger Refetch — der offene Chat ist
           // über den setQueryData-Patch (useMessages) ohnehin aktuell (§3.3,
           // kein Roundtrip-Flicker), geschlossene laden beim nächsten Öffnen.
-          const chatId = (payload.new as Message).chat_id;
-          if (chatId) {
+          const message = payload.new as Message;
+          if (message.chat_id) {
             queryClient.invalidateQueries({
-              queryKey: MESSAGES_KEY(chatId),
+              queryKey: MESSAGES_KEY(message.chat_id),
               refetchType: "none",
             });
+          }
+          // Eine System-Zeile IST eine Session-Zustandsänderung (joined/left →
+          // Besetzung, moved → Zeit/Halle, 0014/0016/0033) — ohne dies zeigten
+          // Feed, Session-Detail und Chat-Kopf bis zu 5 Minuten den alten Stand,
+          // direkt NEBEN der frischen Zeile („Session moved …", Kopf: alte Zeit).
+          // Der Drift ist nur für Mitglieder sichtbar (nur sie sehen den Chat),
+          // und genau die erreicht dieses RLS-gescopte Event. Aktiver Refetch
+          // gewollt (Screens sind ggf. gerade offen); selten genug, um breit zu
+          // invalidieren statt die session_id erst nachzuschlagen.
+          if (message.kind === "system") {
+            queryClient.invalidateQueries({ queryKey: ["sessions"] });
           }
         },
       )
