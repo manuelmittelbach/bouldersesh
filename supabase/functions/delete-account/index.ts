@@ -90,12 +90,21 @@ Deno.serve(async (req) => {
 
     // 4. Apple-Refresh-Token VOR dem deleteUser lesen — die Zeile hängt per
     //    FK-Cascade am Auth-User und wäre danach weg (Migration 0032).
-    const { data: appleRow, error: appleRowError } = await admin
-      .from('apple_refresh_tokens')
-      .select('refresh_token')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (appleRowError) throw appleRowError;
+    //    Best-Effort wie der Revoke selbst: auch ein LESE-Fehler darf das
+    //    Löschen nicht blockieren, sonst hinge der ganze Account an einer
+    //    Nebensächlichkeit.
+    let appleRefreshToken: string | null = null;
+    try {
+      const { data: appleRow, error: appleRowError } = await admin
+        .from('apple_refresh_tokens')
+        .select('refresh_token')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (appleRowError) throw appleRowError;
+      appleRefreshToken = appleRow?.refresh_token ?? null;
+    } catch (e) {
+      console.error('delete-account: could not read Apple refresh token', e);
+    }
 
     // 5. Auth-User löschen. Die vorhandenen FK-Cascades räumen Profil, Sessions
     //    und Anfragen ab; messages.sender_id wird auf NULL gesetzt (Migration
@@ -108,9 +117,9 @@ Deno.serve(async (req) => {
     //    Ausfall darf daraus keinen Fehler machen. Schlägt es fehl, bleibt die
     //    App in den Apple-ID-Einstellungen der Person sichtbar (dort auch
     //    manuell entfernbar) — ärgerlich, aber kein Datenleck.
-    if (appleRow?.refresh_token && isAppleConfigured()) {
+    if (appleRefreshToken && isAppleConfigured()) {
       try {
-        await revokeRefreshToken(appleRow.refresh_token);
+        await revokeRefreshToken(appleRefreshToken);
       } catch (e) {
         console.error('delete-account: Apple token revoke failed', e);
       }
