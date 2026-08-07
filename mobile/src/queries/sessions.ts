@@ -397,7 +397,11 @@ export type UpdateSessionInput = {
 // durch; die Folge-Effekte (matched↔open bei Kapazitäts-Änderung, System-Zeile +
 // Push bei Zeit/Halle) übernehmen DB-Trigger (0033). Invalidierung wie beim Create:
 // der breite `["sessions"]`-Prefix trifft Feed, Detail und „mine"; `["chats"]`
-// aktualisiert die Zeilen-Titel (Halle · Zeit) im Chats-Tab.
+// aktualisiert die Zeilen-Titel (Halle · Zeit) im Chats-Tab. Zusätzlich `["chat"]`
+// (Singular = Nachrichten-Verläufe): der Zeit-/Hallen-Trigger schreibt „Session
+// moved" in den eigenen Chat — normalerweise stößt schon der Realtime-INSERT-Handler
+// (useMyChats) den Verlauf an, aber der Server-Roundtrip der Mutation garantiert es
+// auch bei gerade hakender Realtime-Verbindung.
 export function useUpdateSession() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -414,6 +418,7 @@ export function useUpdateSession() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       queryClient.invalidateQueries({ queryKey: ["chats"] });
+      queryClient.invalidateQueries({ queryKey: ["chat"] });
     },
   });
 }
