@@ -172,7 +172,8 @@ export function useFeedSessions(params: FeedSessionsParams = {}) {
     // Der Feed ist DER Live-Screen der App: Bei jeder Rückkehr aus dem Hintergrund
     // still neu laden, auch wenn die staleTime (5 min Default) noch läuft — spiegelt
     // den bedingungslosen Tab-Focus-Refetch im Dashboard (useFocusEffect, ADR-0006).
-    // "always" greift nur hier; alle anderen Queries bleiben staleTime-gesteuert.
+    // Bedingungslos lädt sonst nur noch useSession (refetchOnMount: "always");
+    // alle anderen Queries bleiben staleTime-gesteuert.
     refetchOnWindowFocus: "always",
   });
 }
@@ -200,6 +201,12 @@ export function useSession(id: string | undefined) {
     queryKey: SESSION_KEY(id ?? ""),
     queryFn: () => getSession(id!),
     enabled: !!id,
+    // Der Detail-Cache kann jünger als die staleTime und trotzdem falsch sein:
+    // Ändert der Host Zeit/Halle, erfahren Pending-Requester davon weder per
+    // System-Zeile noch per Push. Deshalb bei jedem Öffnen still neu laden —
+    // das Gegenstück zum bedingungslosen Foreground-Refetch des Feeds
+    // (useFeedSessions, refetchOnWindowFocus: "always").
+    refetchOnMount: "always",
   });
 }
 
