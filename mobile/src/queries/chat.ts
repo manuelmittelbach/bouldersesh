@@ -405,15 +405,21 @@ export function useMyChats() {
             });
           }
           // Eine System-Zeile IST eine Session-Zustandsänderung (joined/left →
-          // Besetzung, moved → Zeit/Halle, 0014/0016/0033) — ohne dies zeigten
-          // Feed, Session-Detail und Chat-Kopf bis zu 5 Minuten den alten Stand,
-          // direkt NEBEN der frischen Zeile („Session moved …", Kopf: alte Zeit).
-          // Der Drift ist nur für Mitglieder sichtbar (nur sie sehen den Chat),
-          // und genau die erreicht dieses RLS-gescopte Event. Aktiver Refetch
-          // gewollt (Screens sind ggf. gerade offen); selten genug, um breit zu
-          // invalidieren statt die session_id erst nachzuschlagen.
+          // Besetzung/Mitglieder, moved → Zeit/Halle, 0014/0016/0033) — ohne dies
+          // zeigten Feed, Session-Detail, Chat-Kopf und Mitglieder-Leiste bis zu
+          // 5 Minuten den alten Stand, direkt NEBEN der frischen Zeile („Ben
+          // joined", Leiste: ohne Ben). Der Drift ist nur für Mitglieder sichtbar
+          // (nur sie sehen den Chat), und genau die erreicht dieses RLS-gescopte
+          // Event. Aktiver Refetch gewollt (Screens sind ggf. gerade offen);
+          // selten genug, um breit zu invalidieren statt die session_id erst
+          // nachzuschlagen.
           if (message.kind === "system") {
             queryClient.invalidateQueries({ queryKey: ["sessions"] });
+            if (message.chat_id) {
+              queryClient.invalidateQueries({
+                queryKey: CHAT_MEMBERS_KEY(message.chat_id),
+              });
+            }
           }
         },
       )
