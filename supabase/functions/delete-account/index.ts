@@ -13,6 +13,8 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
+import { isAppleConfigured, revokeRefreshToken } from '../_shared/appleAuth.ts';
+
 const PROFILE_IMAGES_BUCKET = 'profile-images';
 
 // Der Aufruf kommt aus der nativen App per fetch; CORS ist dort nicht zwingend,
@@ -86,11 +88,33 @@ Deno.serve(async (req) => {
       if (removeError) throw removeError;
     }
 
-    // 4. Auth-User löschen. Die vorhandenen FK-Cascades räumen Profil, Sessions
+    // 4. Apple-Refresh-Token VOR dem deleteUser lesen — die Zeile hängt per
+    //    FK-Cascade am Auth-User und wäre danach weg (Migration 0032).
+    const { data: appleRow, error: appleRowError } = await admin
+      .from('apple_refresh_tokens')
+      .select('refresh_token')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (appleRowError) throw appleRowError;
+
+    // 5. Auth-User löschen. Die vorhandenen FK-Cascades räumen Profil, Sessions
     //    und Anfragen ab; messages.sender_id wird auf NULL gesetzt (Migration
     //    0010), die Nachrichten überleben als „Deleted user".
     const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
     if (deleteError) throw deleteError;
+
+    // 6. Apple-Verknüpfung widerrufen (App-Store-Pflicht, ADR-0004-Update) —
+    //    NACH dem Löschen und Best-Effort: Der Account ist weg, ein Apple-
+    //    Ausfall darf daraus keinen Fehler machen. Schlägt es fehl, bleibt die
+    //    App in den Apple-ID-Einstellungen der Person sichtbar (dort auch
+    //    manuell entfernbar) — ärgerlich, aber kein Datenleck.
+    if (appleRow?.refresh_token && isAppleConfigured()) {
+      try {
+        await revokeRefreshToken(appleRow.refresh_token);
+      } catch (e) {
+        console.error('delete-account: Apple token revoke failed', e);
+      }
+    }
 
     return json({ ok: true }, 200);
   } catch (e) {
