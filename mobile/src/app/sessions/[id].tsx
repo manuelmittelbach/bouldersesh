@@ -126,13 +126,14 @@ export default function SessionDetail() {
   // undefined → false), damit die folgenden Hooks unbedingt laufen (Hook-Regeln).
   const isMine = !!session && isHostedBy(session, user?.id);
 
-  // Mein eigener Anfrage-Status an dieser fremden Session (ADR-0006). Realtime
-  // lässt „Request sent" live zu „Leave session" umschlagen, wenn angenommen wird.
+  // Mein eigener Anfrage-Status an dieser fremden Session (ADR-0006). Wie die ganze
+  // Seite ein Snapshot beim Öffnen — eine Annahme zeigt sich beim nächsten Öffnen;
+  // sofort melden sie Push und Chats-Tab (siehe useMyRequestForSession).
   const myRequest = useMyRequestForSession(id, !!session && !isMine);
   const myStatus = myRequest.data?.status;
 
-  // Der bestätigte Kader (accepted) — die „Buddies"-Liste weiter unten. Realtime
-  // hält sie live und konsistent mit „Spots left" (siehe useSessionClimbers).
+  // Der bestätigte Kader (accepted) — die „Buddies"-Liste weiter unten. Lädt wie
+  // useSession bei jedem Öffnen frisch und bleibt dann stehen (useSessionClimbers).
   const { data: climbers } = useSessionClimbers(id);
 
   if (isLoading) {
@@ -175,8 +176,8 @@ export default function SessionDetail() {
   const spots = spotsLabel(session);
 
   // Der eine untere Aktions-Platz wechselt seinen Inhalt je nach eigenem Anfrage-
-  // Zustand (ADR-0006). Der geladene Status GEWINNT immer — so schlägt ein
-  // Realtime-Wechsel (Ersteller:in nimmt an/lehnt ab) sofort durch. `isSuccess`
+  // Zustand (ADR-0006). Der geladene Status GEWINNT immer — so schlägt der frisch
+  // geladene Stand (Mount-Refetch bzw. eigene Mutation) sofort durch. `isSuccess`
   // überbrückt nur das Fenster, bevor myRequest erstmals „pending" liefert (Status
   // noch unbekannt), damit der Button nach dem Absenden nicht zurückblitzt.
   const status = myStatus ?? (request.isSuccess ? "pending" : undefined);
@@ -325,7 +326,7 @@ export default function SessionDetail() {
             value={session.gym?.name ?? "—"}
           />
           {/* Buddies — kleine Avatare im selben Info-Block-Stil (ohne Host), dahinter
-              die freien Plätze (spotsLabel). Wächst per Realtime live
+              die freien Plätze (spotsLabel). Frisch bei jedem Öffnen der Seite
               (useSessionClimbers). Steht immer, damit „N spots left" auch dann sichtbar
               bleibt, wenn noch niemand beigetreten ist. */}
           <BuddiesRow people={roster} spotsLabel={spots} />
@@ -445,8 +446,9 @@ export default function SessionDetail() {
           ) : accepted ? (
             // Aufgenommen: nur austreten (den Chat erreicht man über den Chats-Tab).
             // Vor dem Feed-Ende ist es „Leave session" — setzt die eigene Anfrage auf
-            // `cancelled` (Realtime kippt diesen Block danach auf „Climb together?"
-            // zurück), gibt den Platz frei, Wiedereintritt bleibt möglich. Ist die
+            // `cancelled` (die Mutations-Invalidierung in useLeaveSession kippt diesen
+            // Block auf „Climb together?" zurück), gibt den Platz frei, Wiedereintritt
+            // bleibt möglich. Ist die
             // Session vom Feed gefallen (>1h nach Start), gibt es nichts mehr freizugeben:
             // dann nur noch „Leave chat" — endgültig, ohne Re-Join (wie beim Host).
             <View className="gap-2">

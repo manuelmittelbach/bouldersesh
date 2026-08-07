@@ -38,7 +38,11 @@ export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { data: messages, isLoading } = useMessages(id);
+  // Zu welcher Session gehört dieser Chat — schon hier aufgelöst, damit useMessages
+  // bei einer System-Zeile den Session-Cache des Kopfes nachziehen kann (ADR-0018:
+  // das übernimmt der Chat-eigene Kanal, nicht mehr der globale useMyChats-Handler).
+  const { data: sessionId } = useSessionIdForChat(id);
+  const { data: messages, isLoading } = useMessages(id, sessionId ?? undefined);
   const { data: members } = useChatMembers(id);
   const send = useSendMessage(id);
 
@@ -54,10 +58,9 @@ export default function Chat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, newestMessageId]);
 
-  // Zu welcher Session gehört dieser Chat — und bin ich die Gastgeber:in? Dann werden
-  // die offenen Beitritts-Anfragen oben angeheftet (Annehmen/Ablehnen direkt hier),
-  // statt in die Session-Detailseite abzuspringen.
-  const { data: sessionId } = useSessionIdForChat(id);
+  // Bin ich die Gastgeber:in? Dann werden die offenen Beitritts-Anfragen oben
+  // angeheftet (Annehmen/Ablehnen direkt hier), statt in die Session-Detailseite
+  // abzuspringen.
   const { data: session } = useSession(sessionId ?? undefined);
   const isHost = !!session && isHostedBy(session, user?.id);
   const { data: requests } = useRequestsForSession(isHost && sessionId ? sessionId : undefined);

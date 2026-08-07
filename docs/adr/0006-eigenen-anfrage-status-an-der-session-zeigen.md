@@ -5,6 +5,11 @@ date: 2026-07-24
 
 # Eigenen Anfrage-Status an der Session zeigen
 
+> **Update (ADR-0018, 2026-08-07):** Der Punkt „Realtime lässt ‚Request sent'
+> live zu ‚Open chat' umschlagen" ist abgelöst — die Detailseite ist seither ein
+> Snapshot beim Öffnen (`refetchOnMount: "always"`, kein Realtime-Abo mehr).
+> Alle übrigen Entscheidungen gelten weiter.
+
 ## Kontext & Entscheidung
 
 Wer eine Session anfragt („Climb together?" auf einer fremden Session,
