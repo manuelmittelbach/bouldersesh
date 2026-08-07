@@ -7,7 +7,8 @@
 // Deploy-Voraussetzungen (verify_jwt=false, Vault-Secret, FCM): dokumentiert
 // unter [functions.send-push] in supabase/config.toml.
 //
-// Payload: { event: 'request_created' | 'request_accepted' | 'message_created',
+// Payload: { event: 'request_created' | 'request_accepted' | 'message_created'
+//                  | 'session_updated',
 //            record: <die auslösende Zeile als JSON> }
 // Empfänger und Anzeigenamen werden hier per service_role nachgeladen — der
 // Payload liefert nur IDs und (bei Nachrichten) den Text.
@@ -23,7 +24,11 @@ const EXPO_BATCH_SIZE = 100;
 // Push-Payload-Budget ist 4 KiB gesamt — lange Chat-Nachrichten kappen.
 const BODY_PREVIEW_LENGTH = 140;
 
-type PushEvent = 'request_created' | 'request_accepted' | 'message_created';
+type PushEvent =
+  | 'request_created'
+  | 'request_accepted'
+  | 'message_created'
+  | 'session_updated';
 
 type Notification = {
   userIds: string[];
@@ -125,6 +130,49 @@ async function buildNotification(
         title: (await displayName(admin, senderId)) ?? 'New message',
         body: truncate((record.body as string) ?? '', BODY_PREVIEW_LENGTH),
         url: `/chats/${chatId}`,
+      };
+    }
+    case 'session_updated': {
+      // Zeit/Halle einer Session geändert (Trigger 0033, ADR-0017). record ist die
+      // sessions-Zeile. Empfänger: Chat-Mitglieder außer Host — also genau die
+      // angenommenen Mitglieder; pending Requester bekommen bewusst nichts.
+      const sessionId = record.id as string;
+      const creatorId = (record.creator_id as string | null) ?? null;
+      const { data: chat } = await admin
+        .from('chats')
+        .select('id')
+        .eq('session_id', sessionId)
+        .maybeSingle();
+      if (!chat) return null;
+      const { data: members } = await admin
+        .from('chat_members')
+        .select('user_id')
+        .eq('chat_id', chat.id);
+      const recipients = (members ?? [])
+        .map((m) => m.user_id as string)
+        .filter((id) => id !== creatorId);
+      if (recipients.length === 0) return null;
+      const { data: gym } = await admin
+        .from('gyms')
+        .select('name')
+        .eq('id', record.gym_id as string)
+        .maybeSingle();
+      // Gleiches festes Zeitformat wie die System-Zeile im Chat (0033: „Aug 7, 18:30",
+      // Monat zuerst → en-US) und gleiche feste Zone Europe/Berlin — alle Städte
+      // liegen in Deutschland.
+      const when = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Europe/Berlin',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(new Date(record.starts_at as string));
+      return {
+        userIds: recipients,
+        title: 'Session updated',
+        body: gym ? `Now ${when} at ${gym.name}` : `Now ${when}`,
+        url: `/chats/${chat.id}`,
       };
     }
     default:

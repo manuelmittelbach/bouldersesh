@@ -70,6 +70,11 @@ Karte **an Ort und Stelle** — der Rollen-Streifen erscheint/verschwindet, eine
 gelöschte oder gerade voll gewordene Session fällt beim Refetch heraus. Kein
 `router.back()` nötig, weil kein Screen-Wechsel mehr stattfindet.
 
+**Nachtrag ([ADR-0017](0017-session-edit-dieselbe-session-push-nur-bei-zeit-halle.md)):**
+Für die **eigene** Session zeigt das Sheet seit Session-Edit **zwei** Handlungen —
+„Edit session" und „Delete session". Das „genau eine Handlung"-Prinzip gilt
+unverändert für fremde Sessions.
+
 ## Betrachtete Alternativen (und warum verworfen)
 
 - **A — Detailseite als Absprung behalten (Status quo).** Verworfen: als Info-

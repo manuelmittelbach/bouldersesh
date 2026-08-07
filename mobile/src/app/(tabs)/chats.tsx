@@ -1,5 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Clock, Crown, LogOut, MessageCircle, Trash2, Undo2, Users } from 'lucide-react-native';
+import {
+  Clock,
+  Crown,
+  LogOut,
+  MessageCircle,
+  Pencil,
+  Trash2,
+  Undo2,
+  Users,
+} from 'lucide-react-native';
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -565,12 +574,28 @@ export default function Chats() {
           onPress={() => confirmLeaveChat(() => leaveChat.mutate(session.id))}
         />
       ) : swipeAction === 'delete' ? (
-        <SwipeAction
-          label="Delete session"
-          tone="danger"
-          icon={<Trash2 size={22} color={colors.rock[0]} strokeWidth={2} />}
-          onPress={() => confirmDissolve(() => dissolve.mutate(session.id))}
-        />
+        // Eigene Session auf dem Feed: Edit + Delete nebeneinander (ADR-0017).
+        // `delete` heißt bereits hosting UND auf dem Feed — genau das Edit-Fenster
+        // (canEditSession), kein weiterer Guard nötig. Edit schließt die aufgezogene
+        // Zeile und öffnet das vorausgefüllte Formular — dieselbe Route wie
+        // Feed-Sheet und Detail-Bar.
+        <View className="flex-row">
+          <SwipeAction
+            label="Edit session"
+            tone="neutral"
+            icon={<Pencil size={22} color={colors.rock[0]} strokeWidth={2} />}
+            onPress={() => {
+              swipe.closeOpen();
+              router.push(`/sessions/edit/${session.id}`);
+            }}
+          />
+          <SwipeAction
+            label="Delete session"
+            tone="danger"
+            icon={<Trash2 size={22} color={colors.rock[0]} strokeWidth={2} />}
+            onPress={() => confirmDissolve(() => dissolve.mutate(session.id))}
+          />
+        </View>
       ) : (
         <SwipeAction
           label="Leave session"

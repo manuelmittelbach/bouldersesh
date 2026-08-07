@@ -81,6 +81,7 @@ function RootNavigator() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="sessions/new" />
               <Stack.Screen name="sessions/[id]" />
+              <Stack.Screen name="sessions/edit/[id]" />
               <Stack.Screen name="chats/[id]" />
               <Stack.Screen name="profile/[id]" />
             </Stack.Protected>
