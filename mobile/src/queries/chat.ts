@@ -1,8 +1,9 @@
 import { useEffect, useId } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { supabase } from "@/lib/supabase";
+import { isJoinLine, isUnreadFor } from "@/domain/chatUnread";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 import { usePendingCountsForSessions } from "@/queries/matches";
 import { useMyParticipations, useMySessions } from "@/queries/sessions";
 import type { Message, MessageKind } from "@/types/database";
@@ -186,7 +187,7 @@ function resolveSenderName(
  */
 export function systemMessageForViewer(body: string, isMine: boolean): string {
   if (!isMine) return body;
-  if (body.endsWith(" joined")) return "You joined";
+  if (isJoinLine(body)) return "You joined";
   if (body.endsWith(" left")) return "You left";
   return body;
 }
@@ -316,18 +317,11 @@ async function getMyChats(userId: string): Promise<ChatListItem[]> {
         : { ...lastRaw, senderName: resolveSenderName(lastRaw.sender_id, userId, c.members) }
       : null;
     const lastRead = lastReadByChat.get(c.id) ?? null;
-    // Eine System-Zeile („You joined") trägt zwar meine sender_id (die beitretende
-    // Person, 0014/0017), ist aber ein System-Ereignis ÜBER mich, nichts, das ich
-    // geschrieben habe — es soll bis zum Öffnen des Chats (useMarkChatRead setzt
-    // last_read_at) einen Aufmerksamkeits-Punkt tragen. So wird die frisch aufgenommene
-    // „Joined"-Session gepunktet, statt still zu landen — symmetrisch zur Gastgeber:in,
-    // die „Ben joined" ohnehin als ungelesen sieht. Eigene TEXT-Nachrichten dürfen die
-    // eigene Zeile weiterhin NICHT punkten (sonst leuchtete jeder gesendete Text nach).
-    const isSystem = lastMessage?.kind === "system";
-    const unread =
-      !!lastMessage &&
-      (isSystem || lastMessage.sender_id !== userId) &&
-      (!lastRead || lastMessage.sent_at > lastRead);
+    // „Don't notify the actor" mit der einen Join-Ausnahme — Regel + Begründung
+    // leben in domain/chatUnread.ts. lastRaw statt lastMessage: die Regel soll den
+    // eingebackenen Original-Body sehen, nicht die Betrachter-Umschreibung (die
+    // matcht zwar heute auch, hängt aber an deren Wortlaut).
+    const unread = isUnreadFor(lastRaw, userId, lastRead);
 
     return {
       id: c.id,
@@ -393,7 +387,24 @@ export function useMyChats() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
-        invalidate,
+        (payload) => {
+          invalidate();
+          // Auch den Verlaufs-Cache des betroffenen Chats stale markieren: dessen
+          // eigene Subscription (useMessages) lebt nur, solange der Screen offen
+          // ist — Nachrichten, die bei geschlossenem Chat ankommen, blieben sonst
+          // bis zum Ablauf der 5-Minuten-staleTime unsichtbar (und useMarkChatRead
+          // markierte beim Öffnen Ungesehenes als gelesen). refetchType "none":
+          // nur stale markieren, KEIN sofortiger Refetch — der offene Chat ist
+          // über den setQueryData-Patch (useMessages) ohnehin aktuell (§3.3,
+          // kein Roundtrip-Flicker), geschlossene laden beim nächsten Öffnen.
+          const chatId = (payload.new as Message).chat_id;
+          if (chatId) {
+            queryClient.invalidateQueries({
+              queryKey: MESSAGES_KEY(chatId),
+              refetchType: "none",
+            });
+          }
+        },
       )
       .subscribe();
 
