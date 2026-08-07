@@ -169,6 +169,11 @@ export function useFeedSessions(params: FeedSessionsParams = {}) {
     // horizontale Leiste springt beim Remount nach links). keepPreviousData hält die
     // alten Daten sichtbar, bis die neuen da sind — sanfter Übergang statt Reload.
     placeholderData: keepPreviousData,
+    // Der Feed ist DER Live-Screen der App: Bei jeder Rückkehr aus dem Hintergrund
+    // still neu laden, auch wenn die staleTime (5 min Default) noch läuft — spiegelt
+    // den bedingungslosen Tab-Focus-Refetch im Dashboard (useFocusEffect, ADR-0006).
+    // "always" greift nur hier; alle anderen Queries bleiben staleTime-gesteuert.
+    refetchOnWindowFocus: "always",
   });
 }
 
