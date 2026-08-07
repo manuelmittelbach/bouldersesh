@@ -303,8 +303,8 @@ export default function SessionCreate() {
         </View>
 
         {/* Plätze — Sitze für Mitkletternde, ohne die Ersteller:in (ADR-0007). Chip-Reihe
-              wie bei der Stadt; 3/2/1, Default 3. Der Zusatz stellt klar: du bist nicht dabei
-              mitgezählt. */}
+              wie bei der Stadt; 3/2/1, Default 3. Kein Erklärtext: die Überschrift „Spots"
+              reicht. */}
         <View className="mb-6">
           <Eyebrow>Spots</Eyebrow>
           <View className="flex-row gap-2">
@@ -318,23 +318,19 @@ export default function SessionCreate() {
               </Chip>
             ))}
           </View>
-          <Text className="mt-2 font-sans text-xs text-rock-400">
-            Open spots for others to join.
-          </Text>
         </View>
 
         {/* Notiz — trägt „was ich klettern will", hallen-relativ formuliert (die Session
-              hat eine Halle) statt eines strukturierten Grades (ADR-0005). Optional: leer
-              lassen ist erlaubt, der `hint` sagt aber, dass es beim Zusagen hilft. */}
+              hat eine Halle) statt eines strukturierten Grades (ADR-0005). Optional steht
+              direkt im Label; kein separater Hint. */}
         <Input
-          label="What are you climbing?"
+          label="What are you climbing? (optional)"
           value={note}
           onChangeText={setNote}
           onFieldLayout={onFieldLayout}
           multiline
           maxLength={80}
           showCount
-          hint="Optional, but it helps people decide."
           placeholder="e.g. “trying to crack some reds”"
         />
 
