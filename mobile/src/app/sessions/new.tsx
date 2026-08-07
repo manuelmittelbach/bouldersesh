@@ -303,10 +303,10 @@ export default function SessionCreate() {
         </View>
 
         {/* Plätze — Sitze für Mitkletternde, ohne die Ersteller:in (ADR-0007). Chip-Reihe
-              wie bei der Stadt; 3/2/1, Default 3. Kein Erklärtext: die Überschrift „Spots"
-              reicht. */}
+              wie bei der Stadt; 3/2/1, Default 3. Kein Erklärtext: „for others" in der
+              Überschrift trägt die Ohne-dich-Semantik. */}
         <View className="mb-6">
-          <Eyebrow>Spots</Eyebrow>
+          <Eyebrow>Spots for others</Eyebrow>
           <View className="flex-row gap-2">
             {SPOT_OPTIONS.map((count) => (
               <Chip
