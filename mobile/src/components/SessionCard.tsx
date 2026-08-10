@@ -148,7 +148,7 @@ export function SessionCard({
             {/* „Wann" oben rechts als Timestamp (wo das Auge es sucht), statt als graue
                 Meta-Zeile zwischen Notiz und Halle unterzugehen. Feste Breite. */}
             {time ? (
-              <View className="shrink-0 flex-row items-center gap-1">
+              <View className="shrink-0 flex-row items-center gap-1.5">
                 <Clock size={13} color={colors.rock[400]} strokeWidth={2} />
                 <Text numberOfLines={1} className="font-sans text-[13px] text-rock-500">
                   {time}
