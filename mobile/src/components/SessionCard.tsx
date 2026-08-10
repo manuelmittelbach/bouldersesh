@@ -42,10 +42,12 @@ const LABEL_STYLE: Record<
 
 // Die Signatur-Feed-Einheit: wer klettert, wann, wo, auf welchem Niveau. Komponiert
 // Avatar + GradePill + Card. Das Pill zeigt das Niveau der Ersteller:in (ADR-0005) —
-// fehlt es, wird keins gezeigt. Die Meta-Zeilen-Icons (Uhr/Pin) rendert die Karte selbst.
+// fehlt es, wird keins gezeigt. Die Zeit steht oben rechts (Timestamp); die Meta-Zeile
+// mit Pin-Icon (Halle) rendert die Karte selbst.
 function MetaRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <View className="mt-1 flex-row items-center gap-1.5">
+    // mt-2.5 = exakt derselbe Abstand wie Ort→Kader darunter (beide 10px, symmetrisch um den Ort).
+    <View className="mt-2.5 flex-row items-center gap-1.5">
       {icon}
       <Text numberOfLines={1} className="flex-1 font-sans text-[13px] text-rock-500">
         {children}
@@ -134,34 +136,46 @@ export function SessionCard({
         )}
         <View className="min-w-0 flex-1">
           <View className="flex-row items-center justify-between gap-2">
-            <Text numberOfLines={1} className="flex-1 font-display text-[17px] text-rock-900">
-              {name}
-            </Text>
-            {grade ? <GradePill grade={grade} band={band} /> : null}
+            {/* Name + Grade-Pill als EINE Gruppe: das Niveau gehört zur Ersteller:in
+                (ADR-0005), steht also direkt hinter ihr. Der Name schrumpft/trunkiert,
+                damit Pill und Zeit immer sichtbar bleiben. */}
+            <View className="min-w-0 flex-1 flex-row items-center gap-2">
+              <Text numberOfLines={1} className="shrink font-display text-[17px] text-rock-900">
+                {name}
+              </Text>
+              {grade ? <GradePill grade={grade} band={band} /> : null}
+            </View>
+            {/* „Wann" oben rechts als Timestamp (wo das Auge es sucht), statt als graue
+                Meta-Zeile zwischen Notiz und Halle unterzugehen. Feste Breite. */}
+            {time ? (
+              <View className="shrink-0 flex-row items-center gap-1">
+                <Clock size={13} color={colors.rock[400]} strokeWidth={2} />
+                <Text numberOfLines={1} className="font-sans text-[13px] text-rock-500">
+                  {time}
+                </Text>
+              </View>
+            ) : null}
           </View>
           {/* Die Beschreibung („was ich klettern will", ADR-0005) steht direkt unter dem
               Namen — die Stimme der Ersteller:in bei der Person, nicht am Kartenende. Nicht
               geclampt: die Notiz soll vollständig lesbar sein; das Erstell-Limit (80 Zeichen)
-              hält sie ohnehin knapp, sodass sie die Fakten (Zeit/Halle/Kader) darunter kaum
+              hält sie ohnehin knapp, sodass sie die Fakten (Halle/Kader) darunter kaum
               wegschiebt. */}
           {note ? (
             <Text className="mt-1 font-sans text-[13px] leading-5 text-rock-700">
               {note}
             </Text>
           ) : null}
-          {time ? (
-            <MetaRow icon={<Clock size={14} color={colors.rock[400]} strokeWidth={2} />}>{time}</MetaRow>
-          ) : null}
           {gym ? (
             <MetaRow icon={<MapPin size={14} color={colors.rock[400]} strokeWidth={2} />}>{gym}</MetaRow>
           ) : null}
           {/* Kader + freie Plätze in EINER Zeile (wie im Session-Detail, statt „N of M
-              spots left"): das Users-Icon führt links (bündig mit Uhr/Pin darüber), dann
+              spots left"): das Users-Icon führt links (bündig mit dem Pin darüber), dann
               die Avatare der schon Beigetretenen — ohne Namen, jedes tippbar zum Profil —,
               das Label dahinter nur die freien Plätze („N spots left" / „Full"). Ring =
               Kartenweiß (rock-0) für saubere Überlappung. Leere Session → kein Stack. */}
           {(climbers && climbers.length > 0) || spots ? (
-            <View className="mt-1.5 flex-row items-center gap-2">
+            <View className="mt-2.5 flex-row items-center gap-2">
               <Users size={14} color={colors.rock[400]} strokeWidth={2} />
               {climbers && climbers.length > 0 ? (
                 <AvatarStack
