@@ -19,7 +19,13 @@ BoulderSesh
 - DE: `Finde deine Boulder-Session` (27 ✓)
 
 ### Keywords (max 100, EN)
-`bouldering,climbing,boulder,gym,partner,session,climb,social,buddy,meetup,sport,indoor` (86 ✓)
+`bouldering,climbing,boulder,gym,partner,session,climb,social,sport,indoor,crag,bloc` (83 ✓)
+<!-- "meetup" entfernt (fremde Marke → Apple-Ablehnungsrisiko), "buddy" entfernt
+     (Namenskollision-Altlast); ersetzt durch "crag" + "bloc". -->
+
+### Keywords (max 100, DE — eigene Lokalisierung)
+`bouldern,klettern,boulder,halle,kletterpartner,session,sport,indoor,kletterhalle,verabreden,sozial` (98 ✓)
+
 
 ### Beschreibung (EN)
 
@@ -110,3 +116,56 @@ Erhobene Daten (mit Account verknüpft):
 Nicht erhoben: Standort (GPS), Kontakte, Tracking/Werbe-IDs.
 Kein Tracking, keine Werbung, keine Datenweitergabe an Dritte.
 Hosting: Supabase, EU (eu-west-1). In-App-Kontolöschung vorhanden.
+
+---
+
+## Kategorie
+
+- **App Store (iOS):** Primär `Sports`, Sekundär `Social Networking`.
+- **Play Store (Android):** `Sport` (Alternative: `Soziales` — Sport ist thematisch
+  präziser und weniger überlaufen).
+
+---
+
+## Altersfreigabe / Content Rating — Antworten für die Fragebögen
+
+Grundlage: Die App enthält KEINE Gewalt, Sexualität, Drogen, Glücksspiel,
+Schimpfwörter o. ä. Der einzige rating-relevante Punkt ist **nutzergenerierter
+Inhalt / Kommunikation** (Session-Chat, Profile).
+
+### Play Store (IARC-Fragebogen)
+- Gewalt / Sexualität / Drogen / Glücksspiel / Schimpfwörter: **alles „Nein".**
+- **Nutzer interagieren / kommunizieren miteinander: JA** (Chat).
+- **Nutzer teilen selbst erstellte Inhalte: JA** (Sessions, Chat-Nachrichten).
+- **Standort teilen: NEIN** (nur Stadt, kein GPS/präziser Standort).
+- Erwartetes Ergebnis: niedrige Freigabe (USK 0 / PEGI 3 / „Everyone") mit dem
+  Hinweis „Nutzer interagieren".
+
+### App Store (Altersfreigabe-Fragebogen)
+- Alle Inhaltskategorien (Gewalt, Sex, Horror, Glücksspiel …): **„None/Keine".**
+- **User-generated Content: JA** → Apple verlangt dafür Melden + Blockieren +
+  Kontaktmöglichkeit — **alles vorhanden** (siehe Compliance-Hinweis unten).
+- Erwartete Freigabe: 4+ bis 12+ (je nach Apples aktuellem UGC-Handling).
+
+---
+
+## Apple-Guideline-1.2-Compliance (User-generated Content) — ERFÜLLT
+
+Für die Chat-/Profil-Features verlangt Apple (1.2 Safety) vier Dinge — Status:
+- ✅ **Objektionable Inhalte melden:** `profile_reports` (Migration 0009).
+- ✅ **Missbräuchliche Nutzer blockieren:** `profile_blocks` (Migration 0025,
+  kappt Sichtbarkeit + Kontakt sofort).
+- ✅ **Kontaktmöglichkeit des Entwicklers:** hello@bouldersesh.com.
+- ✅ **EULA / Nutzungsbedingungen mit Verhaltensregeln:** bouldersesh.com/terms
+  §4 verbietet Belästigung/Beleidigung + unangemessene Inhalte samt Konsequenzen
+  (Entfernen/Sperren/Löschen) — deckt Apples UGC-Anforderung ab (geprüft 2026-08-10).
+
+---
+
+## Noch fehlende ASSETS (kein Text — separat erstellen)
+
+- ❌ **Screenshots** (Pflicht, beide Stores; aus Simulator/Emulator).
+  - App Store: mind. iPhone 6.7"/6.9"-Format.
+  - Play Store: mind. 2 Telefon-Screenshots.
+- ❌ **Feature-Grafik** (nur Play Store, 1024×500 PNG/JPG).
+- ✅ **App-Icon:** vorhanden (`mobile/assets/images/icon.png` 1024²), nur hochladen.
