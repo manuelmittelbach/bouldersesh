@@ -176,7 +176,7 @@ export function SessionActionSheet({
               loading={request.isPending}
               icon={<Hand size={18} color={colors.rock[0]} strokeWidth={2} />}
               onPress={() => request.mutate(target.id)}>
-              Climb together?
+              Climb together
             </Button>
             {request.isError ? (
               <Text className="mt-2 text-center font-sans text-sm text-danger">

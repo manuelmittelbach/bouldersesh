@@ -3,7 +3,6 @@ import {
   Calendar,
   CheckCircle2,
   Crown,
-  Hand,
   LogOut,
   MapPin,
   Pencil,
@@ -36,7 +35,6 @@ import {
   skillLabel,
 } from "@/lib/utils";
 import {
-  useCreateMatchRequest,
   useMyRequestForSession,
   useSessionClimbers,
   useWithdrawRequest,
@@ -116,7 +114,6 @@ export default function SessionDetail() {
   const insets = useSafeAreaInsets();
   const { data: session, isLoading } = useSession(id);
   const { user } = useAuth();
-  const request = useCreateMatchRequest();
   const withdraw = useWithdrawRequest();
   const leave = useLeaveSession();
   const leaveChat = useLeaveChat();
@@ -176,11 +173,9 @@ export default function SessionDetail() {
   const spots = spotsLabel(session);
 
   // Der eine untere Aktions-Platz wechselt seinen Inhalt je nach eigenem Anfrage-
-  // Zustand (ADR-0006). Der geladene Status GEWINNT immer — so schlägt der frisch
-  // geladene Stand (Mount-Refetch bzw. eigene Mutation) sofort durch. `isSuccess`
-  // überbrückt nur das Fenster, bevor myRequest erstmals „pending" liefert (Status
-  // noch unbekannt), damit der Button nach dem Absenden nicht zurückblitzt.
-  const status = myStatus ?? (request.isSuccess ? "pending" : undefined);
+  // Zustand (ADR-0006). Angefragt wird nur noch über das Feed-Sheet, nie hier — diese
+  // Seite erreicht man erst über den Chat, den es nur mit bestehender Rolle gibt.
+  const status = myStatus;
   const pending = status === "pending";
   const accepted = status === "accepted";
   const declined = status === "declined";
@@ -339,9 +334,9 @@ export default function SessionDetail() {
 
       {/* Aktionsleiste — ein fester Platz am unteren Rand, Inhalt je Zustand
           (ADR-0006): eigene Session → „Delete session"; sonst laden → still,
-          pending → „Request sent", accepted → „Leave session", declined → dezent
-          (keine Leiste), sonst der „Climb together?"-Button. Delete und Leave sitzen
-          bewusst an derselben Stelle. */}
+          pending → „Request sent", accepted → „Leave session". Ohne Rolle (declined
+          oder gar keine Anfrage) bleibt der Platz leer — angefragt wird im Feed-Sheet.
+          Delete und Leave sitzen bewusst an derselben Stelle. */}
       {isMine ? (
         <View
           className="absolute inset-x-0 bottom-0 border-t border-rock-100 bg-rock-0 px-5 pt-3"
@@ -392,7 +387,7 @@ export default function SessionDetail() {
             </View>
           )}
         </View>
-      ) : !declined ? (
+      ) : pending || accepted || myRequest.isLoading ? (
         <View
           className="absolute inset-x-0 bottom-0 border-t border-rock-100 bg-rock-0 px-5 pt-3"
           style={{ paddingBottom: insets.bottom + 12 }}
@@ -446,9 +441,8 @@ export default function SessionDetail() {
           ) : accepted ? (
             // Aufgenommen: nur austreten (den Chat erreicht man über den Chats-Tab).
             // Vor dem Feed-Ende ist es „Leave session" — setzt die eigene Anfrage auf
-            // `cancelled` (die Mutations-Invalidierung in useLeaveSession kippt diesen
-            // Block auf „Climb together?" zurück), gibt den Platz frei, Wiedereintritt
-            // bleibt möglich. Ist die
+            // `cancelled`, gibt den Platz frei und kehrt zum Ausgangs-Tab zurück
+            // (router.back); ein Wiedereintritt bleibt über das Feed-Sheet möglich. Ist die
             // Session vom Feed gefallen (>1h nach Start), gibt es nichts mehr freizugeben:
             // dann nur noch „Leave chat" — endgültig, ohne Re-Join (wie beim Host).
             <View className="gap-2">
@@ -503,25 +497,7 @@ export default function SessionDetail() {
                 </Button>
               )}
             </View>
-          ) : (
-            <>
-              <Button
-                variant="primary"
-                size="lg"
-                fullWidth
-                loading={request.isPending}
-                icon={<Hand size={18} color={colors.rock[0]} strokeWidth={2} />}
-                onPress={() => request.mutate(session.id)}
-              >
-                Climb together?
-              </Button>
-              {request.isError ? (
-                <Text className="mt-2 text-center font-sans text-sm text-danger">
-                  Request failed. Maybe you already asked?
-                </Text>
-              ) : null}
-            </>
-          )}
+          ) : null}
         </View>
       ) : null}
     </SafeAreaView>
