@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { cn, initials as toInitials } from '@/lib/utils';
 
@@ -66,86 +66,11 @@ export function Avatar({
   );
 }
 
-export type AvatarStackMember = {
+// Daten für einen einzelnen Avatar in einer Personen-Reihe (z. B. der Kader-Slot-Reihe
+// auf Feed-Karten). Die `src`-URL ist fertig gerechnet, nicht der Storage-Pfad.
+export type AvatarMember = {
   id: string;
   name?: string | null;
   tone?: Tone;
   src?: string | null;
 };
-
-// Avatar-Gruppe für Gruppen-Chat-Zeilen (ADR-0007) und den Kader-Stack auf Feed-Karten.
-// Die Gesichter stehen nebeneinander (kein Überlappen), getrennt durch einen kleinen Gap.
-// Zeigt bis zu `max` Gesichter, der Rest wird als „+N"-Chip zusammengefasst. Ist
-// `onPressMember` gesetzt, wird jedes gezeigte Gesicht einzeln tippbar (→ Profil); der
-// „+N"-Chip bleibt stumm — der Rest des Kaders hängt hinter der Karte selbst (→
-// Session-Detail mit voller, tippbarer Climbers-Liste).
-export function AvatarStack({
-  members,
-  size = 'lg',
-  max = 3,
-  onPressMember,
-}: {
-  members: AvatarStackMember[];
-  size?: Size;
-  max?: number;
-  onPressMember?: (id: string) => void;
-}) {
-  const dim = dims[size];
-  const gap = Math.round(dim * 0.1); // dezenter Abstand, skaliert mit der Avatargröße
-  const shown = members.slice(0, max);
-  const extra = members.length - shown.length;
-  const fontSize = Math.round(dim * 0.34);
-
-  // Fällt bei genau einer Person auf einen normalen Avatar zurück — kein Stapel nötig.
-  if (members.length <= 1) {
-    const m = members[0];
-    const solo = <Avatar name={m?.name} tone={m?.tone} size={size} src={m?.src} />;
-    return onPressMember && m ? (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`View ${m.name ?? 'climber'}’s profile`}
-        hitSlop={6}
-        onPress={() => onPressMember(m.id)}
-        className="shrink-0 active:opacity-70">
-        {solo}
-      </Pressable>
-    ) : (
-      solo
-    );
-  }
-
-  // Abstand über marginLeft je Avatar statt `gap` am Flex-Container (das greift hier nicht).
-  return (
-    <View className="flex-row shrink-0">
-      {shown.map((m, i) => {
-        const face = <Avatar name={m.name} tone={m.tone} size={size} src={m.src} />;
-        const wrap = { marginLeft: i === 0 ? 0 : gap };
-        return onPressMember ? (
-          <Pressable
-            key={m.id}
-            style={wrap}
-            accessibilityRole="button"
-            accessibilityLabel={`View ${m.name ?? 'climber'}’s profile`}
-            hitSlop={2}
-            onPress={() => onPressMember(m.id)}
-            className="shrink-0 active:opacity-70">
-            {face}
-          </Pressable>
-        ) : (
-          <View key={m.id} style={wrap}>
-            {face}
-          </View>
-        );
-      })}
-      {extra > 0 ? (
-        <View
-          style={{ marginLeft: gap, width: dim, height: dim, borderRadius: dim / 2 }}
-          className="items-center justify-center bg-rock-200">
-          <Text className="font-display text-rock-600" style={{ fontSize }}>
-            +{extra}
-          </Text>
-        </View>
-      ) : null}
-    </View>
-  );
-}

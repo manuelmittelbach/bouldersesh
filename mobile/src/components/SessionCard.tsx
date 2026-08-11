@@ -2,7 +2,7 @@ import { Check, Clock, Crown, MapPin, Plus, Users } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { Avatar, Card, GradePill, type AvatarStackMember } from '@/components/ui';
+import { Avatar, Card, GradePill, type AvatarMember } from '@/components/ui';
 import { cn, type AvatarTone, type GradeBand } from '@/lib/utils';
 import { colors } from '@/theme/colors';
 
@@ -113,7 +113,7 @@ export type SessionCardProps = {
   spotsLeft?: number;
   /** Angenommene Mitkletternde (OHNE Ersteller:in) → je ein Avatar-Slot mit Vorname
    *  darunter. Leer/fehlend → nur die freien Slots. URLs sind fertig (nicht der Storage-Pfad). */
-  climbers?: AvatarStackMember[];
+  climbers?: AvatarMember[];
   /** Tippen auf ein Kader-Gesicht öffnet dessen Profil. Fehlt es, ist der Stack stumm. */
   onPressClimber?: (id: string) => void;
   note?: string | null;
