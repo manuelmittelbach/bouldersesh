@@ -216,7 +216,7 @@ export function SessionCard({
               jeder freie Platz ein gestrichelter „+"-Kreis mit „Available" — der als
               Beitritts-CTA wirkt (Tap = dieselbe Karten-Aktion). Das Users-Icon führt links
               (bündig mit dem Pin darüber). Keine Beigetretenen + keine freien Plätze → nichts. */}
-          {(climbers && climbers.length > 0) || spotsLeft > 0 ? (
+          {(climbers && climbers.length > 0) || spotsLeft > 0 || full ? (
             <View className="mt-2.5 flex-row items-start gap-2">
               <Users
                 size={14}
@@ -249,6 +249,17 @@ export function SessionCard({
                     </View>
                   </RosterSlot>
                 ))}
+                {/* Voll → statt freier „Available"-Slots ein „Full"-Badge (dieselbe eine
+                    Regel wie im Detail, ADR-0011). Graues Pill, identisch zum Session-Detail
+                    (BuddiesRow). Auf Avatar-Höhe zentriert, damit es neben dem Kader sitzt
+                    statt oben zu kleben. */}
+                {full ? (
+                  <View style={{ minHeight: 44 }} className="justify-center">
+                    <View className="rounded-full bg-rock-200 px-2.5 py-1">
+                      <Text className="font-sans-semibold text-[12px] text-rock-600">Full</Text>
+                    </View>
+                  </View>
+                ) : null}
               </View>
             </View>
           ) : null}
