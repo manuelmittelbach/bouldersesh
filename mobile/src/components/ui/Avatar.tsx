@@ -73,28 +73,25 @@ export type AvatarStackMember = {
   src?: string | null;
 };
 
-// Überlappende Avatar-Gruppe für Gruppen-Chat-Zeilen (ADR-0007) und den Kader-Stack auf
-// Feed-Karten. Zeigt bis zu `max` Gesichter, der Rest wird als „+N"-Chip zusammengefasst.
-// Jedes Rund bekommt einen Ring in `ringColor` (= Hintergrund der Fläche darunter), damit
-// die Überlappung sauber getrennt bleibt. Ist `onPressMember` gesetzt, wird jedes gezeigte
-// Gesicht einzeln tippbar (→ Profil); der „+N"-Chip bleibt stumm — der Rest des Kaders
-// hängt hinter der Karte selbst (→ Session-Detail mit voller, tippbarer Climbers-Liste).
+// Avatar-Gruppe für Gruppen-Chat-Zeilen (ADR-0007) und den Kader-Stack auf Feed-Karten.
+// Die Gesichter stehen nebeneinander (kein Überlappen), getrennt durch einen kleinen Gap.
+// Zeigt bis zu `max` Gesichter, der Rest wird als „+N"-Chip zusammengefasst. Ist
+// `onPressMember` gesetzt, wird jedes gezeigte Gesicht einzeln tippbar (→ Profil); der
+// „+N"-Chip bleibt stumm — der Rest des Kaders hängt hinter der Karte selbst (→
+// Session-Detail mit voller, tippbarer Climbers-Liste).
 export function AvatarStack({
   members,
   size = 'lg',
   max = 3,
-  ringColor = '#f7f8fa', // rock-25 (Zeilenhintergrund)
   onPressMember,
 }: {
   members: AvatarStackMember[];
   size?: Size;
   max?: number;
-  ringColor?: string;
   onPressMember?: (id: string) => void;
 }) {
   const dim = dims[size];
-  const ring = 2;
-  const overlap = Math.round(dim * 0.4);
+  const gap = Math.max(4, Math.round(dim * 0.14));
   const shown = members.slice(0, max);
   const extra = members.length - shown.length;
   const fontSize = Math.round(dim * 0.34);
@@ -118,49 +115,30 @@ export function AvatarStack({
   }
 
   return (
-    <View className="flex-row shrink-0">
-      {shown.map((m, i) => {
+    <View className="flex-row shrink-0" style={{ gap }}>
+      {shown.map((m) => {
         const face = <Avatar name={m.name} tone={m.tone} size={size} src={m.src} />;
-        return (
-          <View
+        return onPressMember ? (
+          <Pressable
             key={m.id}
-            style={{
-              marginLeft: i === 0 ? 0 : -overlap,
-              borderRadius: (dim + ring * 2) / 2,
-              backgroundColor: ringColor,
-              padding: ring,
-              zIndex: shown.length - i,
-            }}>
-            {onPressMember ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`View ${m.name ?? 'climber'}’s profile`}
-                hitSlop={2}
-                onPress={() => onPressMember(m.id)}
-                className="active:opacity-70">
-                {face}
-              </Pressable>
-            ) : (
-              face
-            )}
-          </View>
+            accessibilityRole="button"
+            accessibilityLabel={`View ${m.name ?? 'climber'}’s profile`}
+            hitSlop={2}
+            onPress={() => onPressMember(m.id)}
+            className="shrink-0 active:opacity-70">
+            {face}
+          </Pressable>
+        ) : (
+          <View key={m.id}>{face}</View>
         );
       })}
       {extra > 0 ? (
         <View
-          style={{
-            marginLeft: -overlap,
-            borderRadius: (dim + ring * 2) / 2,
-            backgroundColor: ringColor,
-            padding: ring,
-          }}>
-          <View
-            style={{ width: dim, height: dim, borderRadius: dim / 2 }}
-            className="items-center justify-center bg-rock-200">
-            <Text className="font-display text-rock-600" style={{ fontSize }}>
-              +{extra}
-            </Text>
-          </View>
+          style={{ width: dim, height: dim, borderRadius: dim / 2 }}
+          className="items-center justify-center bg-rock-200">
+          <Text className="font-display text-rock-600" style={{ fontSize }}>
+            +{extra}
+          </Text>
         </View>
       ) : null}
     </View>

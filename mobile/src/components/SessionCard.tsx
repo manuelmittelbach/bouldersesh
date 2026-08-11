@@ -171,9 +171,9 @@ export function SessionCard({
           ) : null}
           {/* Kader + freie Plätze in EINER Zeile (wie im Session-Detail, statt „N of M
               spots left"): das Users-Icon führt links (bündig mit dem Pin darüber), dann
-              die Avatare der schon Beigetretenen — ohne Namen, jedes tippbar zum Profil —,
-              das Label dahinter nur die freien Plätze („N spots left" / „Full"). Ring =
-              Kartenweiß (rock-0) für saubere Überlappung. Leere Session → kein Stack. */}
+              die Avatare der schon Beigetretenen — ohne Namen, nebeneinander, jedes tippbar
+              zum Profil —, das Label dahinter nur die freien Plätze („N spots left" /
+              „Full"). Leere Session → kein Stack. */}
           {(climbers && climbers.length > 0) || spots ? (
             <View className="mt-2.5 flex-row items-center gap-2">
               <Users size={14} color={colors.rock[400]} strokeWidth={2} />
@@ -182,7 +182,6 @@ export function SessionCard({
                   members={climbers}
                   size="md"
                   max={4}
-                  ringColor="#ffffff"
                   onPressMember={onPressClimber}
                 />
               ) : null}
