@@ -1,8 +1,8 @@
-import { Check, Clock, Crown, MapPin, Users } from 'lucide-react-native';
+import { Check, Clock, Crown, MapPin, Plus, Users } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { Avatar, AvatarStack, Card, GradePill, type AvatarStackMember } from '@/components/ui';
+import { Avatar, Card, GradePill, type AvatarStackMember } from '@/components/ui';
 import { cn, type AvatarTone, type GradeBand } from '@/lib/utils';
 import { colors } from '@/theme/colors';
 
@@ -56,6 +56,49 @@ function MetaRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   );
 }
 
+// Erstes Wort des Namens — unter dem Avatar reicht der Vorname, hält die Slots schmal.
+function firstName(name?: string | null): string {
+  return (name ?? 'Climber').trim().split(/\s+/)[0] || 'Climber';
+}
+
+// Ein Platz in der Kader-Zeile: ein Rund (Avatar oder „+"-Kreis) mit Label darunter,
+// als Spalte fixer Breite, damit die Labels sauber untereinander sitzen. Ist `onPress`
+// gesetzt, ist der ganze Slot tippbar (Profil bzw. Beitritts-CTA).
+function RosterSlot({
+  children,
+  label,
+  labelClass,
+  onPress,
+  a11yLabel,
+}: {
+  children: ReactNode;
+  label: string;
+  labelClass: string;
+  onPress?: () => void;
+  a11yLabel: string;
+}) {
+  const col = (
+    <View className="items-center gap-1" style={{ width: 52 }}>
+      {children}
+      <Text numberOfLines={1} className={cn('font-sans text-[11px]', labelClass)}>
+        {label}
+      </Text>
+    </View>
+  );
+  return onPress ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
+      hitSlop={4}
+      onPress={onPress}
+      className="active:opacity-70">
+      {col}
+    </Pressable>
+  ) : (
+    col
+  );
+}
+
 export type SessionCardProps = {
   name: string;
   avatarTone?: AvatarTone;
@@ -65,11 +108,11 @@ export type SessionCardProps = {
   band?: GradeBand;
   time?: string;
   gym?: string;
-  /** Freie Plätze für Mitkletternde, ohne die Ersteller:in — „N spots left" bzw. „Full"
-   *  (ADR-0007). Steht hinter dem Kader-Stack; die belegten Plätze zeigen die Avatare. */
-  spots?: string | null;
-  /** Angenommene Mitkletternde (OHNE Ersteller:in) → überlappender Avatar-Stack, keine
-   *  Namen. Leer/fehlend → kein Stack. Die Avatar-URLs sind fertig (nicht der Storage-Pfad). */
+  /** Anzahl noch freier Plätze (ohne die Ersteller:in, ADR-0007). Jeder freie Platz wird
+   *  als „+ Available"-Slot gerendert und wirkt als Beitritts-CTA. 0 → keine freien Slots. */
+  spotsLeft?: number;
+  /** Angenommene Mitkletternde (OHNE Ersteller:in) → je ein Avatar-Slot mit Vorname
+   *  darunter. Leer/fehlend → nur die freien Slots. URLs sind fertig (nicht der Storage-Pfad). */
   climbers?: AvatarStackMember[];
   /** Tippen auf ein Kader-Gesicht öffnet dessen Profil. Fehlt es, ist der Stack stumm. */
   onPressClimber?: (id: string) => void;
@@ -99,7 +142,7 @@ export function SessionCard({
   band = 'neutral',
   time,
   gym,
-  spots,
+  spotsLeft = 0,
   climbers,
   onPressClimber,
   note,
@@ -169,27 +212,44 @@ export function SessionCard({
           {gym ? (
             <MetaRow icon={<MapPin size={14} color={colors.rock[400]} strokeWidth={2} />}>{gym}</MetaRow>
           ) : null}
-          {/* Kader + freie Plätze in EINER Zeile (wie im Session-Detail, statt „N of M
-              spots left"): das Users-Icon führt links (bündig mit dem Pin darüber), dann
-              die Avatare der schon Beigetretenen — ohne Namen, nebeneinander, jedes tippbar
-              zum Profil —, das Label dahinter nur die freien Plätze („N spots left" /
-              „Full"). Leere Session → kein Stack. */}
-          {(climbers && climbers.length > 0) || spots ? (
-            <View className="mt-2.5 flex-row items-center gap-2">
-              <Users size={14} color={colors.rock[400]} strokeWidth={2} />
-              {climbers && climbers.length > 0 ? (
-                <AvatarStack
-                  members={climbers}
-                  size="md"
-                  max={4}
-                  onPressMember={onPressClimber}
-                />
-              ) : null}
-              {spots ? (
-                <Text numberOfLines={1} className="font-sans text-[13px] text-rock-500">
-                  {spots}
-                </Text>
-              ) : null}
+          {/* Kader als Slot-Reihe: jede beigetretene Person ein Avatar mit Vorname darunter,
+              jeder freie Platz ein gestrichelter „+"-Kreis mit „Available" — der als
+              Beitritts-CTA wirkt (Tap = dieselbe Karten-Aktion). Das Users-Icon führt links
+              (bündig mit dem Pin darüber). Keine Beigetretenen + keine freien Plätze → nichts. */}
+          {(climbers && climbers.length > 0) || spotsLeft > 0 ? (
+            <View className="mt-2.5 flex-row items-start gap-2">
+              <Users
+                size={14}
+                color={colors.rock[400]}
+                strokeWidth={2}
+                style={{ marginTop: 15 }}
+              />
+              <View className="flex-1 flex-row flex-wrap gap-x-3 gap-y-2">
+                {climbers?.map((c) => (
+                  <RosterSlot
+                    key={c.id}
+                    label={firstName(c.name)}
+                    labelClass="text-rock-600"
+                    a11yLabel={`View ${c.name ?? 'climber'}’s profile`}
+                    onPress={onPressClimber ? () => onPressClimber(c.id) : undefined}>
+                    <Avatar name={c.name} tone={c.tone} size="md" src={c.src} />
+                  </RosterSlot>
+                ))}
+                {Array.from({ length: spotsLeft }).map((_, i) => (
+                  <RosterSlot
+                    key={`free-${i}`}
+                    label="Available"
+                    labelClass="font-sans-semibold text-brand-600"
+                    a11yLabel="Join this session"
+                    onPress={onPress}>
+                    <View
+                      style={{ width: 44, height: 44, borderRadius: 22 }}
+                      className="items-center justify-center border border-dashed border-brand-300 bg-brand-50">
+                      <Plus size={20} color={colors.brand[500]} strokeWidth={2.5} />
+                    </View>
+                  </RosterSlot>
+                ))}
+              </View>
             </View>
           ) : null}
           {footer ? <View className="mt-3">{footer}</View> : null}

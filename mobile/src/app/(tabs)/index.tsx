@@ -10,7 +10,7 @@ import { GymPickerSheet } from '@/components/GymPickerSheet';
 import { SessionActionSheet, type SessionActionTarget } from '@/components/SessionActionSheet';
 import { SessionCard, type SessionLabel } from '@/components/SessionCard';
 import { Button, Chip } from '@/components/ui';
-import { isFull, roleFor, spotsLabel } from '@/domain/session';
+import { isFull, roleFor, spotsLeft } from '@/domain/session';
 import { useActiveCity } from '@/hooks/useActiveCity';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
@@ -340,9 +340,8 @@ export default function Dashboard() {
               time={formatSessionTime(item.starts_at, { withDay: false })}
               // Nur der Hallenname: die Stadt steht bereits im Titel des Feeds.
               gym={item.gym?.name}
-              // Nur die freien Plätze (wie im Detail): „N spots left" / „Full" — die
-              // belegten zeigen die Kader-Avatare daneben, kein „N of M" mehr.
-              spots={spotsLabel(item)}
+              // Freie Platzzahl → je ein „+ Available"-Slot in der Kader-Zeile (CTA).
+              spotsLeft={spotsLeft(item)}
               // Kader-Stack: die schon Beigetretenen (ohne Host, der links groß steht) als
               // namenlose, zum Profil tippbare Avatare. Bild-URL + Ton hier fertig gerechnet,
               // die Karte bleibt dumm.
