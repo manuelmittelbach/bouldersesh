@@ -24,7 +24,7 @@ import {
 } from "react-native-safe-area-context";
 
 import { Avatar, Button, Card, GradePill, ScreenHeader } from "@/components/ui";
-import { isHostedBy, spotsLabel } from "@/domain/session";
+import { isFull, isHostedBy, spotsLabel } from "@/domain/session";
 import { useAuth } from "@/hooks/useAuth";
 import { publicImageUrl } from "@/lib/images";
 import {
@@ -72,9 +72,11 @@ type Buddy = { id: string | null; name: string; avatarPath: string | null };
 function BuddiesRow({
   people,
   spotsLabel,
+  full,
 }: {
   people: Buddy[];
   spotsLabel: string;
+  full: boolean;
 }) {
   return (
     <View className="flex-row items-center gap-3">
@@ -100,9 +102,20 @@ function BuddiesRow({
               />
             </Pressable>
           ))}
-          <Text className="ml-1 font-sans text-[13px] text-rock-500">
-            {spotsLabel}
-          </Text>
+          {/* Voll → graues „Full"-Badge, identisch zur Feed-Karte (SessionCard). Sonst
+              („N spots left") schlichter Text — die Karte kennt diesen Zustand nicht
+              (dort sind es die „Available"-Slots), also lebt er nur hier. */}
+          {full ? (
+            <View className="ml-1 rounded-full bg-rock-200 px-2.5 py-1">
+              <Text className="font-sans-semibold text-[12px] text-rock-600">
+                {spotsLabel}
+              </Text>
+            </View>
+          ) : (
+            <Text className="ml-1 font-sans text-[13px] text-rock-500">
+              {spotsLabel}
+            </Text>
+          )}
         </View>
       </View>
     </View>
@@ -324,7 +337,7 @@ export default function SessionDetail() {
               die freien Plätze (spotsLabel). Frisch bei jedem Öffnen der Seite
               (useSessionClimbers). Steht immer, damit „N spots left" auch dann sichtbar
               bleibt, wenn noch niemand beigetreten ist. */}
-          <BuddiesRow people={roster} spotsLabel={spots} />
+          <BuddiesRow people={roster} spotsLabel={spots} full={isFull(session)} />
         </Card>
 
         {/* Beitritts-Anfragen leben seit 0017 allein im Chat (oben angeheftet), nicht
