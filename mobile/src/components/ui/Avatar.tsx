@@ -91,7 +91,7 @@ export function AvatarStack({
   onPressMember?: (id: string) => void;
 }) {
   const dim = dims[size];
-  const gap = Math.max(4, Math.round(dim * 0.14));
+  const gap = Math.round(dim * 0.1); // dezenter Abstand, skaliert mit der Avatargröße
   const shown = members.slice(0, max);
   const extra = members.length - shown.length;
   const fontSize = Math.round(dim * 0.34);
@@ -114,13 +114,16 @@ export function AvatarStack({
     );
   }
 
+  // Abstand über marginLeft je Avatar statt `gap` am Flex-Container (das greift hier nicht).
   return (
-    <View className="flex-row shrink-0" style={{ gap }}>
-      {shown.map((m) => {
+    <View className="flex-row shrink-0">
+      {shown.map((m, i) => {
         const face = <Avatar name={m.name} tone={m.tone} size={size} src={m.src} />;
+        const wrap = { marginLeft: i === 0 ? 0 : gap };
         return onPressMember ? (
           <Pressable
             key={m.id}
+            style={wrap}
             accessibilityRole="button"
             accessibilityLabel={`View ${m.name ?? 'climber'}’s profile`}
             hitSlop={2}
@@ -129,12 +132,14 @@ export function AvatarStack({
             {face}
           </Pressable>
         ) : (
-          <View key={m.id}>{face}</View>
+          <View key={m.id} style={wrap}>
+            {face}
+          </View>
         );
       })}
       {extra > 0 ? (
         <View
-          style={{ width: dim, height: dim, borderRadius: dim / 2 }}
+          style={{ marginLeft: gap, width: dim, height: dim, borderRadius: dim / 2 }}
           className="items-center justify-center bg-rock-200">
           <Text className="font-display text-rock-600" style={{ fontSize }}>
             +{extra}
