@@ -29,7 +29,7 @@ BoulderSesh
 
 ### Beschreibung (EN)
 
-Never boulder alone again.
+Who's climbing today?
 
 BoulderSesh connects you with boulderers in your city. See who's
 planning a session at your gym, join with one tap, or start your own
