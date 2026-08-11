@@ -140,7 +140,7 @@ export default function Login() {
               Get climbing
             </Text>
             <Text className="mt-1.5 font-sans text-[15px] leading-5 text-rock-500">
-              Sign in or create an account to see who’s climbing near you.
+              Sign in or create an account to see who’s climbing.
             </Text>
 
             <View className="mt-6 gap-3">
