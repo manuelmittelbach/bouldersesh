@@ -70,13 +70,29 @@ export function isHostedBy(
   return !!userId && session.creator_id === userId;
 }
 
+/** Der kader-relevante Ausschnitt — für das „bin ich aufgenommen?"-Prädikat. */
+export type SessionRoster = Pick<SessionWithMeta, "climbers">;
+
+/**
+ * Bin ich (userId) im eingebetteten Kader dieser Session — also aufgenommen? Dieselbe
+ * Quelle wie die Avatare der Karte (der `climbers`-Embed der Zeile): „Joined"-Streifen
+ * und Kader können so nie auseinanderlaufen, egal auf welchem Weg die Zeile frisch
+ * wurde (Focus-Refetch, Realtime-Invalidierung, Mutation).
+ */
+export function hasClimber(
+  session: SessionRoster,
+  userId: string | null | undefined,
+): boolean {
+  return !!userId && session.climbers.some((c) => c.id === userId);
+}
+
 /** Meine Rolle an einer Session — höchstens eine (ADR-0010). Vorher fünffach kodiert
  *  (`'hosting'`/`'host'`, `isMine`, `isHost`, `SessionRelationship`), jetzt ein Typ. */
 export type SessionRole = "hosting" | "joined" | "requested" | "none";
 
-/** Die Teilnahme-Signale, die NICHT auf der Zeile liegen: „pending"/„accepted" kommen
- *  aus eigenen Queries (useMyPendingRequests/useMyAcceptedRequests bzw.
- *  useMyRequestForSession) — die Rollenleiter nimmt sie als Hinweis entgegen. */
+/** Die Teilnahme-Signale für die Rollenleiter: „accepted" liest der Feed direkt von
+ *  der Zeile (hasClimber über den Kader-Embed), „pending" liegt nicht auf ihr und
+ *  kommt aus eigenen Queries (useMyPendingRequests bzw. useMyRequestForSession). */
 export type ViewerMembership = { accepted?: boolean; requested?: boolean };
 
 /**

@@ -5,6 +5,13 @@ date: 2026-07-29
 
 # Rollen-Label im Feed: Hosting / Joined / Requested
 
+> **Update (ADR-0019, 2026-08-12):** Die Datenquelle des `Joined`-Streifens ist
+> abgelöst — `useMyAcceptedRequests` entfällt, das Label liest den in der
+> Feed-Zeile eingebetteten Kader (`hasClimber`, `domain/session.ts`); „kein
+> Realtime" für Requested/Declined ist ebenfalls abgelöst (Invalidierung über
+> das bestehende `useMyParticipations`-Abo). Rollenleiter, Optik und
+> Chats-Tab-Angleich gelten unverändert.
+
 ## Kontext & Entscheidung
 
 [ADR-0006](0006-eigenen-anfrage-status-an-der-session-zeigen.md) führte den

@@ -322,7 +322,16 @@ export function useMyParticipations() {
   // Realtime: Beantwortet die Ersteller:in meine Anfrage (accept/decline), soll die
   // Zeile im Chats-Tab sofort wandern — Requested → Joined bei „accepted", raus bei
   // „declined" (getMyParticipations filtert auf accepted|pending). Ohne dies bewegte
-  // sich nichts bis zum nächsten Focus-Refetch. KEIN session_id-Filter nötig: der
+  // sich nichts bis zum nächsten Focus-Refetch. Dasselbe Event speist die Feed-
+  // Streifen: die Set-Queries unter ["matches","outgoing","all"|"declined"]
+  // (MY_PENDING_KEY/MY_DECLINED_KEY, queries/matches.ts) halten „Requested"/
+  // Declined-Ausblendung live — vorher lief der Kader der Karte per System-
+  // Nachricht (queries/chat.ts) frisch ein, während der Streifen bis zum
+  // Tab-Wechsel stehen blieb; Declines erzeugen gar keine System-Nachricht, die
+  // erreicht nur dieses Abo. Bewusst NICHT den ganzen outgoing-Prefix: darunter
+  // liegt auch MY_REQUEST_KEY (…,"session",id), die Aktionsleiste des Session-
+  // Details — und das Detail bleibt Snapshot (ADR-0018), es darf hier nicht
+  // live umspringen. KEIN session_id-Filter nötig: der
   // Filter geht über `requester_id`, und Realtime erzwingt ohnehin RLS (nur meine
   // eigenen match_requests-Zeilen werden zugestellt). channelId (useId) hält den Topic
   // pro Hook-Instanz eindeutig — derselbe Hook läuft im Chats-Screen UND im Tab-Badge
@@ -343,6 +352,12 @@ export function useMyParticipations() {
         () => {
           queryClient.invalidateQueries({
             queryKey: MY_PARTICIPATIONS_KEY(userId),
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["matches", "outgoing", "all"],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["matches", "outgoing", "declined"],
           });
         },
       )

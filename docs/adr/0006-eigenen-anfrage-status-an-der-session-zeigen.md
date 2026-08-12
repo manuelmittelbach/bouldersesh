@@ -10,6 +10,11 @@ date: 2026-07-24
 > Snapshot beim Öffnen (`refetchOnMount: "always"`, kein Realtime-Abo mehr).
 > Alle übrigen Entscheidungen gelten weiter.
 
+> **Update (ADR-0019, 2026-08-12):** „Bewusst kein Realtime, nur Fetch-on-Focus"
+> für den Feed-Streifen ist abgelöst — der Streifen aktualisiert jetzt live über
+> das bestehende `useMyParticipations`-Abo (kein neuer Kanal). Die Sichtbarkeit
+> an sich (Streifen an Feed-Karte + Detail) gilt unverändert.
+
 ## Kontext & Entscheidung
 
 Wer eine Session anfragt („Climb together?" auf einer fremden Session,

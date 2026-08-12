@@ -10,7 +10,7 @@ import { GymPickerSheet } from '@/components/GymPickerSheet';
 import { SessionActionSheet, type SessionActionTarget } from '@/components/SessionActionSheet';
 import { SessionCard, type SessionLabel } from '@/components/SessionCard';
 import { Button, Chip } from '@/components/ui';
-import { isFull, roleFor, spotsLeft } from '@/domain/session';
+import { hasClimber, isFull, roleFor, spotsLeft } from '@/domain/session';
 import { useActiveCity } from '@/hooks/useActiveCity';
 import { useAuth } from '@/hooks/useAuth';
 import { publicImageUrl } from '@/lib/images';
@@ -27,7 +27,6 @@ import {
 import { useCities } from '@/queries/cities';
 import { useGyms, type GymWithCity } from '@/queries/gyms';
 import {
-  useMyAcceptedRequests,
   useMyDeclinedRequests,
   useMyPendingRequests,
 } from '@/queries/matches';
@@ -209,11 +208,9 @@ export default function Dashboard() {
   // zum Feed zurück, wird neu geladen — so verschwindet der Streifen an einer Session,
   // von der man zurückgetreten oder abgelehnt wurde (der Tab bleibt sonst gemountet).
   const { data: requestedIds, refetch: refetchRequested } = useMyPendingRequests();
-  // Sessions, in die ich aufgenommen wurde → „Joined"-Streifen. Nur solange die Runde
-  // noch offen ist (ein Platz frei) taucht sie überhaupt im Feed auf; wird sie voll,
-  // kippt sie auf `matched` und fällt raus. Gleicher Focus-Refetch wie „requested",
-  // damit ein frisch angenommener Beitritt beim Rückkehr in den Feed sichtbar wird.
-  const { data: acceptedIds, refetch: refetchAccepted } = useMyAcceptedRequests();
+  // Kein eigenes „accepted"-Set mehr: der „Joined"-Streifen liest den eingebetteten
+  // Kader der Zeile (hasClimber unten) — dieselbe Quelle wie die Avatare, kann also
+  // nie hinter ihnen herhinken.
   // Sessions, aus denen mich die Ersteller:in abgelehnt hat — die blende ich unten aus,
   // damit eine Absage nicht als freier Platz zurück in den Feed rutscht. Gleicher
   // Focus-Refetch wie „requested": kehrt man vom Detail zurück (wo man die Absage sieht),
@@ -232,8 +229,7 @@ export default function Dashboard() {
       refetch();
       refetchRequested();
       refetchDeclined();
-      refetchAccepted();
-    }, [refetch, refetchRequested, refetchDeclined, refetchAccepted]),
+    }, [refetch, refetchRequested, refetchDeclined]),
   );
 
   // Abgelehnte Sessions raus, bevor die Liste sie rendert (ADR-0006).
@@ -319,10 +315,11 @@ export default function Dashboard() {
           // leben dort, statt in jedem Screen neu (und früher uneinig) gerechnet zu werden.
           const full = isFull(item);
           // Meine Rolle an dieser Session → höchstens ein Streifen (ADR-0010). Die
-          // Ausschlussleiter (hosting > joined > requested) steckt in roleFor; „pending"/
-          // „accepted" liegen nicht auf der Zeile, darum als Membership-Hinweis rein.
+          // Ausschlussleiter (hosting > joined > requested) steckt in roleFor;
+          // „accepted" liest den Kader der Zeile selbst (hasClimber), nur „pending"
+          // liegt nicht auf ihr und kommt als eigenes Set rein.
           const role = roleFor(item, userId, {
-            accepted: acceptedIds?.has(item.id) ?? false,
+            accepted: hasClimber(item, userId),
             requested: requestedIds?.has(item.id) ?? false,
           });
           const label: SessionLabel | null = role === 'none' ? null : role;

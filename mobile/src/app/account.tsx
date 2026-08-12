@@ -149,14 +149,18 @@ export default function Account() {
               </>
             ) : (
               <>
-                <Row label="Email" value={user?.email} divider />
+                {/* Apple liefert die Email nur bei der Erstautorisierung — bei
+                    Re-Auth entsteht ein Account ohne Email. Dann Zeile weglassen
+                    statt leer anzeigen. */}
+                {user?.email ? <Row label="Email" value={user.email} divider /> : null}
                 <Row label="Sign-in" value={providerName} />
               </>
             )}
           </View>
           {method !== "email" ? (
             <Text className="mt-2 px-4 font-sans text-[13px] leading-4 text-rock-400">
-              Email and sign-in are managed by your {providerName} account.
+              {user?.email ? "Email and sign-in are" : "Sign-in is"} managed by your{" "}
+              {providerName} account.
             </Text>
           ) : null}
         </View>
