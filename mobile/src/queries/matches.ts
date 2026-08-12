@@ -1,9 +1,9 @@
-import { useEffect, useId } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { syncPushToken } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
+import { usePostgresChanges } from "@/hooks/usePostgresChanges";
 import type { MatchRequest } from "@/types/database";
 
 import { fetchMyBlockIds } from "./blocks";
@@ -58,12 +58,6 @@ async function getRequestsForSession(
 
 export function useRequestsForSession(sessionId: string | undefined) {
   const queryClient = useQueryClient();
-  // Eindeutig pro Hook-Instanz: derselbe Hook läuft im Session-Detail UND im
-  // angehefteten Anfragen-Block des Chats. Beim Annehmen aus dem Detail wird der Chat
-  // OBEN AUF den Stack gelegt — dann sind beide gleichzeitig gemountet. Zwei Kanäle mit
-  // demselben Topic kollidieren in supabase-js („postgres_changes after subscribe"),
-  // der useId-Suffix hält sie auseinander (siehe queries/chat.ts).
-  const channelId = useId();
 
   const query = useQuery({
     queryKey: REQUESTS_FOR_SESSION_KEY(sessionId ?? ""),
@@ -73,30 +67,23 @@ export function useRequestsForSession(sessionId: string | undefined) {
 
   // Realtime: a new request (or a status change) on this session refetches the
   // list so the creator sees it pop in without a reload. See queries/chat.ts §3.3.
-  useEffect(() => {
-    if (!sessionId) return;
-    const channel = supabase
-      .channel(`session-requests:${sessionId}:${channelId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "match_requests",
-          filter: `session_id=eq.${sessionId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({
-            queryKey: REQUESTS_FOR_SESSION_KEY(sessionId),
-          });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [sessionId, channelId, queryClient]);
+  //
+  // Derselbe Hook läuft im Session-Detail UND im angehefteten Anfragen-Block des
+  // Chats. Beim Annehmen aus dem Detail wird der Chat OBEN AUF den Stack gelegt —
+  // dann sind beide gleichzeitig gemountet; usePostgresChanges hält die beiden
+  // Channel-Topics per Instanz-Suffix auseinander.
+  usePostgresChanges(sessionId ? `session-requests:${sessionId}` : undefined, [
+    {
+      event: "*",
+      table: "match_requests",
+      filter: `session_id=eq.${sessionId}`,
+      onEvent: () => {
+        queryClient.invalidateQueries({
+          queryKey: REQUESTS_FOR_SESSION_KEY(sessionId!),
+        });
+      },
+    },
+  ]);
 
   return query;
 }
@@ -128,7 +115,6 @@ async function getPendingCountsForSessions(
  */
 export function usePendingCountsForSessions(sessionIds: string[]) {
   const queryClient = useQueryClient();
-  const channelId = useId();
   const sorted = [...sessionIds].sort();
   const enabled = sorted.length > 0;
 
@@ -142,29 +128,20 @@ export function usePendingCountsForSessions(sessionIds: string[]) {
   // Eine neue/geänderte Anfrage an einer meiner Sessions aktualisiert die Zähler
   // live — sonst bewegte sich der Chats-Badge erst beim nächsten Tab-Focus. KEIN
   // session_id-Filter nötig: Realtime erzwingt RLS, stellt mir also ohnehin nur
-  // Zeilen zu, die ich sehen darf (Anfragen an meine Sessions). channelId (useId)
-  // hält den Topic pro Hook-Instanz eindeutig — derselbe Hook läuft im Tab-Badge
-  // UND im Chats-Screen; zwei Kanäle mit gleichem Topic würden in supabase-js
-  // kollidieren (siehe queries/chat.ts).
-  useEffect(() => {
-    if (!enabled) return;
-    const channel = supabase
-      .channel(`incoming-counts:${channelId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "match_requests" },
-        () => {
-          queryClient.invalidateQueries({
-            queryKey: ["matches", "incoming", "counts"],
-          });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [enabled, channelId, queryClient]);
+  // Zeilen zu, die ich sehen darf (Anfragen an meine Sessions). Derselbe Hook läuft
+  // im Tab-Badge UND im Chats-Screen; usePostgresChanges hält die beiden
+  // Channel-Topics per Instanz-Suffix auseinander.
+  usePostgresChanges(enabled ? "incoming-counts" : undefined, [
+    {
+      event: "*",
+      table: "match_requests",
+      onEvent: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["matches", "incoming", "counts"],
+        });
+      },
+    },
+  ]);
 
   return query;
 }

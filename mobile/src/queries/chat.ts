@@ -1,8 +1,8 @@
-import { useEffect, useId } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { isJoinLine, isUnreadFor } from "@/domain/chatUnread";
 import { useAuth } from "@/hooks/useAuth";
+import { usePostgresChanges } from "@/hooks/usePostgresChanges";
 import { supabase } from "@/lib/supabase";
 import { usePendingCountsForSessions } from "@/queries/matches";
 import {
@@ -37,45 +37,33 @@ export function useMessages(chatId: string | undefined, sessionId?: string) {
 
   // Realtime subscription — see Lessons §3.3.
   // Patches the cache instead of invalidating to avoid the round-trip flicker.
-  useEffect(() => {
-    if (!chatId) return;
-    const channel = supabase
-      .channel(`chat:${chatId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `chat_id=eq.${chatId}`,
-        },
-        (payload) => {
-          const newMessage = payload.new as Message;
-          queryClient.setQueryData<Message[]>(
-            MESSAGES_KEY(chatId),
-            (prev = []) => {
-              if (prev.some((m) => m.id === newMessage.id)) return prev;
-              return [...prev, newMessage];
-            },
-          );
-          // Der Kopf des OFFENEN Chats (gym · Zeit, „Full", Krone) hängt am
-          // Session-Cache (useSession im Chat-Screen). Eine System-Zeile muss ihn
-          // sofort nachziehen, sonst steht sie neben einem alten Kopf (der
-          // Drift-Fix aus 5c89842). Das passiert bewusst HIER statt im globalen
-          // useMyChats-Handler: dieses Abo lebt nur, solange der Chat offen ist —
-          // das Session-Detail bleibt so ein Snapshot (ADR-0018) und springt
-          // nicht live um, wenn dieselbe System-Zeile eintrifft.
-          if (newMessage.kind === "system" && sessionId) {
-            queryClient.invalidateQueries({ queryKey: SESSION_KEY(sessionId) });
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [chatId, sessionId, queryClient]);
+  usePostgresChanges(chatId ? `chat:${chatId}` : undefined, [
+    {
+      event: "INSERT",
+      table: "messages",
+      filter: `chat_id=eq.${chatId}`,
+      onEvent: (payload) => {
+        const newMessage = payload.new as Message;
+        queryClient.setQueryData<Message[]>(
+          MESSAGES_KEY(chatId!),
+          (prev = []) => {
+            if (prev.some((m) => m.id === newMessage.id)) return prev;
+            return [...prev, newMessage];
+          },
+        );
+        // Der Kopf des OFFENEN Chats (gym · Zeit, „Full", Krone) hängt am
+        // Session-Cache (useSession im Chat-Screen). Eine System-Zeile muss ihn
+        // sofort nachziehen, sonst steht sie neben einem alten Kopf (der
+        // Drift-Fix aus 5c89842). Das passiert bewusst HIER statt im globalen
+        // useMyChats-Handler: dieses Abo lebt nur, solange der Chat offen ist —
+        // das Session-Detail bleibt so ein Snapshot (ADR-0018) und springt
+        // nicht live um, wenn dieselbe System-Zeile eintrifft.
+        if (newMessage.kind === "system" && sessionId) {
+          queryClient.invalidateQueries({ queryKey: SESSION_KEY(sessionId) });
+        }
+      },
+    },
+  ]);
 
   return query;
 }
@@ -365,12 +353,6 @@ export function useMyChats() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const userId = user?.id;
-  // Eindeutig PRO Hook-Instanz: useMyChats läuft an mehreren Stellen gleichzeitig
-  // (My-Sessions-Screen UND der Tab-Badge in _layout). Zwei Kanäle mit demselben
-  // Topic-Namen kollidieren in supabase-js („cannot add postgres_changes callbacks
-  // after subscribe()"). Der Topic-Name ist nur ein Client-Identifier — der Filter
-  // steckt in den `.on()`-Bindings —, also macht der Instanz-Suffix ihn kollisionsfrei.
-  const channelId = useId();
 
   const query = useQuery({
     queryKey: CHATS_LIST_KEY(userId ?? ""),
@@ -381,80 +363,70 @@ export function useMyChats() {
   // Realtime: a new membership (chat just created for me) or any incoming
   // message refreshes the list. Realtime enforces RLS, so the message stream
   // only carries chats I'm a member of.
-  useEffect(() => {
-    if (!userId) return;
-    const invalidate = () =>
-      queryClient.invalidateQueries({ queryKey: CHATS_LIST_KEY(userId) });
-
-    const channel = supabase
-      .channel(`my-chats:${userId}:${channelId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat_members",
-          filter: `user_id=eq.${userId}`,
-        },
-        invalidate,
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        (payload) => {
-          invalidate();
-          // Auch den Verlaufs-Cache des betroffenen Chats stale markieren: dessen
-          // eigene Subscription (useMessages) lebt nur, solange der Screen offen
-          // ist — Nachrichten, die bei geschlossenem Chat ankommen, blieben sonst
-          // bis zum Ablauf der 5-Minuten-staleTime unsichtbar (und useMarkChatRead
-          // markierte beim Öffnen Ungesehenes als gelesen). refetchType "none":
-          // nur stale markieren, KEIN sofortiger Refetch — der offene Chat ist
-          // über den setQueryData-Patch (useMessages) ohnehin aktuell (§3.3,
-          // kein Roundtrip-Flicker), geschlossene laden beim nächsten Öffnen.
-          const message = payload.new as Message;
+  //
+  // useMyChats läuft an mehreren Stellen gleichzeitig (My-Sessions-Screen UND
+  // der Tab-Badge in _layout) — usePostgresChanges hält die beiden Channel-
+  // Topics per Instanz-Suffix auseinander.
+  usePostgresChanges(userId ? `my-chats:${userId}` : undefined, [
+    {
+      event: "INSERT",
+      table: "chat_members",
+      filter: `user_id=eq.${userId}`,
+      onEvent: () =>
+        queryClient.invalidateQueries({ queryKey: CHATS_LIST_KEY(userId!) }),
+    },
+    {
+      event: "INSERT",
+      table: "messages",
+      onEvent: (payload) => {
+        queryClient.invalidateQueries({ queryKey: CHATS_LIST_KEY(userId!) });
+        // Auch den Verlaufs-Cache des betroffenen Chats stale markieren: dessen
+        // eigene Subscription (useMessages) lebt nur, solange der Screen offen
+        // ist — Nachrichten, die bei geschlossenem Chat ankommen, blieben sonst
+        // bis zum Ablauf der 5-Minuten-staleTime unsichtbar (und useMarkChatRead
+        // markierte beim Öffnen Ungesehenes als gelesen). refetchType "none":
+        // nur stale markieren, KEIN sofortiger Refetch — der offene Chat ist
+        // über den setQueryData-Patch (useMessages) ohnehin aktuell (§3.3,
+        // kein Roundtrip-Flicker), geschlossene laden beim nächsten Öffnen.
+        const message = payload.new as Message;
+        if (message.chat_id) {
+          queryClient.invalidateQueries({
+            queryKey: MESSAGES_KEY(message.chat_id),
+            refetchType: "none",
+          });
+        }
+        // Eine System-Zeile IST eine Session-Zustandsänderung (joined/left →
+        // Besetzung/Mitglieder, moved → Zeit/Halle, 0014/0016/0033) — ohne dies
+        // zeigten Feed, Listen und Mitglieder-Leiste bis zu 5 Minuten den alten
+        // Stand, direkt NEBEN der frischen Zeile („Ben joined", Leiste: ohne
+        // Ben). Der Drift ist nur für Mitglieder sichtbar (nur sie sehen den
+        // Chat), und genau die erreicht dieses RLS-gescopte Event. Breit
+        // invalidieren statt die session_id nachzuschlagen: selten genug.
+        // ABER: SESSION_KEY refetcht hier bewusst NICHT sofort — das
+        // Session-Detail ist ein Snapshot und soll nicht unter den Augen der
+        // Betrachter:in umspringen (ADR-0018); es lädt beim nächsten Öffnen
+        // ohnehin frisch (refetchOnMount "always"). Deshalb erst alles nur
+        // stale markieren, dann gezielt die Listen-Keys aktiv refetchen. Den
+        // Kopf des OFFENEN Chats zieht dessen eigenes Abo nach (useMessages).
+        if (message.kind === "system") {
+          queryClient.invalidateQueries({
+            queryKey: ["sessions"],
+            refetchType: "none",
+          });
+          queryClient.invalidateQueries({ queryKey: ["sessions", "open"] });
+          queryClient.invalidateQueries({ queryKey: ["sessions", "mine"] });
+          queryClient.invalidateQueries({
+            queryKey: ["sessions", "participations"],
+          });
           if (message.chat_id) {
             queryClient.invalidateQueries({
-              queryKey: MESSAGES_KEY(message.chat_id),
-              refetchType: "none",
+              queryKey: CHAT_MEMBERS_KEY(message.chat_id),
             });
           }
-          // Eine System-Zeile IST eine Session-Zustandsänderung (joined/left →
-          // Besetzung/Mitglieder, moved → Zeit/Halle, 0014/0016/0033) — ohne dies
-          // zeigten Feed, Listen und Mitglieder-Leiste bis zu 5 Minuten den alten
-          // Stand, direkt NEBEN der frischen Zeile („Ben joined", Leiste: ohne
-          // Ben). Der Drift ist nur für Mitglieder sichtbar (nur sie sehen den
-          // Chat), und genau die erreicht dieses RLS-gescopte Event. Breit
-          // invalidieren statt die session_id nachzuschlagen: selten genug.
-          // ABER: SESSION_KEY refetcht hier bewusst NICHT sofort — das
-          // Session-Detail ist ein Snapshot und soll nicht unter den Augen der
-          // Betrachter:in umspringen (ADR-0018); es lädt beim nächsten Öffnen
-          // ohnehin frisch (refetchOnMount "always"). Deshalb erst alles nur
-          // stale markieren, dann gezielt die Listen-Keys aktiv refetchen. Den
-          // Kopf des OFFENEN Chats zieht dessen eigenes Abo nach (useMessages).
-          if (message.kind === "system") {
-            queryClient.invalidateQueries({
-              queryKey: ["sessions"],
-              refetchType: "none",
-            });
-            queryClient.invalidateQueries({ queryKey: ["sessions", "open"] });
-            queryClient.invalidateQueries({ queryKey: ["sessions", "mine"] });
-            queryClient.invalidateQueries({
-              queryKey: ["sessions", "participations"],
-            });
-            if (message.chat_id) {
-              queryClient.invalidateQueries({
-                queryKey: CHAT_MEMBERS_KEY(message.chat_id),
-              });
-            }
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId, queryClient, channelId]);
+        }
+      },
+    },
+  ]);
 
   return query;
 }
