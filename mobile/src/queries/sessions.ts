@@ -1,4 +1,3 @@
-import { useEffect, useId } from "react";
 import {
   keepPreviousData,
   useMutation,
@@ -7,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/useAuth";
+import { usePostgresChanges } from "@/hooks/usePostgresChanges";
 import { syncPushToken } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import type { Session } from "@/types/database";
@@ -309,9 +309,6 @@ export function useMyParticipations() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const userId = user?.id;
-  // Eindeutig pro Hook-Instanz (siehe Realtime-Kommentar unten): useMyParticipations
-  // läuft im Chats-Screen UND im Tab-Badge (useChatsBadgeCount) gleichzeitig.
-  const channelId = useId();
 
   const query = useQuery({
     queryKey: MY_PARTICIPATIONS_KEY(userId ?? ""),
@@ -333,25 +330,19 @@ export function useMyParticipations() {
   // Details — und das Detail bleibt Snapshot (ADR-0018), es darf hier nicht
   // live umspringen. KEIN session_id-Filter nötig: der
   // Filter geht über `requester_id`, und Realtime erzwingt ohnehin RLS (nur meine
-  // eigenen match_requests-Zeilen werden zugestellt). channelId (useId) hält den Topic
-  // pro Hook-Instanz eindeutig — derselbe Hook läuft im Chats-Screen UND im Tab-Badge
-  // (useChatsBadgeCount in _layout); zwei Kanäle mit gleichem Topic kollidieren in
-  // supabase-js („postgres_changes after subscribe", siehe queries/chat.ts).
-  useEffect(() => {
-    if (!userId) return;
-    const channel = supabase
-      .channel(`my-participations:${userId}:${channelId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "match_requests",
-          filter: `requester_id=eq.${userId}`,
-        },
-        () => {
+  // eigenen match_requests-Zeilen werden zugestellt). derselbe Hook läuft im
+  // Chats-Screen UND im Tab-Badge (useChatsBadgeCount in _layout) —
+  // usePostgresChanges hält die beiden Channel-Topics per Instanz-Suffix auseinander.
+  usePostgresChanges(
+    userId ? `my-participations:${userId}` : undefined,
+    [
+      {
+        event: "*",
+        table: "match_requests",
+        filter: `requester_id=eq.${userId}`,
+        onEvent: () => {
           queryClient.invalidateQueries({
-            queryKey: MY_PARTICIPATIONS_KEY(userId),
+            queryKey: MY_PARTICIPATIONS_KEY(userId!),
           });
           queryClient.invalidateQueries({
             queryKey: ["matches", "outgoing", "all"],
@@ -360,13 +351,9 @@ export function useMyParticipations() {
             queryKey: ["matches", "outgoing", "declined"],
           });
         },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId, channelId, queryClient]);
+      },
+    ],
+  );
 
   return query;
 }
