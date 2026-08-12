@@ -19,8 +19,6 @@ const MY_PENDING_KEY = (userId: string) =>
   [...MY_OUTGOING_KEY, "all", userId] as const;
 const MY_DECLINED_KEY = (userId: string) =>
   [...MY_OUTGOING_KEY, "declined", userId] as const;
-const MY_ACCEPTED_KEY = (userId: string) =>
-  [...MY_OUTGOING_KEY, "accepted", userId] as const;
 
 /** A match request with the requester's profile joined in. */
 export type MatchRequestWithRequester = MatchRequest & {
@@ -396,10 +394,11 @@ async function getMyPendingSessionIds(userId: string): Promise<Set<string>> {
 
 /**
  * Die Session-IDs, für die ich eine offene (pending) Anfrage habe — als Set für
- * den Feed-Badge. Bewusst OHNE Realtime (ADR-0006): der Feed zeigt nur offene
- * Sessions, eine angenommene Anfrage lässt die Karte ohnehin herausfallen, also
- * ist `pending` der einzige je sichtbare Zustand. Aktualisiert wird über den
- * MY_OUTGOING_KEY-Prefix (useCreateMatchRequest.onSuccess) plus staleTime.
+ * den Feed-Badge. Kein eigenes Realtime-Abo: Antworten der Ersteller:in erreichen
+ * MY_PENDING_KEY über das match_requests-Abo in useMyParticipations
+ * (queries/sessions.ts) — der „Requested"-Streifen wandert also live, im selben
+ * Moment wie der Kader der Karte. Dazu useCreateMatchRequest.onSuccess (eigene
+ * neue Anfrage) plus staleTime/Focus-Refetch als Netz.
  */
 export function useMyPendingRequests() {
   const { user } = useAuth();
@@ -408,37 +407,6 @@ export function useMyPendingRequests() {
   return useQuery({
     queryKey: MY_PENDING_KEY(userId ?? ""),
     queryFn: () => getMyPendingSessionIds(userId!),
-    enabled: !!userId,
-    staleTime: 30_000,
-  });
-}
-
-async function getMyAcceptedSessionIds(userId: string): Promise<Set<string>> {
-  const { data, error } = await supabase
-    .from("match_requests")
-    .select("session_id")
-    .eq("requester_id", userId)
-    .eq("status", "accepted");
-  if (error) throw error;
-  return new Set((data ?? []).map((r) => r.session_id));
-}
-
-/**
- * Die Session-IDs, in die ich als Anfragende:r aufgenommen wurde (accepted) — als Set
- * für den „Joined"-Streifen im Feed (ADR-0010). Wie useMyPendingRequests bewusst OHNE Realtime:
- * der Feed zeigt nur offene Sessions; eine Gruppen-Session bleibt nach meiner Aufnahme
- * nur `open`, solange noch ein Platz frei ist (kippt sonst auf `matched` und fällt raus,
- * Trigger handle_match_accepted/0014) — der einzige je sichtbare Fall. Aktualisierung
- * über den MY_OUTGOING_KEY-Prefix plus staleTime plus Focus-Refetch im Feed; Respond/
- * Leave invalidieren breiter (`["sessions"]`/`["matches"]`) und ziehen mit.
- */
-export function useMyAcceptedRequests() {
-  const { user } = useAuth();
-  const userId = user?.id;
-
-  return useQuery({
-    queryKey: MY_ACCEPTED_KEY(userId ?? ""),
-    queryFn: () => getMyAcceptedSessionIds(userId!),
     enabled: !!userId,
     staleTime: 30_000,
   });
@@ -457,10 +425,9 @@ async function getMyDeclinedSessionIds(userId: string): Promise<Set<string>> {
 /**
  * Die Session-IDs, aus denen mich die Ersteller:in abgelehnt hat (declined) — der
  * Feed blendet diese Sessions für mich aus, damit eine Absage nicht als offener
- * Platz wieder auftaucht (ADR-0006). Wie useMyPendingRequests bewusst OHNE Realtime:
- * die Ablehnung erfährt man beim Öffnen der Session bzw. im Chats-Tab, der Feed lädt
- * beim Zurückkehren per Focus-Refetch neu (siehe (tabs)/index.tsx). Aktualisierung
- * sonst über den MY_OUTGOING_KEY-Prefix plus staleTime.
+ * Platz wieder auftaucht (ADR-0006). Wie useMyPendingRequests ohne eigenes Abo,
+ * aber live: useMyParticipations (queries/sessions.ts) invalidiert MY_DECLINED_KEY
+ * bei jeder Antwort auf meine Anfragen; staleTime/Focus-Refetch bleiben als Netz.
  */
 export function useMyDeclinedRequests() {
   const { user } = useAuth();

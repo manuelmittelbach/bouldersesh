@@ -9,6 +9,7 @@ import test from "node:test";
 import {
   availableAction,
   canEditSession,
+  hasClimber,
   isFull,
   isHostedBy,
   minSpotsForOthers,
@@ -66,6 +67,27 @@ test("spotsLabel: 'Full' bzw. Singular/Plural", () => {
   assert.equal(spotsLabel(cap(4, 0)), "3 spots left");
   assert.equal(spotsLabel(cap(3, 0)), "2 spots left");
   assert.equal(spotsLabel(cap(4, 0, "matched")), "Full");
+});
+
+/** Eine Kader-Zeile bauen — nur die IDs zählen, die Profilfelder sind Beiwerk. */
+function climbers(...ids: string[]) {
+  return {
+    climbers: ids.map((id) => ({
+      id,
+      display_name: null,
+      avatar_path: null,
+    })),
+  };
+}
+
+// Das „Joined"-Signal kommt direkt vom eingebetteten Kader der Session-Zeile —
+// dieselbe Quelle wie die Avatare, kann also nie von ihnen abweichen.
+test("hasClimber: im Kader → true, sonst false, null/undefined nie", () => {
+  assert.equal(hasClimber(climbers("u1", "u2"), "u2"), true);
+  assert.equal(hasClimber(climbers("u1", "u2"), "u3"), false);
+  assert.equal(hasClimber(climbers(), "u1"), false);
+  assert.equal(hasClimber(climbers("u1"), null), false);
+  assert.equal(hasClimber(climbers("u1"), undefined), false);
 });
 
 test("isHostedBy: nur die Ersteller:in, null/undefined sind nie Host", () => {
