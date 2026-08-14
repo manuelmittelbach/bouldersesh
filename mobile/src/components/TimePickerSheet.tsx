@@ -63,12 +63,15 @@ export function TimePickerSheet({
             </View>
 
             <View className="items-center px-5 pt-1">
+              {/* Sheet ist hart hell (bg-rock-25), aber der native Picker folgt dem
+                  System-Dark-Mode → weiße Ziffern auf hellem Grund. Deshalb festnageln. */}
               <DateTimePicker
                 value={draft}
                 mode="time"
                 is24Hour
                 display="spinner"
                 minuteInterval={minuteInterval}
+                themeVariant="light"
                 onChange={onChange}
               />
             </View>
