@@ -95,11 +95,11 @@ export function SessionForm({
   onSubmit: (values: SessionFormValues) => Promise<void>;
 }) {
   const insets = useSafeAreaInsets();
-  // Das Notizfeld ist mehrzeilig UND darunter reitet die Submit-Leiste über der
-  // Tastatur. Beide Höhen werden gemessen (barHeight per onLayout an der Leiste), damit
-  // der Scroll-Offset das ganze Feld über Leiste + Tastatur hebt — ohne feste Zahl.
+  // Unter dem mehrzeiligen Notizfeld reitet die Submit-Leiste über der Tastatur. Ihre
+  // Höhe wird gemessen (onLayout) und als clearance in den Scroll-Offset gereicht, damit
+  // das Feld über Leiste + Tastatur steht — ohne feste Zahl.
   const [barHeight, setBarHeight] = useState(0);
-  const { bottomOffset, onFieldLayout } = useKeyboardAwareField({
+  const { bottomOffset } = useKeyboardAwareField({
     clearance: barHeight,
   });
 
@@ -313,7 +313,6 @@ export function SessionForm({
           label="What are you climbing? (optional)"
           value={note}
           onChangeText={setNote}
-          onFieldLayout={onFieldLayout}
           multiline
           maxLength={80}
           showCount

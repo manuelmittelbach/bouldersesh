@@ -1,6 +1,6 @@
 import type { TabTriggerSlotProps } from 'expo-router/ui';
 import type { LucideIcon } from 'lucide-react-native';
-import { forwardRef } from 'react';
+import { createContext, forwardRef, useContext } from 'react';
 import { Pressable, Text, View, type ViewStyle } from 'react-native';
 
 import { colors } from '@/theme/colors';
@@ -9,6 +9,18 @@ import { colors } from '@/theme/colors';
 // gestylte `TabList` (siehe navBarStyle); jeder Tab ist ein `NavItem`, das via
 // `TabTrigger asChild` den `isFocused`-Status bekommt. Send-Orange = aktiv, Rock-400 = ruhig.
 // Icon-/Text-Farbe imperativ (Lucide nimmt `color`, kein className) aus theme/colors.
+
+/**
+ * Gemessene Höhe der Tab-Bar, vom Tabs-Layout per onLayout gefüllt. Screens IM
+ * Tab-Navigator brauchen sie für KeyboardStickyView: deren Leisten ruhen ÜBER der
+ * Bar, die Tastatur deckt aber den ganzen Bildschirm ab — ohne diesen Offset landet
+ * die Leiste um die Bar-Höhe zu hoch über der Tastatur (durchsichtige Lücke).
+ * Kein Standard-Hook möglich (custom expo-router/ui-Bar statt react-navigation).
+ */
+export const TabBarHeightContext = createContext(0);
+export function useTabBarHeight() {
+  return useContext(TabBarHeightContext);
+}
 
 /**
  * Container-Style der Tab-Bar. Als RN-Style-Objekt (nicht className), weil es direkt an

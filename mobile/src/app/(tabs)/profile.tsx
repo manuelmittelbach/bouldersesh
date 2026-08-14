@@ -8,6 +8,7 @@ import {
 } from "react-native-keyboard-controller";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useTabBarHeight } from "@/components/BottomNav";
 import { SkillLevelPicker } from "@/components/SkillLevelPicker";
 import { Avatar, Button, Input } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,6 +37,7 @@ export default function Profile() {
   const setAvatar = useSetAvatar();
   const removeAvatar = useRemoveAvatar();
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useTabBarHeight();
 
   const [skill, setSkill] = useState<SkillLevel | null>(null);
   const [bio, setBio] = useState("");
@@ -47,7 +49,7 @@ export default function Profile() {
   // Ihre gemessene Höhe (barHeight) als clearance weiterreichen — aber nur, wenn sie
   // sichtbar ist (dirty) —, damit das fokussierte Feld über Leiste UND Tastatur bleibt.
   const [barHeight, setBarHeight] = useState(0);
-  const { bottomOffset, onFieldLayout } = useKeyboardAwareField({
+  const { bottomOffset } = useKeyboardAwareField({
     clearance: dirty ? barHeight : 0,
   });
 
@@ -163,7 +165,6 @@ export default function Profile() {
             label="Bio"
             value={bio}
             onChangeText={setBio}
-            onFieldLayout={onFieldLayout}
             multiline
             maxLength={280}
             placeholder="A line or two about you and your climbing."
@@ -203,12 +204,14 @@ export default function Profile() {
           den Feldern und per KeyboardStickyView über der Tastatur (wie in sessions/new).
           Weiterhin explizites Speichern von Skill/Bio (ADR-0003), nur an sichtbarerer
           Stelle; der Avatar speichert unverändert sofort. */}
-      {/* Bei offener Tastatur reitet die Leiste direkt auf der Tastatur, die den
-          Home-Indicator-Bereich schon abdeckt — den insets.bottom-Anteil der
-          paddingBottom deshalb per offset.opened hinter die Tastatur schieben,
-          sonst bleibt ein toter weißer Streifen unter dem Button. */}
+      {/* Bei offener Tastatur soll die Leiste DIREKT auf der Tastatur reiten. Ihre
+          Ruheposition liegt aber über der Tab-Bar, während die Tastatur bis zum
+          Bildschirmrand reicht — ohne Ausgleich landet sie um die Bar-Höhe zu hoch
+          (durchsichtige Lücke). Deshalb offset.opened = Tab-Bar-Höhe, plus
+          insets.bottom, um den Home-Indicator-Anteil der paddingBottom hinter die
+          Tastatur zu schieben (sonst toter weißer Streifen unter dem Button). */}
       {dirty ? (
-        <KeyboardStickyView offset={{ opened: insets.bottom }}>
+        <KeyboardStickyView offset={{ opened: tabBarHeight + insets.bottom }}>
           <View
             onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
             className="border-t border-rock-100 bg-rock-0 px-5 pt-3"

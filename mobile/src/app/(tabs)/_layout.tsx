@@ -1,8 +1,9 @@
 import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui';
 import { Mountain, MessageCircle, User } from 'lucide-react-native';
+import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { NavItem, navBarStyle } from '@/components/BottomNav';
+import { NavItem, navBarStyle, TabBarHeightContext } from '@/components/BottomNav';
 import { useChatsBadgeCount } from '@/queries/chat';
 
 // Custom Tab-Navigation (login-first, hinter dem Root-Gate). expo-router/ui statt
@@ -17,20 +18,28 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const badge = useChatsBadgeCount();
 
+  // Bar-Höhe messen und an die Tab-Screens reichen (TabBarHeightContext) — für
+  // KeyboardStickyView-Leisten, die sonst um diese Höhe über der Tastatur schweben.
+  const [tabBarHeight, setTabBarHeight] = useState(0);
+
   return (
-    <Tabs>
-      <TabSlot />
-      <TabList style={navBarStyle(insets.bottom)}>
-        <TabTrigger name="index" href="/" asChild>
-          <NavItem icon={Mountain} label="Sessions" />
-        </TabTrigger>
-        <TabTrigger name="chats" href="/chats" asChild>
-          <NavItem icon={MessageCircle} label="Chats" badge={badge} />
-        </TabTrigger>
-        <TabTrigger name="profile" href="/profile" asChild>
-          <NavItem icon={User} label="Profile" />
-        </TabTrigger>
-      </TabList>
-    </Tabs>
+    <TabBarHeightContext.Provider value={tabBarHeight}>
+      <Tabs>
+        <TabSlot />
+        <TabList
+          style={navBarStyle(insets.bottom)}
+          onLayout={(e) => setTabBarHeight(e.nativeEvent.layout.height)}>
+          <TabTrigger name="index" href="/" asChild>
+            <NavItem icon={Mountain} label="Sessions" />
+          </TabTrigger>
+          <TabTrigger name="chats" href="/chats" asChild>
+            <NavItem icon={MessageCircle} label="Chats" badge={badge} />
+          </TabTrigger>
+          <TabTrigger name="profile" href="/profile" asChild>
+            <NavItem icon={User} label="Profile" />
+          </TabTrigger>
+        </TabList>
+      </Tabs>
+    </TabBarHeightContext.Provider>
   );
 }

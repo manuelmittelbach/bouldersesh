@@ -18,10 +18,6 @@ export type InputProps = TextInputProps & {
   // `maxLength` sinnvoll. Bei Erreichen des Limits färbt er sich danger.
   showCount?: boolean;
   containerClassName?: string;
-  // Meldet die Höhe der (umrandeten) Feld-Box — nicht des Labels. Ein
-  // KeyboardAwareScrollView leitet daraus ab, wie weit es scrollen muss, damit das
-  // ganze Feld über der Tastatur steht, statt eine feste Zahl zu raten.
-  onFieldLayout?: (height: number) => void;
 };
 
 export const Input = forwardRef<TextInput, InputProps>(function Input(
@@ -36,7 +32,6 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
     className,
     onFocus,
     onBlur,
-    onFieldLayout,
     ...rest
   },
   ref,
@@ -62,15 +57,6 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
         </Text>
       ) : null}
       <View
-        // Nur mehrzeilige Felder melden ihre Höhe: dort kann der Cursor oben stehen,
-        // während die Box nach unten reicht — der Scroll muss die ganze Box freiräumen.
-        // Bei einzeiligen Feldern sitzt der Cursor faktisch an der Unterkante; die Lib
-        // scrollt sie ohnehin frei, ein Höhen-Aufschlag würde nur zu weit hochscrollen.
-        onLayout={
-          onFieldLayout && multiline
-            ? (e) => onFieldLayout(e.nativeEvent.layout.height)
-            : undefined
-        }
         className={cn(
           "flex-row gap-2 rounded-md border bg-rock-0 px-3.5",
           multiline ? "items-start py-3" : "h-[46px] items-center",
