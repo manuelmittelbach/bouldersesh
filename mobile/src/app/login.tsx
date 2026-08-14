@@ -143,30 +143,31 @@ export default function Login() {
               Sign in or create an account to see who’s climbing.
             </Text>
 
-            <View className="mt-6 gap-3">
+            {/* Während eines laufenden Sign-ins sperrt pointerEvents die GANZE Gruppe
+                (auch Email), statt einzelne Buttons zu disablen: kein sichtbares
+                Ausgrauen der Nachbar-Buttons, wenn z. B. Apple angetippt wurde. */}
+            <View className="mt-6 gap-3" pointerEvents={pending ? 'none' : 'auto'}>
               {/* Social — Apple oben (App-Store-Konvention: sobald irgendein
                   Social-Login angeboten wird, ist Apple Pflicht und erwartet
                   Prominenz). Nur auf iOS; Android bekommt nur Google + Email. */}
               {Platform.OS === 'ios' ? (
-                <View pointerEvents={pending ? 'none' : 'auto'}>
-                  <AppleAuthentication.AppleAuthenticationButton
-                    buttonType={
-                      AppleAuthentication.AppleAuthenticationButtonType.CONTINUE
-                    }
-                    buttonStyle={
-                      AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-                    }
-                    cornerRadius={12}
-                    style={styles.appleButton}
-                    onPress={() => handleSocial('apple')}
-                  />
-                </View>
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={
+                    AppleAuthentication.AppleAuthenticationButtonType.CONTINUE
+                  }
+                  buttonStyle={
+                    AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                  }
+                  cornerRadius={12}
+                  style={styles.appleButton}
+                  onPress={() => handleSocial('apple')}
+                />
               ) : null}
               <Button
                 variant="outline"
                 size="lg"
                 fullWidth
-                disabled={!isGoogleSignInConfigured || pending !== null}
+                disabled={!isGoogleSignInConfigured}
                 loading={pending === 'google'}
                 onPress={() => handleSocial('google')}>
                 Continue with Google
