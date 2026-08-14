@@ -7,6 +7,7 @@ import {
   type SessionFormValues,
 } from "@/components/SessionForm";
 import { useActiveCity } from "@/hooks/useActiveCity";
+import { setPendingFeedDay } from "@/lib/feedDayStore";
 import { SESSION_DAY_WINDOW, startOfDay, toDateKey } from "@/lib/utils";
 import { useCities } from "@/queries/cities";
 import { useCreateSession } from "@/queries/sessions";
@@ -86,6 +87,14 @@ export default function SessionCreate() {
       // DB-Kapazität = Plätze für andere + Gastgeber:in (ADR-0007).
       capacity: values.spots + 1,
     });
+    // Der Feed springt beim Zurückkehren auf den Tag der neuen Session (One-Shot-
+    // Übergabe, siehe feedDayStore) — sie soll dort als Bestätigung sichtbar sein,
+    // statt dass der Feed stumm auf seinem alten Tag steht. Bewusst NUR der Tag,
+    // kein Hallen-Vorfilter: der würde den restlichen Tag verstecken (der Hallen-
+    // Filter ist optional, Entdeckung über Hallengrenzen hinweg gewollt) und könnte
+    // bei einer Auswärts-Session ins Leere zeigen. Vor leaveAfterCreate abgelegt:
+    // der Feed konsumiert erst beim Fokus, also auch nach dem Auswärts-Alert.
+    setPendingFeedDay(values.startsAt);
     leaveAfterCreate(values.cityId);
   }
 

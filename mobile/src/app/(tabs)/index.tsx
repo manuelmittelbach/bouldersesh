@@ -13,6 +13,7 @@ import { Button, Chip } from '@/components/ui';
 import { hasClimber, isFull, roleFor, spotsLeft } from '@/domain/session';
 import { useActiveCity } from '@/hooks/useActiveCity';
 import { useAuth } from '@/hooks/useAuth';
+import { takePendingFeedDay } from '@/lib/feedDayStore';
 import { publicImageUrl } from '@/lib/images';
 import {
   avatarTone,
@@ -226,6 +227,12 @@ export default function Dashboard() {
   // (siehe oben) — eine erst nach Mount vergangene Session fällt hier NICHT raus.
   useFocusEffect(
     useCallback(() => {
+      // Kommt der Fokus aus dem Create-Flow zurück, liegt dort der Tag der eben
+      // veröffentlichten Session (One-Shot, feedDayStore) — dorthin springen, damit
+      // sie sofort sichtbar ist. Der Tab bleibt gemountet, ein Router-Param käme
+      // hier also gar nicht an; bei jeder anderen Tab-Rückkehr ist take null.
+      const createdDay = takePendingFeedDay();
+      if (createdDay) setSelectedDate(createdDay);
       refetch();
       refetchRequested();
       refetchDeclined();
