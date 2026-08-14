@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ban, Flag } from 'lucide-react-native';
+import { Ban, Check, Flag } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -39,11 +39,14 @@ function ReportButton({ profileId, name }: { profileId: string; name: string }) 
   const [sheetOpen, setSheetOpen] = useState(false);
   const done = alreadyReported || report.isSuccess;
 
+  // Kompakt statt Satz: die Bestätigung ersetzt den Button im schmalen rechten
+  // Fußzeilen-Slot neben „Block user" — ein langer Text bricht dort gequetscht um.
   if (done) {
     return (
-      <Text className="font-sans text-[13px] text-rock-400">
-        You reported this profile. We’re looking into it.
-      </Text>
+      <View className="flex-row items-center gap-1.5 px-3 py-2">
+        <Check size={13} color={colors.rock[400]} strokeWidth={2} />
+        <Text className="font-sans text-[13px] text-rock-400">Reported</Text>
+      </View>
     );
   }
 
