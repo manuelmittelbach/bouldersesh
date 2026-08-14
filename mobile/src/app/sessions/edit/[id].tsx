@@ -15,6 +15,7 @@ import {
   spotsTotal,
 } from "@/domain/session";
 import { useAuth } from "@/hooks/useAuth";
+import { setPendingFeedDay } from "@/lib/feedDayStore";
 import { hasLeftFeed, startOfDay } from "@/lib/utils";
 import { useSession, useUpdateSession } from "@/queries/sessions";
 import { colors } from "@/theme/colors";
@@ -79,6 +80,15 @@ export default function SessionEdit() {
         throw new Error("Spots can’t go below the climbers already in.");
       }
       throw e;
+    }
+    // Ist die Session auf einen ANDEREN Kalendertag gewandert, folgt ihr der Feed
+    // beim nächsten Fokus (One-Shot, ADR-0020) — sonst sähe sie vom Feed-Sheet aus
+    // wie gelöscht aus (sie fällt ja aus dem gerade gezeigten Tag). Nur bei echtem
+    // Tagwechsel: eine Notiz-/Spots-Änderung soll den Feed-Tag nicht anfassen.
+    // Kein router-Umbau nötig: back() darf weiter aufs Detail/Chats zurückführen,
+    // das Store wartet bis zum nächsten Feed-Fokus.
+    if (startOfDay(values.startsAt).getTime() !== startOfDay(startsAt).getTime()) {
+      setPendingFeedDay(values.startsAt);
     }
     router.back();
   }
