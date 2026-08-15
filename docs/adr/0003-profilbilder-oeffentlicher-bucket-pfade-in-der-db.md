@@ -11,6 +11,14 @@ date: 2026-07-21
 > bleiben unverändert; die Rückkehr ist ein reiner Code-Merge. Alles Übrige in
 > diesem ADR (öffentlicher Bucket, Pfade statt URLs, Avatar-Flow) gilt unverändert.
 
+> **Nachtrag (2026-08-15):** Die Mediathek-Berechtigung wird **nicht mehr aktiv
+> angefragt** (WhatsApp/Instagram-Muster): Die System-Picker (iOS PHPicker,
+> Android Photo Picker) laufen außerhalb der App und brauchen keine Berechtigung.
+> Der frühere `requestMediaLibraryPermissionsAsync`-Prompt vor dem Picker löste
+> bei „Zugriff beschränken" das System-Sheet „Fotos auswählen" aus, das mit dem
+> Picker verwechselt wurde. Der Berechtigungstext (`photosPermission` in der
+> app.json-Plugin-Config) bleibt als Absicherung bestehen.
+
 ## Kontext & Entscheidung
 
 Nutzer:innen bekommen einen Avatar und eine Galerie (max. 6 Bilder). Avatare

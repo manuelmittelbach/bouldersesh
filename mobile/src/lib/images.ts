@@ -27,18 +27,18 @@ export type ImageKind = 'avatar';
 const MAX_EDGE: Record<ImageKind, number> = { avatar: 512 };
 const COMPRESS = 0.8;
 
-/** Wird geworfen, wenn die Person die Mediathek nicht freigibt. Eigener Typ,
- *  damit die UI das von einem echten Fehler unterscheiden kann. */
-export class MediaLibraryDeniedError extends Error {
-  constructor() {
-    super('Photo access is off. Enable it in Settings to pick a picture.');
-    this.name = 'MediaLibraryDeniedError';
-  }
-}
-
 /**
  * Mediathek öffnen, Bild zuschneiden/skalieren und als JPEG in den Bucket legen.
  * Gibt den Storage-Pfad zurück — oder `null`, wenn die Auswahl abgebrochen wurde.
+ *
+ * BEWUSST keine Permission-Abfrage (WhatsApp/Instagram-Muster, ADR-0003-Nachtrag):
+ * die System-Picker (iOS PHPicker, Android Photo Picker) laufen außerhalb der App,
+ * liefern nur das eine gewählte Foto und brauchen dafür keine Mediathek-Berechtigung.
+ * Ein requestMediaLibraryPermissionsAsync davor löste bei „Zugriff beschränken" das
+ * System-Sheet „Fotos auswählen" aus, das Nutzer:innen mit dem Picker verwechselten
+ * (Foto angetippt, nichts ausgewählt). Der Berechtigungstext bleibt trotzdem in der
+ * app.json-Plugin-Config (photosPermission → generiertes Info.plist) — ohne ihn
+ * crasht jeder künftige echte Mediathek-Zugriff hart.
  *
  * Skaliert wird clientseitig, weil Supabase Image Transformations Pro-only sind
  * (ADR-0003). Das löst nebenbei, dass iPhones HEIC liefern, der Bucket aber nur
@@ -48,9 +48,6 @@ export async function pickAndUploadProfileImage(
   userId: string,
   kind: ImageKind,
 ): Promise<string | null> {
-  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!permission.granted) throw new MediaLibraryDeniedError();
-
   // Kein `allowsEditing`: der eingebaute Editor zeigt eine eckige OS-Crop-UI, die
   // nie zur runden/abgerundeten Endform passt. Wir schneiden im eigenen Screen zu.
   const picked = await ImagePicker.launchImageLibraryAsync({
