@@ -29,6 +29,14 @@ export const isGoogleSignInConfigured = Boolean(GOOGLE_WEB_CLIENT_ID);
 
 export type SocialSignInResult = { cancelled: boolean };
 
+// Reaktives Flag, das das Root-Layout mitliest: solange true, zeigt der Navigator
+// den Boot-/Splash-Zustand statt Onboarding. Es überbrückt genau das Zeitfenster
+// beim Apple-Login, in dem die Session schon steht, der Apple-Name aber noch nicht
+// als display_name persistiert ist — sonst rendert das Namens-Gate für einen
+// Sekundenbruchteil, weil der parallele Profil-Fetch in useAuth display_name=null
+// zurückgibt, bevor unser Seed-Update greift.
+export const PROVISIONING_KEY = ['auth', 'provisioning'] as const;
+
 let googleConfigured = false;
 
 function configureGoogle(): void {
@@ -130,13 +138,20 @@ export async function signInWithApple(): Promise<SocialSignInResult> {
   if (error) throw error;
 
   // Namen aus dem Apple-Credential übernehmen, bevor das Namens-Gate greifen kann
-  // (Guideline 4). Muss VOR return awaitet werden, sonst rendert das Onboarding.
+  // (Guideline 4). Das Provisioning-Flag wird SYNCHRON gesetzt (vor dem ersten
+  // await, das an React zurückgibt), damit der Navigator im ganzen Seed-Fenster
+  // Splash statt Onboarding zeigt; `finally` gibt es garantiert wieder frei.
   const userId = data.user?.id;
   if (userId) {
-    await seedAppleDisplayName(
-      userId,
-      appleDisplayName(credential.fullName, data.user?.email),
-    );
+    queryClient.setQueryData(PROVISIONING_KEY, true);
+    try {
+      await seedAppleDisplayName(
+        userId,
+        appleDisplayName(credential.fullName, data.user?.email),
+      );
+    } finally {
+      queryClient.setQueryData(PROVISIONING_KEY, false);
+    }
   }
 
   // Apples authorizationCode (~5 min gültig) serverseitig gegen einen
