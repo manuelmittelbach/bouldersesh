@@ -64,21 +64,19 @@ function hasErrorCode(error: unknown, code: string): boolean {
 // NUR bei der allerersten Autorisierung einer Apple-ID; danach ist er null. Damit
 // ein Apple-Login NIE im Namens-Gate hängenbleibt (auch nicht, wenn Apple keinen
 // Namen mehr schickt — z. B. ein Prüfer, der dieselbe ID schon getestet hat),
-// fallen wir auf das E-Mail-Präfix und zuletzt auf „Climber" zurück.
+// fällt ein fehlender Name auf „Climber" zurück. Bewusst NICHT auf das E-Mail-
+// Präfix: bei „E-Mail verbergen" ist das eine kryptische Relay-Zeichenfolge
+// (z. B. „125da") — als Anzeigename unbrauchbar. Der Nutzer kann ihn ohnehin
+// jederzeit im Profil ändern.
 function appleDisplayName(
   fullName: AppleAuthentication.AppleAuthenticationFullName | null,
-  email: string | null | undefined,
 ): string {
   const fromApple = [fullName?.givenName, fullName?.familyName]
     .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
     .join(' ')
     .trim();
-  if (fromApple) return fromApple;
 
-  const local = email?.split('@')[0]?.trim();
-  if (local) return local;
-
-  return 'Climber';
+  return fromApple || 'Climber';
 }
 
 // Den frisch getauschten Apple-Namen als display_name setzen und die Auth-Gates
@@ -145,10 +143,7 @@ export async function signInWithApple(): Promise<SocialSignInResult> {
   if (userId) {
     queryClient.setQueryData(PROVISIONING_KEY, true);
     try {
-      await seedAppleDisplayName(
-        userId,
-        appleDisplayName(credential.fullName, data.user?.email),
-      );
+      await seedAppleDisplayName(userId, appleDisplayName(credential.fullName));
     } finally {
       queryClient.setQueryData(PROVISIONING_KEY, false);
     }
