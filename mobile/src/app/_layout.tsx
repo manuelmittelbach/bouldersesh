@@ -48,7 +48,7 @@ setupNotificationHandling();
 // `city` liegt bewusst NUR im display_name-Guard (nicht im Stadt-Guard), damit
 // derselbe Screen später als Wechsler per router.push('/city') erreichbar bleibt.
 function RootNavigator() {
-  const { session, profile, isLoading } = useAuth();
+  const { session, profile, isLoading, provisioning } = useAuth();
   const { cityId, isLoading: cityLoading } = useActiveCity();
   const { recoveryPending } = useRecovery();
 
@@ -61,7 +61,9 @@ function RootNavigator() {
 
   // Splash erst freigeben, wenn Session UND Stadt beantwortet sind — sonst flasht kurz
   // der Login bzw. der Stadt-Screen, bevor der gespeicherte Zustand geladen wurde.
-  const booting = isLoading || cityLoading;
+  // `provisioning` hält den Boot-Zustand zusätzlich, während ein Apple-Login den
+  // Namen persistiert — sonst blitzt das Onboarding auf, bis display_name gesetzt ist.
+  const booting = isLoading || cityLoading || provisioning;
   useEffect(() => {
     if (!booting) SplashScreen.hideAsync();
   }, [booting]);
