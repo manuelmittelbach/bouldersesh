@@ -16,6 +16,7 @@ import {
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 
+import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 
 // Die Google-Client-IDs kommen aus der Google Cloud Console (.env, siehe
@@ -50,6 +51,50 @@ function hasErrorCode(error: unknown, code: string): boolean {
   );
 }
 
+// App-Store-Pflicht (Guideline 4 „Sign in with Apple"): den von Apple gelieferten
+// Namen übernehmen, statt ihn danach nochmal abzufragen. Apple sendet `fullName`
+// NUR bei der allerersten Autorisierung einer Apple-ID; danach ist er null. Damit
+// ein Apple-Login NIE im Namens-Gate hängenbleibt (auch nicht, wenn Apple keinen
+// Namen mehr schickt — z. B. ein Prüfer, der dieselbe ID schon getestet hat),
+// fallen wir auf das E-Mail-Präfix und zuletzt auf „Climber" zurück.
+function appleDisplayName(
+  fullName: AppleAuthentication.AppleAuthenticationFullName | null,
+  email: string | null | undefined,
+): string {
+  const fromApple = [fullName?.givenName, fullName?.familyName]
+    .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+    .join(' ')
+    .trim();
+  if (fromApple) return fromApple;
+
+  const local = email?.split('@')[0]?.trim();
+  if (local) return local;
+
+  return 'Climber';
+}
+
+// Den frisch getauschten Apple-Namen als display_name setzen und die Auth-Gates
+// SOFORT bedienen. Der Session-Wechsel triggert in useAuth parallel einen
+// Profil-Fetch (der noch display_name=null läse) — deshalb erst dessen Ergebnis
+// verwerfen (cancelQueries) und dann das echte Profil in beide Caches spiegeln,
+// exakt wie primeProfileCaches in queries/profiles.ts. So springt das Onboarding-
+// Gate gar nicht erst an. `.is('display_name', null)` schützt einen bereits
+// gewählten Namen bei Folge-Logins vor dem Überschreiben.
+async function seedAppleDisplayName(userId: string, name: string): Promise<void> {
+  const { data: updated, error } = await supabase
+    .from('profiles')
+    .update({ display_name: name })
+    .eq('id', userId)
+    .is('display_name', null)
+    .select()
+    .maybeSingle();
+  if (error || !updated) return;
+
+  await queryClient.cancelQueries({ queryKey: ['auth', 'profile', userId] });
+  queryClient.setQueryData(['auth', 'profile', userId], updated);
+  queryClient.setQueryData(['profiles', userId], updated);
+}
+
 export async function signInWithApple(): Promise<SocialSignInResult> {
   // Nonce gegen Token-Replay: Apple bekommt den SHA256-Hash in den Request,
   // Supabase das Original — und prüft, dass der Claim im Token dazu passt.
@@ -77,12 +122,22 @@ export async function signInWithApple(): Promise<SocialSignInResult> {
     throw new Error('Apple did not return an identity token.');
   }
 
-  const { error } = await supabase.auth.signInWithIdToken({
+  const { data, error } = await supabase.auth.signInWithIdToken({
     provider: 'apple',
     token: credential.identityToken,
     nonce: rawNonce,
   });
   if (error) throw error;
+
+  // Namen aus dem Apple-Credential übernehmen, bevor das Namens-Gate greifen kann
+  // (Guideline 4). Muss VOR return awaitet werden, sonst rendert das Onboarding.
+  const userId = data.user?.id;
+  if (userId) {
+    await seedAppleDisplayName(
+      userId,
+      appleDisplayName(credential.fullName, data.user?.email),
+    );
+  }
 
   // Apples authorizationCode (~5 min gültig) serverseitig gegen einen
   // Refresh-Token tauschen — den braucht delete-account später für die
