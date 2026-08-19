@@ -4,14 +4,17 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native';
+// RN's KeyboardAvoidingView macht auf Android (behavior=undefined) nichts und bei
+// Edge-to-Edge verkleinert das System das Fenster nicht mehr → Eingabeleiste wird
+// von der Tastatur verdeckt. keyboard-controller löst iOS+Android einheitlich
+// (KeyboardProvider hängt im Root-_layout).
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MessageBubble } from '@/components/MessageBubble';
@@ -203,9 +206,7 @@ export default function Chat() {
         </View>
       ) : null}
 
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         {/* Kein keyboardVerticalOffset: die KAV reicht bis zur Screen-Unterkante, die
             Eingabeleiste sitzt so direkt über der Tastatur. */}
         {isLoading ? (
