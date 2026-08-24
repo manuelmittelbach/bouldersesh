@@ -20,7 +20,40 @@ if (!url || !anonKey) {
   );
 }
 
+// iOS-Netzwerk-Härtung gegen NSURLErrorNetworkConnectionLost (-1005): iOS'
+// NSURLSession recycelt Keep-Alive-Sockets, die Supabase/Cloudflare nach kurzer
+// Idle-Zeit schon geschlossen haben — der nächste Request läuft in den toten
+// Socket und wirft „The network connection was lost", BEVOR er den Server
+// erreicht. Das killt vor allem den Signup-Verify: zwischen dem ersten Call beim
+// App-Start (frische Verbindung) und der Code-Eingabe vergehen Minuten (App im
+// Hintergrund, Mail öffnen) — genau die Idle-Lücke. Ein Retry öffnet eine NEUE
+// Verbindung und umgeht den toten Socket. NUR diese transiente, geworfene
+// Fehlerklasse wird wiederholt; echte HTTP-Antworten (4xx/5xx) werfen nicht und
+// fliegen unberührt durch.
+const TRANSIENT_NETWORK_ERROR =
+  /network connection was lost|network request failed|the request timed out|connection appears to be offline|software caused connection abort/i;
+
+async function fetchWithRetry(
+  ...args: Parameters<typeof fetch>
+): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await fetch(...args);
+    } catch (err) {
+      lastError = err;
+      const message = err instanceof Error ? err.message : String(err);
+      if (!TRANSIENT_NETWORK_ERROR.test(message)) throw err;
+      // Kurzer Backoff, dann neuer Versuch auf frischer Verbindung.
+      await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 export const supabase = createClient<Database>(url ?? '', anonKey ?? '', {
+  // Alle supabase-js-Requests (Auth, REST, Functions) laufen über den Retry-fetch.
+  global: { fetch: fetchWithRetry },
   auth: {
     // Session in AsyncStorage statt Browser-localStorage.
     storage: AsyncStorage,
