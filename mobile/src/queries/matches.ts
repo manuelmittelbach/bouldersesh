@@ -63,6 +63,16 @@ export function useRequestsForSession(sessionId: string | undefined) {
     queryKey: REQUESTS_FOR_SESSION_KEY(sessionId ?? ""),
     queryFn: () => getRequestsForSession(sessionId!),
     enabled: !!sessionId,
+    // Sicherheitsnetz gegen verpasste Realtime-Events: Die Anfragen-Liste muss immer
+    // aktuell sein, nicht 5 min (Default) dem Cache vertrauen. Verpasst der Websocket
+    // ein INSERT (Screen beim Event nicht gemountet / Socket im Hintergrund weg),
+    // heilt sonst nichts bis zum App-Kill. staleTime 0 + bedingungsloser Refetch bei
+    // Foreground/Mount lädt bei jeder Rückkehr auf den Screen frisch — wie das
+    // Session-Detail (refetchOnMount "always", ADR-0018) und der Feed
+    // (refetchOnWindowFocus "always"). Deckt NICHT das Draufsitzen ohne Navigation ab.
+    staleTime: 0,
+    refetchOnWindowFocus: "always",
+    refetchOnMount: "always",
   });
 
   // Realtime: a new request (or a status change) on this session refetches the
@@ -123,6 +133,9 @@ export function usePendingCountsForSessions(sessionIds: string[]) {
     queryFn: () => getPendingCountsForSessions(sorted),
     enabled,
     staleTime: 30_000,
+    // Bei Rückkehr aus dem Hintergrund den Badge bedingungslos heilen, statt bis zu
+    // 30 s der staleTime zu vertrauen — spiegelt useRequestsForSession/useFeedSessions.
+    refetchOnWindowFocus: "always",
   });
 
   // Eine neue/geänderte Anfrage an einer meiner Sessions aktualisiert die Zähler
