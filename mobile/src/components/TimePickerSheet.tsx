@@ -1,39 +1,78 @@
 import DateTimePicker, {
+  DateTimePickerAndroid,
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { X } from "lucide-react-native";
-import { useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Modal, Platform, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button, IconButton } from "@/components/ui";
 import { colors } from "@/theme/colors";
 
-// Zeit-Wähler beim Anlegen: gleiches Bottom-Sheet-Muster wie GymPickerSheet/CitySwitcherSheet.
-// Das Scroll-Rad (spinner) lebt IM Sheet mit „Set time"-Button — genau wie Meetup, Google
-// Calendar und Airbnb es machen: nie ein nacktes Inline-Rad, sondern immer im Sheet mit
-// Kopfzeile und Bestätigung. Spinner auf iOS UND Android → ein Look für beide Plattformen.
+// Zeit-Wähler beim Anlegen. Achtung: der native Picker verhält sich pro Plattform
+// grundverschieden, deshalb splitten wir hier bewusst.
 //
-// Die Auswahl wird als Entwurf (draft) gehalten und erst beim „Set time" nach oben
-// committet: Scrollen am Rad ändert das Formular noch nicht, Schließen ohne Bestätigen
-// verwirft. Rein präsentational — Wert und „was beim Bestätigen passiert" kommen von außen.
+// iOS: `<DateTimePicker display="spinner">` rendert wirklich als Inline-View. Wir betten
+//   es in ein Bottom-Sheet mit Kopfzeile + „Set time"-Button (gleiches Muster wie
+//   GymPickerSheet/CitySwitcherSheet, wie Meetup/Google Calendar/Airbnb).
+//
+// Android: dieselbe Komponente ist KEIN Inline-View — sie öffnet einen imperativen
+//   nativen Dialog mit eigenem OK/Cancel. In ein Custom-Sheet gepackt hieß das: der native
+//   Dialog ploppt über dem Sheet auf, OK setzt nur den Entwurf, und man musste ZUSÄTZLICH
+//   auf „Set time" tippen (Doppel-Bestätigung) — plus flaky Re-Open. Darum auf Android kein
+//   Sheet: wir öffnen den nativen Dialog direkt und committen aus dessen OK.
+//
 // Deckt sich mit dem MinuteInterval-Literal-Union der Picker-Lib (die es nicht exportiert).
 // Als `number` würde es auf keinen Props-Member passen und den ganzen Picker-Typ sprengen.
 type MinuteInterval = 1 | 2 | 3 | 4 | 5 | 6 | 10 | 12 | 15 | 20 | 30;
 
-export function TimePickerSheet({
-  visible,
-  value,
-  minuteInterval = 15,
-  onConfirm,
-  onClose,
-}: {
+type Props = {
   visible: boolean;
   value: Date;
   minuteInterval?: MinuteInterval;
   onConfirm: (next: Date) => void;
   onClose: () => void;
-}) {
+};
+
+export function TimePickerSheet(props: Props) {
+  // Reiner Weichensteller (ruft selbst keine Hooks auf, damit die Plattform-Verzweigung die
+  // Hook-Regeln nicht verletzt). Jede Variante hält ihre eigenen Hooks.
+  return Platform.OS === "android" ? (
+    <AndroidTimePicker {...props} />
+  ) : (
+    <IOSTimePickerSheet {...props} />
+  );
+}
+
+function AndroidTimePicker({ visible, value, minuteInterval = 15, onConfirm, onClose }: Props) {
+  // Nur auf der steigenden Flanke von `visible` den nativen Dialog aufmachen. Sein OK
+  // committet direkt (kein zweiter Button), Cancel/Back verwirft. Danach immer onClose,
+  // damit das Eltern-Flag zurückgesetzt wird und der nächste Tap wieder öffnet.
+  const [wasVisible, setWasVisible] = useState(false);
+  useEffect(() => {
+    if (visible && !wasVisible) {
+      setWasVisible(true);
+      DateTimePickerAndroid.open({
+        value,
+        mode: "time",
+        is24Hour: true,
+        display: "spinner",
+        minuteInterval,
+        onChange: (event: DateTimePickerEvent, picked?: Date) => {
+          if (event.type === "set" && picked) onConfirm(picked);
+          onClose();
+        },
+      });
+    } else if (!visible && wasVisible) {
+      setWasVisible(false);
+    }
+  }, [visible, wasVisible, value, minuteInterval, onConfirm, onClose]);
+
+  return null;
+}
+
+function IOSTimePickerSheet({ visible, value, minuteInterval = 15, onConfirm, onClose }: Props) {
   // Beim Öffnen den Entwurf auf den aktuellen Wert setzen (React-Muster „State beim
   // Prop-Wechsel anpassen", in der Render-Phase statt per Effect): das Sheet merkt sich den
   // letzten visible-Zustand und seedet das Rad neu, sobald es aufgeht. So bleibt ein zuvor
