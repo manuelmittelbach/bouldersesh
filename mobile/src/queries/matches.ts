@@ -152,6 +152,16 @@ export function usePendingCountsForSessions(sessionIds: string[]) {
         queryClient.invalidateQueries({
           queryKey: ["matches", "incoming", "counts"],
         });
+        // Zweites, unabhängiges Sicherheitsnetz für die Anfragen-LISTE: Dieser
+        // unfilterte Channel kommt zuverlässiger an als die gefilterte
+        // session-requests-Subscription in useRequestsForSession. Feuert er, ohne
+        // dass das gefilterte Event ankam (verpasstes Realtime-Event, Nutzer sitzt
+        // ohne Navigation auf dem Chat), heilt diese breite Invalidierung die Liste
+        // trotzdem. Präfix ["matches","session"] trifft alle
+        // REQUESTS_FOR_SESSION_KEY-Queries; react-query lädt nur die aktiv
+        // gemounteten davon wirklich neu. Kein Payload-Filter nötig — RLS stellt
+        // ohnehin nur meine Zeilen zu.
+        queryClient.invalidateQueries({ queryKey: ["matches", "session"] });
       },
     },
   ]);
