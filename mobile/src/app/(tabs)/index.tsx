@@ -42,6 +42,7 @@ import { colors } from '@/theme/colors';
 
 function Header({
   cityName,
+  canSwitchCity,
   onOpenCityMenu,
   selectedDate,
   onSelectDate,
@@ -52,6 +53,7 @@ function Header({
   onOpenGymPicker,
 }: {
   cityName: string | null;
+  canSwitchCity: boolean;
   onOpenCityMenu: () => void;
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
@@ -66,22 +68,31 @@ function Header({
       {/* Titel „Sessions in [Munich]" — FESTE Schriftgröße (auf „Munich" getrimmt,
           bewusst NICHT dynamisch skaliert), Stadt inline auf einer Zeile; der
           Dropdown-Caret sitzt zentriert UNTER der Stadt. Stadt + Caret bilden den tappbaren
-          Bereich → Bottom-Sheet (CitySwitcherSheet) auf Dashboard-Ebene. */}
+          Bereich → Bottom-Sheet (CitySwitcherSheet) auf Dashboard-Ebene.
+          Bei nur EINER freigeschalteten Stadt (Launch-Scoping, s. migration 0034) gibt es
+          nichts zu wechseln: Caret weg, Stadt nicht tappbar — ein Ein-Optionen-Dropdown
+          wirkt sonst kaputt. Taucht automatisch wieder auf, sobald es ≥2 Städte gibt. */}
       <View className="flex-row items-start">
         <Text className="font-display-bold text-[30px] leading-none text-rock-900">
           {'Sessions in '}
         </Text>
-        <Pressable
-          onPress={onOpenCityMenu}
-          hitSlop={8}
-          className="items-center active:opacity-70">
+        {canSwitchCity ? (
+          <Pressable
+            onPress={onOpenCityMenu}
+            hitSlop={8}
+            className="items-center active:opacity-70">
+            <Text className="font-display-bold text-[30px] leading-none text-brand-600">
+              {cityName ?? 'your city'}
+            </Text>
+            <View className="mt-0.5">
+              <ChevronDown size={20} color={colors.brand[600]} strokeWidth={2.5} />
+            </View>
+          </Pressable>
+        ) : (
           <Text className="font-display-bold text-[30px] leading-none text-brand-600">
             {cityName ?? 'your city'}
           </Text>
-          <View className="mt-0.5">
-            <ChevronDown size={20} color={colors.brand[600]} strokeWidth={2.5} />
-          </View>
-        </Pressable>
+        )}
       </View>
 
       {/* Tag-Filter — immer sichtbar. */}
@@ -276,6 +287,7 @@ export default function Dashboard() {
       <View className="px-5">
         <Header
           cityName={cityName}
+          canSwitchCity={(cities?.length ?? 0) > 1}
           onOpenCityMenu={() => setCityMenuOpen(true)}
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}

@@ -9,6 +9,9 @@ async function getCities(): Promise<City[]> {
   const { data, error } = await supabase
     .from("cities")
     .select("*")
+    // Launch scoping: only cities flagged live are shown (Berlin first, Munich
+    // stays hidden until `enabled` is flipped server-side). See migration 0034.
+    .eq("enabled", true)
     .order("name", { ascending: true });
   if (error) throw error;
   return data ?? [];

@@ -61,11 +61,13 @@ export interface Database {
         Row: {
           id: string;
           name: string;
+          enabled: boolean;
           created_at: string;
         };
         Insert: {
           id?: string;
           name: string;
+          enabled?: boolean;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["cities"]["Insert"]>;

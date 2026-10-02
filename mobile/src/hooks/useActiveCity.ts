@@ -26,12 +26,25 @@ const DEFAULT_CITY_NAME = "Berlin";
 
 async function readOrDefaultCityId(): Promise<string | null> {
   const stored = await AsyncStorage.getItem(STORAGE_KEY);
-  if (stored) return stored;
+  if (stored) {
+    // Validate the stored city is still live. A tester may have Munich persisted
+    // from before launch scoping (migration 0034); without this check the feed
+    // would point at a hidden city. Fall through to the default instead.
+    const { data: live } = await supabase
+      .from("cities")
+      .select("id")
+      .eq("id", stored)
+      .eq("enabled", true)
+      .maybeSingle();
+    if (live) return stored;
+    await AsyncStorage.removeItem(STORAGE_KEY);
+  }
 
   const { data } = await supabase
     .from("cities")
     .select("id")
     .eq("name", DEFAULT_CITY_NAME)
+    .eq("enabled", true)
     .maybeSingle();
   if (!data) return null;
 
