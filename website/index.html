@@ -1,25 +1,668 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BoulderSesh – Finde Leute zum Bouldern</title>
-  <meta name="description" content="BoulderSesh ist die App, mit der du Boulder-Partner:innen in deiner Stadt findest: Sessions posten, joinen, quatschen, bouldern.">
-  <link rel="stylesheet" href="style.css">
+  <title>BoulderSesh — Who's climbing today?</title>
+  <meta name="description" content="BoulderSesh connects you with boulderers in your city. See who's climbing at your gym, join with one tap, or start your own session. Free, no ads, data stays in the EU.">
+  <meta name="theme-color" content="#f25c16">
+  <link rel="icon" href="/img/icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/img/icon.png">
+
+  <!-- Open Graph / social -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="BoulderSesh — Who's climbing today?">
+  <meta property="og:description" content="Find bouldering sessions in your city and climb together. Free, no ads, data stays in the EU.">
+  <meta property="og:url" content="https://bouldersesh.com">
+  <meta property="og:image" content="https://bouldersesh.com/img/icon.png">
+  <meta name="twitter:card" content="summary">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ======================================================================
+       BoulderSesh — landing page
+       Palette, type and the "open spot" motif are pulled straight from the
+       app's design system (Send Orange + cool graphite Rock neutrals,
+       Space Grotesk / Inter / JetBrains Mono). The signature is the dashed
+       circle — the Available spot in a session — the one that's waiting
+       for you.
+       ====================================================================== */
+
+    :root {
+      /* Brand — Send Orange */
+      --brand:        #f25c16;
+      --brand-hover:  #d8480a;
+      --brand-press:  #b3380c;
+      --brand-soft:   #fff4ed;
+
+      /* Rock neutrals */
+      --rock-0:   #ffffff;
+      --rock-25:  #f7f8fa;
+      --rock-50:  #f1f3f6;
+      --rock-100: #e6e9ee;
+      --rock-200: #d3d8e0;
+      --rock-300: #b2bac6;
+      --rock-400: #8b93a3;
+      --rock-500: #646c7d;
+      --rock-700: #353b47;
+      --rock-900: #16181d;
+      --rock-950: #0e0f13;
+
+      /* Grade bands (used as data, not candy) */
+      --beginner-surface:     #e3f3ec; --beginner-ink:     #1f7a52;
+      --intermediate-surface: #e2edf7; --intermediate-ink: #2664a8;
+      --advanced-surface:     #fde6d6; --advanced-ink:     #b3490f;
+
+      --text-strong: var(--rock-900);
+      --text-body:   var(--rock-700);
+      --text-muted:  var(--rock-500);
+
+      --font-display: "Space Grotesk", system-ui, sans-serif;
+      --font-ui:      "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+      --maxw: 1120px;
+      --ease: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+    body {
+      margin: 0;
+      font-family: var(--font-ui);
+      color: var(--text-body);
+      background: var(--rock-0);
+      line-height: 1.5;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: inherit; }
+
+    :focus-visible {
+      outline: 3px solid var(--brand);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: var(--maxw);
+      margin-inline: auto;
+      padding-inline: clamp(20px, 5vw, 40px);
+    }
+
+    /* mono eyebrow label */
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    /* ---------------------------------------------------------------- Header */
+    .site-header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(247, 248, 250, 0.82);
+      backdrop-filter: saturate(140%) blur(12px);
+      -webkit-backdrop-filter: saturate(140%) blur(12px);
+      border-bottom: 1px solid var(--rock-100);
+    }
+    .site-header .wrap {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .brand-mark {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-family: var(--font-display); font-weight: 700;
+      font-size: 19px; letter-spacing: -0.02em;
+      color: var(--text-strong); text-decoration: none;
+    }
+    .brand-mark svg { display: block; }
+    .brand-mark .sesh { color: var(--brand); }
+    .header-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-ui); font-weight: 600; font-size: 14px;
+      color: var(--rock-0); background: var(--rock-900);
+      padding: 9px 16px; border-radius: 999px; text-decoration: none;
+      transition: transform .18s var(--ease), background .18s var(--ease);
+    }
+    .header-cta:hover { background: var(--rock-950); transform: translateY(-1px); }
+    @media (max-width: 640px) { .header-cta { display: none; } }
+
+    /* ----------------------------------------------------------------- Hero */
+    .hero {
+      position: relative;
+      color: #fff;
+      overflow: hidden;
+      background:
+        radial-gradient(120% 90% at 82% -10%, #ff7a3c 0%, rgba(255,122,60,0) 55%),
+        radial-gradient(100% 120% at 10% 115%, #a1300a 0%, rgba(161,48,10,0) 60%),
+        linear-gradient(158deg, #f25c16 0%, #d8480a 55%, #b3380c 100%);
+    }
+    /* faint chalk grain */
+    .hero::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background-image: radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1.4px);
+      background-size: 22px 22px; opacity: 0.35; mix-blend-mode: soft-light;
+    }
+    .hero .wrap {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px;
+      align-items: center;
+      padding-top: clamp(56px, 8vw, 104px);
+      padding-bottom: clamp(56px, 8vw, 104px);
+    }
+    .hero .wrap > * { min-width: 0; }
+    .hero-eyebrow { color: rgba(255,255,255,0.82); margin-bottom: 22px; }
+    .hero h1 {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(40px, 10.5vw, 82px); line-height: 0.98;
+      letter-spacing: -0.03em; margin: 0 0 20px;
+      overflow-wrap: break-word;
+    }
+    .hero h1 .u { position: relative; white-space: nowrap; }
+    .hero h1 .u::after {
+      content: ""; position: absolute; left: 2%; right: 2%; bottom: 0.06em;
+      height: 0.12em; background: rgba(255,255,255,0.45); border-radius: 2px;
+    }
+    .hero p.lede {
+      font-size: clamp(16px, 1.5vw, 19px); line-height: 1.55;
+      color: rgba(255,255,255,0.92); max-width: 30rem; margin: 0 0 32px;
+    }
+    .hero .locnote {
+      font-family: var(--font-mono); font-size: 13px; font-weight: 500;
+      color: rgba(255,255,255,0.78); margin-top: 22px;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .hero .locnote::before {
+      content: ""; width: 7px; height: 7px; border-radius: 50%;
+      background: #7CFFB0; box-shadow: 0 0 0 4px rgba(124,255,176,0.25);
+    }
+
+    /* store badges */
+    .badges { display: flex; flex-wrap: wrap; gap: 14px; }
+    .store-badge {
+      display: inline-flex; align-items: center; gap: 11px;
+      background: #000; color: #fff; text-decoration: none;
+      padding: 11px 18px 11px 16px; border-radius: 13px;
+      border: 1px solid rgba(255,255,255,0.18);
+      transition: transform .18s var(--ease), box-shadow .18s var(--ease);
+      box-shadow: 0 6px 18px rgba(14,15,19,0.22);
+    }
+    .store-badge:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(14,15,19,0.3); }
+    .store-badge svg { flex: none; }
+    .store-badge .bt { display: flex; flex-direction: column; line-height: 1.12; text-align: left; }
+    .store-badge .bt small { font-size: 10px; letter-spacing: 0.04em; opacity: 0.86; font-weight: 500; }
+    .store-badge .bt span { font-family: var(--font-display); font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+
+    /* --- hero session card (the thesis, recreated from the app) --- */
+    .card-stage { position: relative; perspective: 1400px; }
+    .sesh-card {
+      background: var(--rock-0); color: var(--text-strong);
+      border-radius: 22px; padding: 22px 22px 20px;
+      box-shadow: 0 40px 80px -24px rgba(14,15,19,0.5), 0 8px 24px -8px rgba(14,15,19,0.3);
+      transform: rotateY(-9deg) rotateX(3deg) rotateZ(-1.5deg);
+      transform-style: preserve-3d;
+      border: 1px solid rgba(255,255,255,0.6);
+      width: 100%; max-width: 400px; margin-inline: auto;
+      animation: floatcard 7s var(--ease) infinite;
+    }
+    @keyframes floatcard {
+      0%,100% { transform: rotateY(-9deg) rotateX(3deg) rotateZ(-1.5deg) translateY(0); }
+      50%     { transform: rotateY(-7deg) rotateX(2deg) rotateZ(-1deg) translateY(-12px); }
+    }
+    .sesh-card .top { display: flex; align-items: center; gap: 11px; margin-bottom: 4px; }
+    .avatar {
+      width: 44px; height: 44px; border-radius: 50%; flex: none;
+      display: grid; place-items: center;
+      font-family: var(--font-display); font-weight: 600; font-size: 16px; color: #fff;
+      border: 2px solid var(--rock-0);
+    }
+    .avatar-sm { width: 40px; height: 40px; font-size: 14px; }
+    .av-a { background: linear-gradient(135deg, #2664a8, #1f4e86); }
+    .av-b { background: linear-gradient(135deg, #e07a3c, #c8541a); }
+    .sesh-card .who { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+    .sesh-card .who b { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: -0.01em; }
+    .grade-pill {
+      font-family: var(--font-ui); font-weight: 600; font-size: 11.5px;
+      padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+    }
+    .grade-intermediate { background: var(--intermediate-surface); color: var(--intermediate-ink); }
+    .sesh-card .time {
+      font-family: var(--font-mono); font-weight: 600; font-size: 14px;
+      color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px;
+    }
+    .sesh-card .note { font-size: 15.5px; color: var(--rock-900); margin: 12px 0 10px; line-height: 1.4; }
+    .sesh-card .gym {
+      font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--text-muted);
+      display: inline-flex; align-items: center; gap: 6px; margin-bottom: 16px;
+    }
+    .roster { display: flex; align-items: flex-start; gap: 16px; }
+    .roster .slot { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 46px; }
+    .roster .slot small { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+    /* the signature: the open spot */
+    .open-spot {
+      width: 44px; height: 44px; border-radius: 50%;
+      border: 2px dashed var(--brand); color: var(--brand);
+      display: grid; place-items: center; font-size: 22px; font-weight: 400;
+      background: var(--brand-soft);
+    }
+    .open-spot.pulse { animation: spotpulse 2.4s var(--ease) infinite; }
+    .roster .slot.open small { color: var(--brand); font-weight: 600; }
+    @keyframes spotpulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(242,92,22,0.35); }
+      50%     { box-shadow: 0 0 0 9px rgba(242,92,22,0); }
+    }
+    .roster-label { font-size: 12px; color: var(--text-muted); align-self: center; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .sesh-card { animation: none; }
+      .open-spot.pulse { animation: none; }
+    }
+
+    /* ---------------------------------------------------- generic section */
+    section { padding-block: clamp(64px, 9vw, 120px); }
+    .section-head { max-width: 40rem; margin-bottom: clamp(36px, 5vw, 56px); }
+    .section-head .eyebrow { color: var(--brand); margin-bottom: 14px; }
+    .section-head h2 {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(30px, 4.4vw, 46px); line-height: 1.04;
+      letter-spacing: -0.025em; color: var(--text-strong); margin: 0 0 14px;
+      text-wrap: balance;
+    }
+    .section-head p { font-size: 17px; color: var(--text-muted); margin: 0; max-width: 34rem; }
+
+    /* ---------------------------------------------------- how it works */
+    .steps {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;
+    }
+    .step {
+      position: relative; background: var(--rock-25);
+      border: 1px solid var(--rock-100); border-radius: 20px;
+      padding: 26px 24px 28px; overflow: hidden;
+    }
+    .step .num {
+      font-family: var(--font-mono); font-weight: 600; font-size: 12px;
+      letter-spacing: 0.1em; color: var(--brand); margin-bottom: 18px; display: block;
+    }
+    .step h3 {
+      font-family: var(--font-display); font-weight: 600; font-size: 21px;
+      letter-spacing: -0.01em; color: var(--text-strong); margin: 0 0 8px;
+    }
+    .step p { font-size: 15px; color: var(--text-body); margin: 0; line-height: 1.5; }
+    .step .glyph {
+      position: absolute; right: 18px; top: 22px; width: 34px; height: 34px;
+      color: var(--brand); opacity: 0.9;
+    }
+
+    /* ---------------------------------------------------- screenshots */
+    .shots { background: var(--rock-25); border-block: 1px solid var(--rock-100); }
+    .shot-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 4vw, 44px);
+      align-items: start;
+    }
+    .shot { text-align: center; }
+    .shot img {
+      width: 100%; height: auto; display: block; border-radius: 26px;
+      box-shadow: 0 30px 60px -24px rgba(14,15,19,0.4);
+    }
+    .shot figcaption {
+      margin-top: 18px; font-family: var(--font-mono); font-size: 12.5px;
+      font-weight: 500; letter-spacing: 0.04em; color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    /* ---------------------------------------------------- features */
+    .features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    .feature {
+      border: 1px solid var(--rock-100); border-radius: 18px; padding: 24px 22px;
+      background: var(--rock-0);
+    }
+    .feature .ico {
+      width: 38px; height: 38px; border-radius: 10px; background: var(--brand-soft);
+      color: var(--brand); display: grid; place-items: center; margin-bottom: 16px;
+    }
+    .feature h3 {
+      font-family: var(--font-display); font-weight: 600; font-size: 16px;
+      color: var(--text-strong); margin: 0 0 6px; letter-spacing: -0.01em;
+    }
+    .feature p { font-size: 13.5px; color: var(--text-muted); margin: 0; line-height: 1.5; }
+
+    /* ---------------------------------------------------- final CTA */
+    .cta {
+      position: relative; overflow: hidden; color: #fff; text-align: center;
+      background:
+        radial-gradient(90% 120% at 50% -20%, #ff7a3c 0%, rgba(255,122,60,0) 55%),
+        linear-gradient(158deg, #f25c16 0%, #d8480a 60%, #b3380c 100%);
+    }
+    .cta::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background-image: radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1.4px);
+      background-size: 22px 22px; opacity: 0.3; mix-blend-mode: soft-light;
+    }
+    .cta .wrap { position: relative; z-index: 1; }
+    .cta .spot-badge {
+      width: 58px; height: 58px; margin: 0 auto 26px; border-radius: 50%;
+      border: 2px dashed rgba(255,255,255,0.85); color: #fff;
+      display: grid; place-items: center; font-size: 30px; font-weight: 300;
+      animation: spotpulse-w 2.4s var(--ease) infinite;
+    }
+    @keyframes spotpulse-w {
+      0%,100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
+      50%     { box-shadow: 0 0 0 12px rgba(255,255,255,0); }
+    }
+    @media (prefers-reduced-motion: reduce) { .cta .spot-badge { animation: none; } }
+    .cta h2 {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(32px, 5vw, 56px); line-height: 1.02; letter-spacing: -0.03em;
+      margin: 0 auto 16px; max-width: 16ch; text-wrap: balance;
+    }
+    .cta p { font-size: 17px; color: rgba(255,255,255,0.9); margin: 0 auto 32px; max-width: 30rem; }
+    .cta .badges { justify-content: center; }
+
+    /* ---------------------------------------------------- footer */
+    .site-footer {
+      background: var(--rock-950); color: var(--rock-300);
+      padding-block: 56px; font-size: 14px;
+    }
+    .site-footer .wrap {
+      display: flex; flex-wrap: wrap; gap: 28px 48px; justify-content: space-between; align-items: flex-start;
+    }
+    .foot-brand { display: flex; flex-direction: column; gap: 10px; max-width: 24rem; }
+    .foot-brand .brand-mark { color: #fff; }
+    .foot-brand p { margin: 0; color: var(--rock-400); line-height: 1.5; }
+    .foot-links { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; }
+    .foot-links a { color: var(--rock-300); text-decoration: none; }
+    .foot-links a:hover { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+    .foot-legal { width: 100%; border-top: 1px solid var(--rock-900); padding-top: 22px; margin-top: 8px;
+      display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; color: var(--rock-500); }
+    .foot-legal a { color: var(--rock-400); }
+
+    /* ---------------------------------------------------- reveal */
+    .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
+
+    /* ---------------------------------------------------- responsive */
+    @media (max-width: 900px) {
+      .hero .wrap { grid-template-columns: 1fr; gap: 48px; }
+      .card-stage { order: 2; }
+      .steps { grid-template-columns: 1fr; }
+      .features { grid-template-columns: repeat(2, 1fr); }
+      .sesh-card { transform: rotateY(0) rotateX(0) rotateZ(0); animation: none; }
+    }
+    @media (max-width: 620px) {
+      .shot-row { grid-template-columns: 1fr; max-width: 320px; margin-inline: auto; gap: 40px; }
+      .features { grid-template-columns: 1fr; }
+      .foot-legal { flex-direction: column; }
+    }
+  </style>
 </head>
 <body>
-  <header class="site"><a href="/">BoulderSesh</a></header>
+
+  <!-- =====================================================================
+       STORE LINKS — paste your App Store URL here (one spot).
+       Play Store is already wired from your package name.
+       ===================================================================== -->
+  <script>
+    window.STORE = {
+      ios: "https://apps.apple.com/de/app/bouldersesh/id6798312634",
+      android: "https://play.google.com/store/apps/details?id=de.manumittelbach.bouldersesh"
+    };
+  </script>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand-mark" href="/" aria-label="BoulderSesh home">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+          <path d="M3 22L10 8l4 7 2.2-4L23 22H3z" fill="#f25c16"/>
+          <path d="M10 8l4 7 2.2-4" stroke="#fff" stroke-width="1.4" stroke-linejoin="round" opacity="0"/>
+        </svg>
+        Boulder<span class="sesh">Sesh</span>
+      </a>
+      <a class="header-cta" href="#get">Get the app</a>
+    </div>
+  </header>
+
+  <!-- ================================================================ HERO -->
   <main>
-    <h1>Finde Leute zum Bouldern.</h1>
-    <p>BoulderSesh ist die App, mit der du Boulder-Partner:innen in deiner Stadt
-    findest: Poste eine Session in deiner Halle, joine Sessions von anderen und
-    verabrede dich im Chat. Bald im App&nbsp;Store.</p>
-    <p><a href="mailto:hello@bouldersesh.com">hello@bouldersesh.com</a></p>
+  <section class="hero" id="top">
+    <div class="wrap">
+      <div class="hero-copy">
+        <p class="eyebrow hero-eyebrow">Free · No ads · Data stays in the EU</p>
+        <h1>Who's <span class="u">climbing</span><br>today?</h1>
+        <p class="lede">
+          BoulderSesh shows you who's planning a session at your gym.
+          Join with one tap, or post your own and let the city climb with you.
+        </p>
+        <div class="badges" id="get">
+          <a class="store-badge" data-store="ios" href="#" aria-label="Download on the App Store">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M16.37 1.43c.06 1.06-.34 2.08-1 2.84-.69.8-1.83 1.42-2.93 1.33-.08-1.04.4-2.1 1.04-2.78.7-.78 1.92-1.36 2.89-1.39zM20.3 17.4c-.5 1.17-.75 1.69-1.4 2.72-.9 1.44-2.17 3.24-3.75 3.25-1.4.01-1.76-.92-3.67-.9-1.9.01-2.3.92-3.7.9-1.58-.02-2.78-1.64-3.68-3.08-2.52-4.02-2.78-8.73-1.23-11.24 1.1-1.78 2.83-2.82 4.46-2.82 1.66 0 2.7.92 4.08.92 1.33 0 2.14-.92 4.06-.92 1.45 0 2.99.8 4.08 2.17-3.59 1.98-3 7.14.42 8.72z"/></svg>
+            <span class="bt"><small>Download on the</small><span>App Store</span></span>
+          </a>
+          <a class="store-badge" data-store="android" href="#" aria-label="Get it on Google Play">
+            <svg width="24" height="26" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3.6 2.3c-.3.3-.5.8-.5 1.4v16.6c0 .6.2 1.1.5 1.4l.1.1 9.3-9.3v-.2L3.6 2.3z" fill="#34A9FF"/>
+              <path d="M16.3 15.4l-3.1-3.1v-.2l3.1-3.1.1.04 3.7 2.1c1.05.6 1.05 1.58 0 2.18l-3.7 2.1-.1.03z" fill="#FFD900"/>
+              <path d="M16.4 15.37l-3.2-3.2L3.6 21.7c.35.37.9.4 1.55.04l11.25-6.4z" fill="#FF3333"/>
+              <path d="M16.4 8.93L5.15 2.56C4.5 2.2 3.95 2.23 3.6 2.6l9.6 9.57 3.2-3.2z" fill="#00D679"/>
+            </svg>
+            <span class="bt"><small>GET IT ON</small><span>Google Play</span></span>
+          </a>
+        </div>
+        <p class="locnote">Live in Berlin &amp; Munich — more cities soon</p>
+      </div>
+
+      <!-- recreated session card = the thesis -->
+      <div class="card-stage">
+        <article class="sesh-card" aria-label="Example session: Jonas at Berta Block, 18:30, one spot open">
+          <div class="top">
+            <span class="avatar av-a" aria-hidden="true">J</span>
+            <div class="who">
+              <b>Jonas</b>
+              <span class="grade-pill grade-intermediate">Intermediate</span>
+            </div>
+            <span class="time">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              18:30
+            </span>
+          </div>
+          <p class="note">Trying some reds after warmup</p>
+          <div class="gym">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.6-7-11a7 7 0 1114 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            Berta Block
+          </div>
+          <div class="roster">
+            <span class="roster-label" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--rock-400)" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg>
+            </span>
+            <div class="slot">
+              <span class="avatar avatar-sm av-b" aria-hidden="true">N</span>
+              <small>Nina</small>
+            </div>
+            <div class="slot open">
+              <span class="open-spot pulse">+</span>
+              <small>Available</small>
+            </div>
+            <div class="slot open">
+              <span class="open-spot pulse" style="animation-delay:.6s">+</span>
+              <small>Available</small>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== HOW IT WORKS -->
+  <section class="how">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">How it works</p>
+        <h2>Three taps from your couch to the wall.</h2>
+        <p>No feeds to scroll for hours, no swiping. Just the sessions happening near you, today and tomorrow.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <span class="num">STEP 01</span>
+          <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <h3>Find a session</h3>
+          <p>Pick your city and gym. See who's climbing, when, and at what level — beginner to crusher.</p>
+        </div>
+        <div class="step reveal">
+          <span class="num">STEP 02</span>
+          <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          <h3>Or start your own</h3>
+          <p>Choose a gym, set a time, open a few spots. Your session goes live to boulderers in your city.</p>
+        </div>
+        <div class="step reveal">
+          <span class="num">STEP 03</span>
+          <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 01-9 8.4L3 21l1.1-5.5A8.4 8.4 0 1121 11.5z"/></svg>
+          <h3>Climb together</h3>
+          <p>Everyone in the session lands in one chat to sort the details. It disappears afterwards — no clutter.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= SCREENSHOTS -->
+  <section class="shots">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">See it in action</p>
+        <h2>Built for the five minutes before you leave.</h2>
+      </div>
+      <div class="shot-row">
+        <figure class="shot reveal">
+          <img src="/img/screens/feed.png" alt="BoulderSesh sessions feed showing climbers Jonas, Mara and Lena with open spots at Berlin gyms" loading="lazy">
+          <figcaption>The feed · who's on today</figcaption>
+        </figure>
+        <figure class="shot reveal">
+          <img src="/img/screens/create.png" alt="BoulderSesh new-session screen: pick a city, gym, time and how many spots to open" loading="lazy">
+          <figcaption>Create · open a few spots</figcaption>
+        </figure>
+        <figure class="shot reveal">
+          <img src="/img/screens/chat.png" alt="BoulderSesh session chat between Jonas and Max sorting out when and where to meet" loading="lazy">
+          <figcaption>Chat · sort the details</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ FEATURES -->
+  <section class="why">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">The fine print, up front</p>
+        <h2>Quiet by design.</h2>
+      </div>
+      <div class="features">
+        <div class="feature reveal">
+          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <h3>Free, no ads</h3>
+          <p>No subscriptions, no banners, nothing to upsell. It's just the app.</p>
+        </div>
+        <div class="feature reveal">
+          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+          <h3>Chats disappear</h3>
+          <p>Session chats clear out after the session. No endless threads, no noise.</p>
+        </div>
+        <div class="feature reveal">
+          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <h3>Data stays in the EU</h3>
+          <p>No tracking, no ad IDs, no selling your data. Hosted in the EU.</p>
+        </div>
+        <div class="feature reveal">
+          <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg></div>
+          <h3>Every level welcome</h3>
+          <p>Set your grade so others know what to expect — first-timer to crusher.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= CTA -->
+  <section class="cta">
+    <div class="wrap">
+      <div class="reveal">
+        <div class="spot-badge" aria-hidden="true">+</div>
+        <h2>There's a spot open for you tonight.</h2>
+        <p>Grab your shoes. Your next sesh is one tap away.</p>
+        <div class="badges">
+          <a class="store-badge" data-store="ios" href="#" aria-label="Download on the App Store">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M16.37 1.43c.06 1.06-.34 2.08-1 2.84-.69.8-1.83 1.42-2.93 1.33-.08-1.04.4-2.1 1.04-2.78.7-.78 1.92-1.36 2.89-1.39zM20.3 17.4c-.5 1.17-.75 1.69-1.4 2.72-.9 1.44-2.17 3.24-3.75 3.25-1.4.01-1.76-.92-3.67-.9-1.9.01-2.3.92-3.7.9-1.58-.02-2.78-1.64-3.68-3.08-2.52-4.02-2.78-8.73-1.23-11.24 1.1-1.78 2.83-2.82 4.46-2.82 1.66 0 2.7.92 4.08.92 1.33 0 2.14-.92 4.06-.92 1.45 0 2.99.8 4.08 2.17-3.59 1.98-3 7.14.42 8.72z"/></svg>
+            <span class="bt"><small>Download on the</small><span>App Store</span></span>
+          </a>
+          <a class="store-badge" data-store="android" href="#" aria-label="Get it on Google Play">
+            <svg width="24" height="26" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3.6 2.3c-.3.3-.5.8-.5 1.4v16.6c0 .6.2 1.1.5 1.4l.1.1 9.3-9.3v-.2L3.6 2.3z" fill="#34A9FF"/>
+              <path d="M16.3 15.4l-3.1-3.1v-.2l3.1-3.1.1.04 3.7 2.1c1.05.6 1.05 1.58 0 2.18l-3.7 2.1-.1.03z" fill="#FFD900"/>
+              <path d="M16.4 15.37l-3.2-3.2L3.6 21.7c.35.37.9.4 1.55.04l11.25-6.4z" fill="#FF3333"/>
+              <path d="M16.4 8.93L5.15 2.56C4.5 2.2 3.95 2.23 3.6 2.6l9.6 9.57 3.2-3.2z" fill="#00D679"/>
+            </svg>
+            <span class="bt"><small>GET IT ON</small><span>Google Play</span></span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
   </main>
-  <footer class="site">
-    <a href="/terms">Nutzungsbedingungen</a> ·
-    <a href="/privacy">Datenschutz</a> ·
-    <a href="/impressum">Impressum</a>
+
+  <!-- ============================================================== FOOTER -->
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="foot-brand">
+        <a class="brand-mark" href="/" aria-label="BoulderSesh home">
+          <svg width="24" height="24" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M3 22L10 8l4 7 2.2-4L23 22H3z" fill="#f25c16"/></svg>
+          Boulder<span class="sesh">Sesh</span>
+        </a>
+        <p>Find bouldering partners in your city. Made for people who'd rather be at the wall.</p>
+      </div>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="mailto:hello@bouldersesh.com">hello@bouldersesh.com</a>
+        <a href="/terms">Terms</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/impressum">Impressum</a>
+        <a href="/delete-account">Delete account</a>
+      </nav>
+      <div class="foot-legal">
+        <span>© 2026 BoulderSesh · Manuel Mittelbach</span>
+        <span>Made in Berlin 🧗</span>
+      </div>
+    </div>
   </footer>
+
+  <script>
+    // Wire every store button from the single STORE config above.
+    (function () {
+      var map = window.STORE || {};
+      document.querySelectorAll('[data-store]').forEach(function (a) {
+        var url = map[a.getAttribute('data-store')];
+        if (url) { a.setAttribute('href', url); a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); }
+      });
+
+      // Scroll reveal
+      var items = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        items.forEach(function (el) { el.classList.add('in'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
 </body>
 </html>
