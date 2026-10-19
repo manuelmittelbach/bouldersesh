@@ -1,55 +1,55 @@
 # BoulderSesh
 
-> Eine App, in der sich Boulder:innen verabreden können: eintragen, wann/wo/auf welchem Level man klettern will — andere sehen es, matchen, chatten, klettern.
+> An app for boulderers to meet up: post when/where/at what level you want to climb — others see it, match, chat, and climb.
 
-BoulderSesh ist eine native iOS/Android-App zum spontanen Finden von Kletterpartner:innen in Boulderhallen. Nutzer:innen erstellen Sessions (Halle, Zeit, Level, Gruppengröße), andere in derselben Stadt sehen sie im Feed, fragen an und stimmen sich per Chat ab.
+BoulderSesh is a native iOS/Android app for spontaneously finding climbing partners at bouldering gyms. Users create sessions (gym, time, level, group size); others in the same city see them in the feed, send requests, and coordinate via chat.
 
-## Aufbau (Monorepo)
+## Structure (monorepo)
 
-| Verzeichnis | Inhalt |
+| Directory | Contents |
 |---|---|
-| [`mobile/`](mobile/) | Die Expo-App (React Native, iOS/Android). Enthält eigene [README](mobile/README.md), [CLAUDE.md](mobile/CLAUDE.md) und `docs/`. |
-| [`supabase/`](supabase/) | Backend: Postgres-Migrationen, RLS-Policies, Realtime, E-Mail-Templates und die `delete-account` Edge Function. |
-| [`website/`](website/) | Gehostete Rechtstexte für [bouldersesh.com](https://bouldersesh.com) (Impressum, Datenschutz, AGB) als statische Seiten. |
-| [`docs/`](docs/) | Architekturentscheidungen ([ADRs](docs/adr/)) und [Glossar](docs/glossary.md). |
-| `BoulderSesh Design System/` | Design-System (Farben, Typo, Komponenten-Vorlagen). |
-| `BoulderSesh_Konzept.md` | Ursprüngliches Konzept & Produktplan. |
+| [`mobile/`](mobile/) | The Expo app (React Native, iOS/Android). Has its own [README](mobile/README.md), [CLAUDE.md](mobile/CLAUDE.md), and `docs/`. |
+| [`supabase/`](supabase/) | Backend: Postgres migrations, RLS policies, Realtime, email templates, and the `delete-account` edge function. |
+| [`website/`](website/) | Hosted legal texts for [bouldersesh.com](https://bouldersesh.com) (imprint, privacy policy, terms) as static pages. |
+| [`docs/`](docs/) | Architecture decisions ([ADRs](docs/adr/)) and [glossary](docs/glossary.md). |
+| `BoulderSesh Design System/` | Design system (colors, typography, component templates). |
+| `BoulderSesh_Konzept.md` | Original concept & product plan. |
 
-## Tech-Stack
+## Tech stack
 
-**App** — Expo SDK 57 · React Native 0.86 · React 19 · TypeScript · [Expo Router](https://docs.expo.dev/router/introduction/) (file-based) · [NativeWind](https://www.nativewind.dev/) (Tailwind) · [TanStack Query](https://tanstack.com/query) · Google- & Apple-Login
+**App** — Expo SDK 57 · React Native 0.86 · React 19 · TypeScript · [Expo Router](https://docs.expo.dev/router/introduction/) (file-based) · [NativeWind](https://www.nativewind.dev/) (Tailwind) · [TanStack Query](https://tanstack.com/query) · Google & Apple login
 
 **Backend** — [Supabase](https://supabase.com) (Postgres, Auth, Realtime, Storage, Edge Functions)
 
-## Entwicklung
+## Development
 
-Die App liegt in `mobile/`:
+The app lives in `mobile/`:
 
 ```bash
 cd mobile
 npm install
-npm start          # Expo Dev-Server
-npm run ios        # iOS (Simulator/Dev-Build)
+npm start          # Expo dev server
+npm run ios        # iOS (simulator/dev build)
 npm run android    # Android
 npm run typecheck  # tsc --noEmit
 npm run lint       # expo lint
-npm test           # Unit-Tests
+npm test           # unit tests
 ```
 
-> **Hinweis:** Die App nutzt native Module (Google-Sign-In, Notifications, …) und läuft **nicht** in der App-Store-Version von Expo Go. Für Gerätetests einen Dev-Build (`npm run ios`/`android`) oder Simulator verwenden.
+> **Note:** The app uses native modules (Google Sign-In, notifications, …) and does **not** run in the App Store version of Expo Go. For device testing, use a dev build (`npm run ios`/`android`) or a simulator.
 
-### Umgebungsvariablen
+### Environment variables
 
-`mobile/.env` anhand von [`mobile/.env.example`](mobile/.env.example) anlegen (Supabase-URL & Anon-Key). Echte Keys werden **nie** committet.
+Create `mobile/.env` based on [`mobile/.env.example`](mobile/.env.example) (Supabase URL & anon key). Real keys are **never** committed.
 
-## Backend / Datenbank
+## Backend / database
 
-Schema-Änderungen laufen ausschließlich über nummerierte Migrationen in [`supabase/migrations/`](supabase/migrations/) — bestehende Migrationen nie nachträglich editieren, immer eine neue Datei anlegen. Details siehe [`supabase/`](supabase/) und die zugehörigen [ADRs](docs/adr/).
+Schema changes go exclusively through numbered migrations in [`supabase/migrations/`](supabase/migrations/) — never edit existing migrations after the fact, always add a new file. See [`supabase/`](supabase/) and the related [ADRs](docs/adr/) for details.
 
-## Architekturentscheidungen
+## Architecture decisions
 
-Größere Entscheidungen sind als ADRs in [`docs/adr/`](docs/adr/) dokumentiert (Warum Expo statt Web, Stadt als Entität, Auth-Flow, Chat-Retention u. a.). Beim Nachvollziehen von „Warum ist das so?"-Fragen dort zuerst nachschauen.
+Larger decisions are documented as ADRs in [`docs/adr/`](docs/adr/) (why Expo instead of web, city as an entity, auth flow, chat retention, and more). When tracing "why is it this way?" questions, look there first.
 
 ## Status
 
-In aktiver Entwicklung · Version 1.0.0 · privates Repository.
+In active development · version 1.0.0.
